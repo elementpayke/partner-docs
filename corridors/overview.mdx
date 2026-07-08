@@ -52,11 +52,16 @@ Documented playbooks:
 - [Nigeria](/corridors/nigeria)
 - [Uganda](/corridors/uganda)
 
-## Token contract addresses
+## Supported stablecoins (asset)
 
-| Environment | Typical OnRamp (USDC) | Typical OffRamp (USDT) |
-|-------------|----------------------|------------------------|
-| Sandbox | Base Sepolia USDC | Polygon USDT (confirm in catalog) |
-| Production | Base USDC `0x833589…` | Polygon USDT `0xc2132d…` |
+Pass **`asset.token`**, **`asset.currency`**, and **`asset.network`** on every quote.  
+Local fiat corridors currently support **two** contract addresses only:
 
-Pass `asset.token`, `asset.currency`, and `asset.network` on every quote.
+| Use | Currency | Network | Contract (`asset.token`) |
+|-----|----------|---------|--------------------------|
+| **Default (recommended)** | `USDC` | `BASE` | `0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913` |
+| Alternate | `USDT` | `POLYGON` | `0xc2132d05d31c914a87c6611c10748aeb04b58e8f` |
+
+**Partner guidance:** use **Base USDC** for all OnRamp and OffRamp sandbox examples unless we tell you otherwise. Quickstart and corridor samples use Base USDC. Polygon USDT remains available on the rail but can behave differently for direct settlement — stick to Base USDC unless QA has confirmed USDT for your corridor.
+
+Same addresses apply on sandbox and production for these rails.

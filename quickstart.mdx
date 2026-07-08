@@ -22,6 +22,18 @@ X-API-Key: <API_KEY>
 Content-Type: application/json
 ```
 
+### Asset to use (sandbox)
+
+Use **Base USDC** on every quote unless we tell you otherwise:
+
+| Field | Value |
+|-------|--------|
+| `asset.currency` | `USDC` |
+| `asset.network` | `BASE` |
+| `asset.token` | `0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913` |
+
+(Polygon USDT is also on the rail — see [Corridors overview](/corridors/overview). Prefer Base USDC for integration.)
+
 ## 2. Discover Kenya corridors
 
 ```bash
