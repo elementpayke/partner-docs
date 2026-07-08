@@ -1,0 +1,61 @@
+# Kenya (KE / KES)
+
+Kenya supports **M-PESA mobile money** and **bank** rails for OnRamp and OffRamp.
+
+## Discovery
+
+```bash
+# OnRamp providers (momo + bank)
+curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data.african_markets[0]'
+
+# Field requirements
+curl -sS "$BASE/partner/order-requirements?country=KE&currency=KES&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+## Sandbox test values
+
+| Field | Success value | Notes |
+|-------|---------------|-------|
+| Momo `phone_number` | `+2541111111111` | Sandbox success MSISDN |
+| Bank `account_number` | `1111111111` | Simulates success |
+| `customer.name` | Two words, e.g. `Jane Doe` | Required |
+| OffRamp `customer.name` | Include `Successful`, e.g. `Successful Jane Doe` | May auto-simulate crypto deposit on sandbox |
+
+### Example network IDs (sandbox — verify via catalog)
+
+| Rail | Example `network_id` |
+|------|---------------------|
+| Safaricom M-PESA | `7ea6df5c-6bba-46b2-a7e6-f511959e7edb` |
+| National Bank of Kenya | `30f11b2e-0905-4c09-ba5f-d05aa4e4a11c` |
+
+## OnRamp (momo)
+
+Customer pays KES via M-PESA → receives USDC/USDT on your `wallet_address`.
+
+See [Quickstart](/quickstart) for a full curl.
+
+## OffRamp (momo)
+
+Customer sends **Polygon USDT** to the deposit wallet returned on **accept** (not in the quote body).
+
+1. Quote with `order_type: OffRamp`, `crypto_amount`, `refund_address`
+2. Accept → read `data.accepted.payment_instructions.crypto_deposit`
+3. Customer sends exact amount before `expires_at`
+4. Webhook `order.settled` when fiat is paid out to momo
+
+<Warning>
+OffRamp deposit address is **per order** from accept response. Do not reuse addresses across orders.
+</Warning>
+
+## Bank rail
+
+Use `payment_method.type: bank` and `network_id` from:
+
+```bash
+curl -sS "$BASE/partner/banks?country=KE&currency=KES&order_type=OnRamp&payment_method_type=bank" \
+  -H "X-API-Key: $API_KEY" | jq '.data.institutions'
+```
+
+For momo `network_id`, use catalog — **`GET /partner/banks` returns 422 for mobile_money**.

@@ -1,0 +1,44 @@
+# Element Pay Partner API
+
+Provider-neutral **fiat ↔ crypto** ramps for B2B partners.
+
+Integrate once against Element Pay — we route local African fiat (mobile money and bank) by corridor, return binding quotes, and notify your backend via webhooks when orders settle.
+
+## What you can do today
+
+| Product | Markets | Flow |
+|---------|---------|------|
+| **OnRamp** | KE, NG, UG, TZ, ZA, … (see catalog) | Customer pays local fiat → receives stablecoin on your chosen network |
+| **OffRamp** | Same African corridors | Customer sends stablecoin → receives fiat to momo or bank |
+
+## Core pattern
+
+Every order follows the same three steps:
+
+1. **Discover** — `GET /partner/catalog` (or granular discovery endpoints)
+2. **Quote** — `POST /partner/orders/quote`
+3. **Accept** — `POST /partner/orders/{quote_id}/accept`
+
+Settlement status is delivered on your API key **`webhook_url`** (`order.processing`, `order.settled`, `order.failed`).
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Sandbox setup and first KE OnRamp in under 10 minutes.
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    OpenAPI-generated endpoint reference.
+  </Card>
+</CardGroup>
+
+## Base URLs
+
+| Environment | Base URL |
+|-------------|----------|
+| **Sandbox** | `https://sandbox.elementpay.net/api/v1` |
+| **Production** | `https://api.elementpay.net/api/v1` |
+
+All partner API routes are under **`/partner/*`**.
+
+## Support
+
+Email **compliance@elementpay.net** for sandbox API keys, corridor enablement, and production onboarding.

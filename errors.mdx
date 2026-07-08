@@ -1,0 +1,59 @@
+# Errors
+
+Partner endpoints return a consistent envelope:
+
+```json
+{
+  "status": "error",
+  "message": "Human-readable summary",
+  "data": { }
+}
+```
+
+HTTP status codes follow REST conventions. **`message`** is safe to show integrators; **`data`** may include field-level hints.
+
+## Common HTTP statuses
+
+| Status | Meaning | Retry? |
+|--------|---------|--------|
+| `400` | Malformed request | Fix payload |
+| `401` | Missing or invalid `X-API-Key` | Fix auth |
+| `422` | Validation — missing/invalid fields | Fix payload; see `data.field` |
+| `409` | Quote already accepted or conflict | Use new quote or fetch order |
+| `410` | Quote expired | Create a new quote |
+| `502` | Payment rail temporarily unavailable | Retry with backoff |
+| `503` | Corridor not configured on this environment | Contact support |
+
+## Validation errors (422)
+
+Quote validation often returns:
+
+```json
+{
+  "status": "error",
+  "message": "payment_method.network_id is required for this rail",
+  "data": {
+    "field": "payment_method.network_id"
+  }
+}
+```
+
+| `data.field` | Typical fix |
+|--------------|-------------|
+| `payment_method.network_id` | Call `GET /partner/catalog` or `GET /partner/banks` |
+| `payment_method.phone_number` | E.164 MSISDN on momo rails |
+| `customer.name` | First and last name (two words) |
+| `customer.dob` | `mm/dd/yyyy` on African retail corridors |
+| `customer.additional_id_number` | Nigeria BVN required for retail |
+
+## Quote lifecycle errors
+
+| Situation | Status | Action |
+|-----------|--------|--------|
+| Quote TTL passed | `410` | `POST /partner/orders/quote` again |
+| Accept after accept | `409` | Idempotent — use returned `merchant_order_id` |
+| Amount below corridor minimum | `422` | Check `providers[].min_amount` in catalog |
+
+## Support
+
+When contacting **compliance@elementpay.net**, include your `customer.uid` and `quote_id` so we can trace the request.

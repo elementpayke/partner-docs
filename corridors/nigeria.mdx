@@ -1,0 +1,73 @@
+# Nigeria (NG / NGN)
+
+Nigeria supports **bank transfer** for OnRamp and OffRamp. Retail customers require **BVN** fields.
+
+## Required retail fields
+
+| Field | Example |
+|-------|---------|
+| `customer.additional_id_type` | `bvn` |
+| `customer.additional_id_number` | `12345678901` |
+| `customer.name` | `John Doe` (two words) |
+
+## Discovery
+
+```bash
+curl -sS "$BASE/partner/banks?country=NG&currency=NGN&order_type=OnRamp&payment_method_type=bank" \
+  -H "X-API-Key: $API_KEY" | jq '.data.institutions[] | {id, name}'
+```
+
+## Sandbox bank account
+
+| `account_number` | Result |
+|------------------|--------|
+| `1111111111` | Success |
+| `0000000000` | Failure |
+
+<Warning>
+Do not use arbitrary account numbers like `0123456789` — orders may remain `pending` indefinitely on sandbox.
+</Warning>
+
+## OnRamp quote (sketch)
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "currency": "NGN",
+    "country": "NG",
+    "local_amount": 5000,
+    "asset": {
+      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+      "currency": "USDC",
+      "network": "BASE"
+    },
+    "customer": {
+      "uid": "partner-ng-001",
+      "type": "user",
+      "name": "John Doe",
+      "country": "NG",
+      "phone": "+2348012345678",
+      "address": "Lagos",
+      "dob": "01/01/1990",
+      "email": "john@example.com",
+      "id_number": "A1234567",
+      "id_type": "passport",
+      "additional_id_number": "12345678901",
+      "additional_id_type": "bvn"
+    },
+    "payment_method": {
+      "type": "bank",
+      "network_id": "5f1af11b-305f-4420-8fce-65ed2725a409",
+      "account_number": "1111111111",
+      "account_name": "John Doe"
+    },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }'
+```
+
+Quote response includes **`payment_instructions`** with the bank account the customer must transfer to — display before accept.
+
+Full copy-paste payloads: [Sandbox test payloads](/sandbox/test-payloads).

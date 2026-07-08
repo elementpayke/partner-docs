@@ -1,0 +1,44 @@
+# Authentication
+
+Partner API requests are authenticated with an **API key** sent on every call.
+
+## Header
+
+```http
+X-API-Key: <your-api-key>
+Content-Type: application/json
+```
+
+## Key types
+
+| Prefix | Environment | Use |
+|--------|-------------|-----|
+| `is_test_` | Sandbox | Integration and QA |
+| `is_live_` | Production | Live money movement |
+
+Keys are **not interchangeable**. Customers, enrollment, and settled orders are scoped per environment.
+
+## API key fields
+
+When Element Pay provisions your key, configure:
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `webhook_url` | Recommended | HTTPS endpoint for order and enrollment events |
+| `webhook_secret` | Recommended | HMAC verification (see [Webhooks](/webhooks)) |
+
+## Requesting access
+
+Email **compliance@elementpay.net** with:
+
+- Company name and use case
+- Corridors you need (e.g. KE OnRamp, NG bank OffRamp)
+- Sandbox `webhook_url` for testing
+
+See [Sandbox onboarding](/sandbox/onboarding) for the full checklist we send new partners.
+
+## Security
+
+- Never expose API keys in browser or mobile apps — call Element Pay from your **backend** only.
+- Rotate keys if compromised; contact support for replacement.
+- Use separate keys per environment and per integration surface where possible.

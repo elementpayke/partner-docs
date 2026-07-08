@@ -1,0 +1,43 @@
+# Postman & API playground
+
+Test the Partner API interactively or import a collection into Postman.
+
+## Mintlify API playground (recommended)
+
+1. Open the **API Reference** tab.
+2. Pick an endpoint (e.g. `POST /partner/orders/quote`).
+3. Click **Try it** — enter your sandbox `X-API-Key`.
+4. Send the request against `https://sandbox.elementpay.net/api/v1`.
+
+Base URL and auth are configured in `docs.json`.
+
+## Postman
+
+Import the collection from this repo:
+
+```
+postman/Element-Pay-Partner-API.postman_collection.json
+```
+
+### Environment variables
+
+| Variable | Example |
+|----------|---------|
+| `base_url` | `https://sandbox.elementpay.net/api/v1` |
+| `api_key` | `is_test_...` |
+
+Set `api_key` in Postman **Environment** or collection variables — never commit real keys.
+
+### Typical flow
+
+1. `GET /partner/catalog?country=KE`
+2. `POST /partner/orders/quote`
+3. `POST /partner/orders/{{quote_id}}/accept` with body `{}`
+
+## cURL
+
+See [Quickstart](/quickstart) for copy-paste curls.
+
+## Support
+
+Email **compliance@elementpay.net** for sandbox keys and corridor enablement.

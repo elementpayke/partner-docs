@@ -1,0 +1,28 @@
+# Uganda (UG / UGX)
+
+Uganda supports **mobile money** (e.g. Airtel) for OnRamp and OffRamp.
+
+## Discovery
+
+```bash
+curl -sS "$BASE/partner/catalog?country=UG&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data.african_markets[0].onramp.mobile_money.providers'
+```
+
+## Sandbox momo phone
+
+| Field | Success value |
+|-------|---------------|
+| `payment_method.phone_number` | `+256111111111` |
+
+### Example network ID (sandbox — verify via catalog)
+
+| Operator | Example `network_id` |
+|----------|---------------------|
+| Airtel Mobile Money | `04a3083a-567c-4a2b-aa39-fa8f19e64341` |
+
+## Flow
+
+Same as [Kenya momo](/corridors/kenya): quote → show amounts → accept → webhooks.
+
+See [Sandbox test payloads](/sandbox/test-payloads) for full UG OnRamp and OffRamp JSON files.

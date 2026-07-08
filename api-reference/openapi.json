@@ -1,0 +1,3078 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Element Pay Partner API",
+    "description": "Provider-neutral fiat \u2194 crypto ramps for partners. Discover corridors, create a binding quote, accept it, and receive webhooks. African local fiat (mobile money and bank) is auto-routed by corridor.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/partner/rates/indicative": {
+      "get": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Indicative fiat vs USD rates",
+        "description": "Returns **indicative** ``buy`` / ``sell`` rates for the requested ISO fiat codes \u2014 **not** a binding quote (use ``POST /partner/orders/quote`` for checkout pricing). Response body: ``requested``, ``rates``, ``fetched_at``. **Auth:** ``X-API-Key``.",
+        "operationId": "partner_indicative_rates_partner_rates_indicative_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fiat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated ISO 4217 codes (e.g. `NGN,KES,GHS`).",
+              "examples": [
+                "NGN,KES,GHS"
+              ],
+              "title": "Fiat"
+            },
+            "description": "Comma-separated ISO 4217 codes (e.g. `NGN,KES,GHS`)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicative fiat vs USD rates (non-binding)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Indicative rates (non-binding)",
+                  "data": {
+                    "requested": [
+                      "KES",
+                      "NGN",
+                      "UGX"
+                    ],
+                    "fetched_at": "2026-07-07T10:00:00Z",
+                    "rates": [
+                      {
+                        "currency": "KES",
+                        "buy": 131.5,
+                        "sell": 128.0
+                      },
+                      {
+                        "currency": "NGN",
+                        "buy": 1580.0,
+                        "sell": 1550.0
+                      }
+                    ]
+                  }
+                },
+                "examples": {
+                  "kes_ngn_ugx": {
+                    "summary": "East Africa tickers",
+                    "value": {
+                      "status": "success",
+                      "message": "Indicative rates (non-binding)",
+                      "data": {
+                        "requested": [
+                          "KES",
+                          "NGN",
+                          "UGX"
+                        ],
+                        "fetched_at": "2026-07-07T10:00:00Z",
+                        "rates": [
+                          {
+                            "currency": "KES",
+                            "buy": 131.5,
+                            "sell": 128.0
+                          },
+                          {
+                            "currency": "NGN",
+                            "buy": 1580.0,
+                            "sell": 1550.0
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `fiat` query parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Invalid fiat code 'XX'; use three-letter ISO 4217 codes (e.g. NGN,KES).",
+                  "data": {
+                    "field": "fiat"
+                  }
+                },
+                "examples": {
+                  "invalid_fiat_code": {
+                    "summary": "Unrecognized ISO code",
+                    "value": {
+                      "status": "error",
+                      "message": "Invalid fiat code 'XX'; use three-letter ISO 4217 codes (e.g. NGN,KES).",
+                      "data": {
+                        "field": "fiat"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Missing required query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Query parameter `fiat` is required (e.g. fiat=NGN,KES,GHS).",
+                  "data": {
+                    "field": "fiat"
+                  }
+                },
+                "examples": {
+                  "missing_fiat": {
+                    "summary": "fiat query param omitted",
+                    "value": {
+                      "status": "error",
+                      "message": "Query parameter `fiat` is required (e.g. fiat=NGN,KES,GHS).",
+                      "data": {
+                        "field": "fiat"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream discovery temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": {
+                    "upstream_http_status": 502
+                  }
+                },
+                "examples": {
+                  "upstream_unavailable": {
+                    "summary": "Discovery upstream error",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": {
+                        "upstream_http_status": 502
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes.\n\n<Warning>\nThese rates are **not** binding. Use [`POST /partner/orders/quote`](/partner/orders/quote) for checkout pricing.\n</Warning>\n\nResponse `data` includes `requested`, `rates`, and `fetched_at`.\n\n**Auth:** `X-API-Key` header."
+        }
+      }
+    },
+    "/partner/corridors": {
+      "get": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Supported partner corridors (African markets and international bank)",
+        "description": "Indicative catalog for partner checkout UI. **african_markets** \u2014 local fiat corridors (country + currency, onramp/offramp flags). **international_bank** \u2014 EUR/USD bank transfer payin; currency only, no ISO country. Binding eligibility: ``POST /partner/orders/quote``.",
+        "operationId": "partner_corridors_partner_corridors_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter African markets by ISO country.",
+              "title": "Country"
+            },
+            "description": "Filter African markets by ISO country."
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by fiat currency (e.g. KES, EUR).",
+              "title": "Currency"
+            },
+            "description": "Filter by fiat currency (e.g. KES, EUR)."
+          },
+          {
+            "name": "order_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by order type: OnRamp (buy) or OffRamp (sell).",
+              "examples": [
+                "OnRamp",
+                "OffRamp"
+              ],
+              "title": "Order Type"
+            },
+            "description": "Filter by order type: OnRamp (buy) or OffRamp (sell)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Supported corridors (indicative)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Partner corridors (indicative)",
+                  "data": {
+                    "african_markets": [
+                      {
+                        "country": "KE",
+                        "currency": "KES",
+                        "onramp": true,
+                        "offramp": true
+                      }
+                    ],
+                    "international_bank": {
+                      "currencies": [
+                        {
+                          "currency": "EUR",
+                          "onramp": true,
+                          "offramp": false
+                        },
+                        {
+                          "currency": "USD",
+                          "onramp": true,
+                          "offramp": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "examples": {
+                  "corridors_ke": {
+                    "summary": "Filter KE",
+                    "value": {
+                      "status": "success",
+                      "message": "Partner corridors (indicative)",
+                      "data": {
+                        "african_markets": [
+                          {
+                            "country": "KE",
+                            "currency": "KES",
+                            "onramp": true,
+                            "offramp": true
+                          }
+                        ],
+                        "international_bank": {
+                          "currencies": [
+                            {
+                              "currency": "EUR",
+                              "onramp": true,
+                              "offramp": false
+                            },
+                            {
+                              "currency": "USD",
+                              "onramp": true,
+                              "offramp": false
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (missing corridor parameters or rail resolution failed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Provide country for African corridors (e.g. KE) or currency for international bank (EUR/USD).",
+                  "data": null
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error (corridor not supported or invalid parameters)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Corridor not supported on this environment.",
+                  "data": {
+                    "currency": "EUR",
+                    "country": "FR"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream discovery temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": {
+                    "upstream_http_status": 502
+                  }
+                },
+                "examples": {
+                  "upstream_unavailable": {
+                    "summary": "Discovery upstream error",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": {
+                        "upstream_http_status": 502
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Indicative catalog for partner checkout UI.\n\n### African markets (`african_markets`)\nLocal fiat corridors: **country**, **currency**, and **onramp** / **offramp** flags.\n\nOptional filters: `country`, `currency`, `order_type` (`OnRamp` | `OffRamp`).\n\n### International bank (`international_bank`)\nEUR/USD bank transfer **payin** \u2014 **currency only** (do not pass ISO country).\n\n<Note>\nBinding eligibility is confirmed at [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+        }
+      }
+    },
+    "/partner/catalog": {
+      "get": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Checkout catalog (corridors, methods, and providers)",
+        "description": "Single indicative catalog for partner checkout UI: per-country onramp/offramp, ``mobile_money`` and ``bank`` buckets with live provider lists, optional ``rails`` for international payout markets, and ``international_bank`` for EUR/USD payin. Composed from cached upstream discovery APIs (refreshed periodically). ``providers[].id`` is the opaque institution UUID to send as ``payment_method.network_id`` on quote (bank rows may also use ``GET /banks``). Each provider includes ``min_amount``, ``max_amount``, and ``currency`` for checkout validation. **OnRamp and OffRamp provider lists can differ** for the same country (filter with ``order_type``). Optional filters: ``country``, ``currency``, ``order_type`` (``OnRamp`` | ``OffRamp``). Omit filters for the full tree. Binding eligibility: ``POST /partner/orders/quote``.",
+        "operationId": "partner_catalog_partner_catalog_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ISO country (e.g. KE).",
+              "title": "Country"
+            },
+            "description": "Filter by ISO country (e.g. KE)."
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by fiat currency (e.g. KES, EUR).",
+              "title": "Currency"
+            },
+            "description": "Filter by fiat currency (e.g. KES, EUR)."
+          },
+          {
+            "name": "order_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by order type: OnRamp (buy) or OffRamp (sell).",
+              "examples": [
+                "OnRamp",
+                "OffRamp"
+              ],
+              "title": "Order Type"
+            },
+            "description": "Filter by order type: OnRamp (buy) or OffRamp (sell)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout catalog (corridors, methods, providers)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Supported corridors and payment methods",
+                  "data": {
+                    "african_markets": [
+                      {
+                        "country": "KE",
+                        "currency": "KES",
+                        "onramp": {
+                          "enabled": true,
+                          "payment_methods": {
+                            "mobile_money": {
+                              "enabled": true,
+                              "providers": [
+                                {
+                                  "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                                  "name": "Safaricom M-PESA",
+                                  "enabled": true,
+                                  "min_amount": 100,
+                                  "max_amount": 250000,
+                                  "currency": "KES"
+                                }
+                              ]
+                            },
+                            "bank": {
+                              "enabled": true,
+                              "providers": []
+                            }
+                          }
+                        },
+                        "offramp": {
+                          "enabled": true
+                        }
+                      }
+                    ],
+                    "international_bank": {
+                      "currencies": []
+                    }
+                  }
+                },
+                "examples": {
+                  "ke_onramp_catalog": {
+                    "summary": "KE OnRamp catalog slice",
+                    "value": {
+                      "status": "success",
+                      "message": "Supported corridors and payment methods",
+                      "data": {
+                        "african_markets": [
+                          {
+                            "country": "KE",
+                            "currency": "KES",
+                            "onramp": {
+                              "enabled": true,
+                              "payment_methods": {
+                                "mobile_money": {
+                                  "enabled": true,
+                                  "providers": [
+                                    {
+                                      "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                                      "name": "Safaricom M-PESA",
+                                      "enabled": true,
+                                      "min_amount": 100,
+                                      "max_amount": 250000,
+                                      "currency": "KES"
+                                    }
+                                  ]
+                                },
+                                "bank": {
+                                  "enabled": true,
+                                  "providers": []
+                                }
+                              }
+                            },
+                            "offramp": {
+                              "enabled": true
+                            }
+                          }
+                        ],
+                        "international_bank": {
+                          "currencies": []
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (missing corridor parameters or rail resolution failed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Provide country for African corridors (e.g. KE) or currency for international bank (EUR/USD).",
+                  "data": null
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error (corridor not supported or invalid parameters)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Corridor not supported on this environment.",
+                  "data": {
+                    "currency": "EUR",
+                    "country": "FR"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream discovery temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": {
+                    "upstream_http_status": 502
+                  }
+                },
+                "examples": {
+                  "upstream_unavailable": {
+                    "summary": "Discovery upstream error",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": {
+                        "upstream_http_status": 502
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Single indicative catalog for partner checkout: per-country onramp/offramp, `mobile_money` and `bank` buckets with live provider lists, optional `rails` for international payout markets, and `international_bank` for EUR/USD payin.\n\n### Provider IDs\n`providers[].id` is the opaque institution UUID to send as `payment_method.network_id` on quote. Bank rows may also use [`GET /partner/banks`](/partner/banks).\n\nEach provider includes `min_amount`, `max_amount`, and `currency` for checkout validation.\n\n<Warning>\n**OnRamp and OffRamp provider lists can differ** for the same country \u2014 filter with `order_type`.\n</Warning>\n\nOptional filters: `country`, `currency`, `order_type`. Omit filters for the full tree.\n\n<Note>\nBinding eligibility: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+        }
+      }
+    },
+    "/partner/payment-methods": {
+      "get": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Payment method types for a corridor",
+        "description": "Indicative payment methods for one corridor. **African:** ``country`` (required). ``currency`` is optional and must match the catalog when sent; response ``context`` always includes both. Optional ``order_type`` (``OnRamp`` or ``OffRamp``); omit to get both ``onramp`` and ``offramp`` buckets. **International bank:** ``currency`` = EUR or USD (required). Do not pass ``country``. EUR/USD onramp returns ``bank``; offramp uses international bank when configured. **international bank payout markets** (e.g. FR + EUR offramp): ``country`` + ``currency``; returns rails such as ``BankSepa`` and ``BankSwift`` with ``type`` set to international bank ``PaymentMethodType``. local fiat rail African ``mobile_money`` and ``bank`` rows include a ``networks[]`` list (``id``, ``name``, ``min_amount``, ``max_amount``, ``currency``) for client-side amount gating. Binding check: quote endpoint.",
+        "operationId": "partner_payment_methods_partner_payment_methods_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO country (required for African corridors, e.g. KE).",
+              "title": "Country"
+            },
+            "description": "ISO country (required for African corridors, e.g. KE)."
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional for African (validated against catalog). Required for international_bank (EUR/USD).",
+              "title": "Currency"
+            },
+            "description": "Optional for African (validated against catalog). Required for international_bank (EUR/USD)."
+          },
+          {
+            "name": "order_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OnRamp or OffRamp; omit for both onramp and offramp buckets.",
+              "examples": [
+                "OnRamp",
+                "OffRamp"
+              ],
+              "title": "Order Type"
+            },
+            "description": "OnRamp or OffRamp; omit for both onramp and offramp buckets."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment methods for the requested corridor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Partner payment methods (indicative)",
+                  "data": {
+                    "context": {
+                      "country": "KE",
+                      "currency": "KES"
+                    },
+                    "onramp": [
+                      {
+                        "type": "mobile_money",
+                        "status": "active",
+                        "networks": [
+                          {
+                            "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                            "name": "Safaricom M-PESA",
+                            "min_amount": 100,
+                            "max_amount": 250000,
+                            "currency": "KES"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "bank",
+                        "status": "active",
+                        "networks": []
+                      }
+                    ],
+                    "offramp": [
+                      {
+                        "type": "mobile_money",
+                        "status": "active",
+                        "networks": []
+                      },
+                      {
+                        "type": "bank",
+                        "status": "active",
+                        "networks": []
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (missing corridor parameters or rail resolution failed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Provide country for African corridors (e.g. KE) or currency for international bank (EUR/USD).",
+                  "data": null
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error (corridor not supported or invalid parameters)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Corridor not supported on this environment.",
+                  "data": {
+                    "currency": "EUR",
+                    "country": "FR"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream discovery temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": {
+                    "upstream_http_status": 502
+                  }
+                },
+                "examples": {
+                  "upstream_unavailable": {
+                    "summary": "Discovery upstream error",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": {
+                        "upstream_http_status": 502
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Indicative payment methods for one corridor.\n\n### African corridors\n- **`country`** \u2014 required\n- **`currency`** \u2014 optional; must match the catalog when sent; response `context` always includes both\n- **`order_type`** \u2014 `OnRamp` or `OffRamp`; omit to get both `onramp` and `offramp` buckets\n\n### International bank\n- **`currency`** = EUR or USD (required)\n- Do **not** pass `country`\n- EUR/USD onramp returns `bank`\n- Offramp uses international bank when configured\n\n### International bank payout markets\nExample: FR + EUR offramp \u2014 pass `country` + `currency`. Returns rails such as `BankSepa` and `BankSwift` with `type` set to the international bank `PaymentMethodType`.\n\n### Local fiat (African)\n`mobile_money` and `bank` rows include a **`networks[]`** list (`id`, `name`, `min_amount`, `max_amount`, `currency`) for client-side amount gating.\n\n<Note>\nBinding check: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+        }
+      }
+    },
+    "/partner/order-requirements": {
+      "get": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Indicative order field requirements for a corridor",
+        "description": "Returns partner-neutral **field name** hints before ``POST /partner/orders/quote``. Call after ``GET /corridors`` and ``GET /payment-methods``. Query: ``country``, ``currency``, ``order_type`` (OnRamp or OffRamp). List payout rails with ``GET /payment-methods`` first when several exist; pass ``payment_method_type`` (e.g. ``BankSepa``) on this call. Single-rail international bank corridors (e.g. GH) may omit it. rail: ``mobile_money`` or ``bank`` \u2014 both require ``network_id`` on quote (from catalog ``providers[].id`` or ``GET /banks`` for bank). Optional ``customer_type`` (``retail`` or ``institution``) on local fiat rail corridors. No JSON Schema, bank lists, fees, or provider labels. Bank lists and dynamic form schemas are separate partner endpoints (see partner quickstart). Binding check: quote endpoint.",
+        "operationId": "partner_order_requirements_partner_order_requirements_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "description": "ISO country code.",
+              "title": "Country"
+            },
+            "description": "ISO country code."
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 3,
+              "description": "Fiat currency code.",
+              "title": "Currency"
+            },
+            "description": "Fiat currency code."
+          },
+          {
+            "name": "order_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "OnRamp or OffRamp.",
+              "examples": [
+                "OffRamp"
+              ],
+              "title": "Order Type"
+            },
+            "description": "OnRamp or OffRamp."
+          },
+          {
+            "name": "customer_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "retail or institution \u2014 affects required customer fields on local fiat rail corridors.",
+              "default": "retail",
+              "title": "Customer Type"
+            },
+            "description": "retail or institution \u2014 affects required customer fields on local fiat rail corridors."
+          },
+          {
+            "name": "payment_method_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrows payment_method requirements: mobile_money | bank (rail) or international bank PaymentMethodType from payment-methods (e.g. BankLocal).",
+              "title": "Payment Method Type"
+            },
+            "description": "Narrows payment_method requirements: mobile_money | bank (rail) or international bank PaymentMethodType from payment-methods (e.g. BankLocal)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicative field requirements before quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Partner order requirements (indicative)",
+                  "data": {
+                    "context": {
+                      "country": "KE",
+                      "currency": "KES",
+                      "order_type": "OnRamp",
+                      "payment_method_type": "mobile_money"
+                    },
+                    "customer": [
+                      "name",
+                      "phone",
+                      "dob",
+                      "id_number",
+                      "id_type"
+                    ],
+                    "payment_method": [
+                      "type",
+                      "phone_number",
+                      "network_id"
+                    ],
+                    "order": [
+                      "wallet_address",
+                      "local_amount",
+                      "asset"
+                    ]
+                  }
+                },
+                "examples": {
+                  "ke_momo_onramp": {
+                    "summary": "KE momo OnRamp",
+                    "value": {
+                      "status": "success",
+                      "message": "Partner order requirements (indicative)",
+                      "data": {
+                        "context": {
+                          "country": "KE",
+                          "currency": "KES",
+                          "order_type": "OnRamp",
+                          "payment_method_type": "mobile_money"
+                        },
+                        "customer": [
+                          "name",
+                          "phone",
+                          "dob",
+                          "id_number",
+                          "id_type"
+                        ],
+                        "payment_method": [
+                          "type",
+                          "phone_number",
+                          "network_id"
+                        ],
+                        "order": [
+                          "wallet_address",
+                          "local_amount",
+                          "asset"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (missing corridor parameters or rail resolution failed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Provide country for African corridors (e.g. KE) or currency for international bank (EUR/USD).",
+                  "data": null
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error (corridor not supported or invalid parameters)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Corridor not supported on this environment.",
+                  "data": {
+                    "currency": "EUR",
+                    "country": "FR"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream discovery temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": {
+                    "upstream_http_status": 502
+                  }
+                },
+                "examples": {
+                  "upstream_unavailable": {
+                    "summary": "Discovery upstream error",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": {
+                        "upstream_http_status": 502
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Returns partner-neutral **field name** hints before [`POST /partner/orders/quote`](/partner/orders/quote).\n\nCall after [`GET /partner/corridors`](/partner/corridors) and [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` or `OffRamp`).\n\nWhen several payout rails exist, list them with [`GET /partner/payment-methods`](/partner/payment-methods) first, then pass `payment_method_type` (e.g. `BankSepa`) on this call. Single-rail international bank corridors (e.g. GH) may omit it.\n\n### Rails\n- **`mobile_money`** or **`bank`** \u2014 both require `network_id` on quote (from catalog `providers[].id` or [`GET /partner/banks`](/partner/banks) for bank)\n- Optional **`customer_type`** (`retail` or `institution`) on local fiat corridors\n\nThis endpoint does **not** return JSON Schema, bank lists, fees, or provider labels. Bank lists and dynamic form schemas are separate partner endpoints (see [Quickstart](/quickstart)).\n\n<Note>\nBinding check: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+        }
+      }
+    },
+    "/partner/banks": {
+      "get": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Indicative bank/network options for a rail",
+        "description": "Lists partner-neutral bank/network options for a rail chosen via ``GET /partner/payment-methods``. Query: ``country``, ``currency``, ``order_type`` (OnRamp or OffRamp), and ``payment_method_type``. local fiat rail rails support ``payment_method_type=bank`` (active networks only). ``payment_method_type=mobile_money`` returns 422 \u2014 use ``GET /catalog`` ``providers[].id`` for momo ``payment_method.network_id``. international bank rails (e.g. ``BankSepa``, ``BankSwift``) return best-effort enum options extracted from international bank ``FormSchema``.",
+        "operationId": "partner_banks_partner_banks_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "description": "ISO country code.",
+              "title": "Country"
+            },
+            "description": "ISO country code."
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 3,
+              "description": "Fiat currency code.",
+              "title": "Currency"
+            },
+            "description": "Fiat currency code."
+          },
+          {
+            "name": "order_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "OnRamp or OffRamp.",
+              "examples": [
+                "OffRamp"
+              ],
+              "title": "Order Type"
+            },
+            "description": "OnRamp or OffRamp."
+          },
+          {
+            "name": "payment_method_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Rail id from ``GET /payment-methods``: rail uses ``mobile_money`` or ``bank``; international bank uses ``PaymentMethodType`` values like ``BankSepa``.",
+              "title": "Payment Method Type"
+            },
+            "description": "Rail id from ``GET /payment-methods``: rail uses ``mobile_money`` or ``bank``; international bank uses ``PaymentMethodType`` values like ``BankSepa``."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bank institution options for bank rail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Partner banks (indicative)",
+                  "data": {
+                    "context": {
+                      "country": "NG",
+                      "currency": "NGN",
+                      "order_type": "OnRamp",
+                      "payment_method_type": "bank"
+                    },
+                    "institutions": [
+                      {
+                        "id": "5f1af11b-305f-4420-8fce-65ed2725a409",
+                        "name": "Access Bank"
+                      }
+                    ]
+                  }
+                },
+                "examples": {
+                  "ng_bank_onramp": {
+                    "summary": "NG bank OnRamp institutions",
+                    "value": {
+                      "status": "success",
+                      "message": "Partner banks (indicative)",
+                      "data": {
+                        "context": {
+                          "country": "NG",
+                          "currency": "NGN",
+                          "order_type": "OnRamp",
+                          "payment_method_type": "bank"
+                        },
+                        "institutions": [
+                          {
+                            "id": "5f1af11b-305f-4420-8fce-65ed2725a409",
+                            "name": "Access Bank"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (missing corridor parameters or rail resolution failed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Provide country for African corridors (e.g. KE) or currency for international bank (EUR/USD).",
+                  "data": null
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error (corridor not supported or invalid parameters)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Corridor not supported on this environment.",
+                  "data": {
+                    "currency": "EUR",
+                    "country": "FR"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream discovery temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "country": {
+                          "type": "string"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": {
+                    "upstream_http_status": 502
+                  }
+                },
+                "examples": {
+                  "upstream_unavailable": {
+                    "summary": "Discovery upstream error",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": {
+                        "upstream_http_status": 502
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Lists bank/network institution options for a rail chosen via [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` | `OffRamp`), and `payment_method_type`.\n\n### Rails\n- **`bank`** (local fiat) \u2014 active networks only; use returned `institutions[].id` as `payment_method.network_id` on quote\n- **`mobile_money`** \u2014 returns **422**; use [`GET /partner/catalog`](/partner/catalog) `providers[].id` for momo `network_id`\n- International bank types (e.g. `BankSepa`, `BankSwift`) \u2014 best-effort enum options from upstream form schema"
+        }
+      }
+    },
+    "/partner/orders/quote": {
+      "post": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Create a partner order quote",
+        "description": "Create a binding quote for a fiat \u2194 crypto order. **Flow:** create a quote \u2192 show the returned amounts and payment instructions to the user \u2192 accept the `quote_id` with `POST /partner/orders/{quote_id}/accept`. **Discovery before quote:** - `GET /partner/catalog` or `GET /partner/payment-methods` \u2192 rails for the corridor. - `GET /partner/catalog?order_type=OnRamp|OffRamp` \u2192 `providers[].id` for momo/bank. - `GET /partner/order-requirements` \u2192 exact field names (`network_id` required for momo/bank). - `GET /partner/banks` \u2192 bank institution UUIDs where applicable. **Payment method by rail:** - **`mobile_money`**: `payment_method.type=mobile_money`, `payment_method.phone_number` (E.164), and `payment_method.network_id` (UUID from catalog `providers[].id`). - **`bank`**: `payment_method.type=bank`, `account_number`, `account_name`, and `payment_method.network_id` (from `GET /partner/banks` or catalog). **OnRamp response** includes `payment_instructions` \u2014 show these to the user before accept. `provider` is optional. When omitted, ElementPay auto-routes by corridor. **Quote id formats:** `yc_receive_<id>` (OnRamp), `yc_send_<id>` (OffRamp). The quote expires at `data.expires_at`.",
+        "operationId": "partner_order_quote_partner_orders_quote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerOrderQuoteRequest"
+              },
+              "examples": {
+                "ke_onramp_local_fiat_success": {
+                  "summary": "KE OnRamp via local fiat rail",
+                  "description": "Customer pays KES by M-PESA and receives the requested stablecoin/network.",
+                  "value": {
+                    "order_type": "OnRamp",
+                    "currency": "KES",
+                    "country": "KE",
+                    "local_amount": 800,
+                    "asset": {
+                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                      "currency": "USDC",
+                      "network": "BASE"
+                    },
+                    "customer": {
+                      "uid": "sandbox-ke-onramp-success-001",
+                      "type": "user",
+                      "name": "Successful Jane Customer",
+                      "country": "KE",
+                      "phone": "+2541111111111",
+                      "address": "Nairobi",
+                      "dob": "02/01/1997",
+                      "email": "jane@example.com",
+                      "id_number": "A1234567",
+                      "id_type": "passport"
+                    },
+                    "payment_method": {
+                      "type": "mobile_money",
+                      "phone_number": "+2541111111111",
+                      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+                    },
+                    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+                  }
+                },
+                "ke_onramp_local_fiat_failure": {
+                  "summary": "KE OnRamp sandbox failure",
+                  "description": "Sandbox failure case using failure test identity/phone.",
+                  "value": {
+                    "rail": "local_fiat",
+                    "order_type": "OnRamp",
+                    "currency": "KES",
+                    "country": "KE",
+                    "local_amount": 800,
+                    "asset": {
+                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                      "currency": "USDC",
+                      "network": "BASE"
+                    },
+                    "customer": {
+                      "uid": "sandbox-ke-onramp-failure-001",
+                      "type": "user",
+                      "name": "Failure Jane Customer",
+                      "country": "KE",
+                      "phone": "+2540000000000",
+                      "address": "Nairobi",
+                      "dob": "02/01/1997",
+                      "email": "jane@example.com",
+                      "id_number": "A1234567",
+                      "id_type": "passport"
+                    },
+                    "payment_method": {
+                      "type": "mobile_money",
+                      "phone_number": "+2540000000000",
+                      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                      "account_name": "Failure Jane Customer"
+                    },
+                    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+                  }
+                },
+                "ke_offramp_local_fiat": {
+                  "summary": "KE OffRamp via local fiat rail (mobile money)",
+                  "description": "Customer sends Polygon USDT and receives KES by M-PESA.",
+                  "value": {
+                    "rail": "local_fiat",
+                    "order_type": "OffRamp",
+                    "currency": "KES",
+                    "country": "KE",
+                    "crypto_amount": 20,
+                    "asset": {
+                      "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+                      "currency": "USDT",
+                      "network": "POLYGON"
+                    },
+                    "refund_address": "0x3333333333333333333333333333333333333333",
+                    "customer": {
+                      "uid": "sandbox-ke-offramp-success-001",
+                      "type": "user",
+                      "name": "Successful Jane Customer",
+                      "country": "KE",
+                      "phone": "+254712345678",
+                      "address": "Nairobi",
+                      "dob": "02/01/1997",
+                      "email": "jane@example.com",
+                      "idNumber": "A1234567",
+                      "idType": "passport"
+                    },
+                    "payment_method": {
+                      "type": "mobile_money",
+                      "phone_number": "+2541111111111",
+                      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                      "account_name": "Successful Jane Customer"
+                    }
+                  }
+                },
+                "ng_onramp_bank": {
+                  "summary": "NG OnRamp \u2014 bank transfer (network_id required)",
+                  "description": "Customer pays NGN by bank transfer and receives USDC. `payment_method.network_id` is the UUID from `GET /partner/banks` or catalog (e.g. Access Bank). The quote response includes `payment_instructions` with the account the customer must transfer to.",
+                  "value": {
+                    "order_type": "OnRamp",
+                    "currency": "NGN",
+                    "country": "NG",
+                    "local_amount": 5000,
+                    "asset": {
+                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                      "currency": "USDC",
+                      "network": "BASE"
+                    },
+                    "customer": {
+                      "uid": "sandbox-ng-bank-onramp-001",
+                      "type": "user",
+                      "name": "John Doe",
+                      "country": "NG",
+                      "phone": "+2348012345678",
+                      "address": "Lagos",
+                      "dob": "01/01/1990",
+                      "email": "john@example.com",
+                      "id_number": "A1234567",
+                      "id_type": "passport",
+                      "additional_id_number": "12345678901",
+                      "additional_id_type": "bvn"
+                    },
+                    "payment_method": {
+                      "type": "bank",
+                      "account_number": "0123456789",
+                      "account_name": "John Doe",
+                      "network_id": "5f1af11b-305f-4420-8fce-65ed2725a409"
+                    },
+                    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+                  }
+                },
+                "ng_offramp_bank": {
+                  "summary": "NG OffRamp \u2014 bank payout (network_id required)",
+                  "description": "Customer sends USDC and receives NGN to their bank account. `payment_method.network_id` is the UUID from `GET /partner/banks` or catalog for the destination bank (e.g. Access Bank = `5f1af11b-305f-4420-8fce-65ed2725a409`).",
+                  "value": {
+                    "order_type": "OffRamp",
+                    "currency": "NGN",
+                    "country": "NG",
+                    "crypto_amount": 20,
+                    "asset": {
+                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                      "currency": "USDC",
+                      "network": "BASE"
+                    },
+                    "refund_address": "0x3333333333333333333333333333333333333333",
+                    "customer": {
+                      "uid": "sandbox-ng-bank-offramp-001",
+                      "type": "user",
+                      "name": "John Doe",
+                      "country": "NG",
+                      "phone": "+2348012345678",
+                      "address": "Lagos",
+                      "dob": "01/01/1990",
+                      "email": "john@example.com",
+                      "id_number": "A1234567",
+                      "id_type": "passport",
+                      "additional_id_number": "12345678901",
+                      "additional_id_type": "bvn"
+                    },
+                    "payment_method": {
+                      "type": "bank",
+                      "account_number": "0123456789",
+                      "account_name": "John Doe",
+                      "network_id": "5f1af11b-305f-4420-8fce-65ed2725a409"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Partner order quote created",
+            "content": {
+              "application/json": {
+                "schema": {},
+                "example": {
+                  "status": "success",
+                  "message": "Partner order quote created",
+                  "data": {
+                    "quote_id": "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c",
+                    "rail": "local_fiat",
+                    "status": "process",
+                    "order_type": "OnRamp",
+                    "route": {
+                      "family": "ramp_provider",
+                      "rail": "local_fiat",
+                      "direction": "payin",
+                      "mode": "auto",
+                      "reason": "Auto-routed for KE KES OnRamp."
+                    },
+                    "expires_at": "2026-05-16T08:13:40.322Z",
+                    "amounts": {
+                      "rate": 131.69,
+                      "rate_currency": "KES",
+                      "user_pays": {
+                        "amount": 800,
+                        "currency": "KES"
+                      },
+                      "user_receives": {
+                        "amount": 5.94999132,
+                        "currency": "USDC",
+                        "network": "BASE"
+                      },
+                      "fees": {
+                        "network_fee_usd": 0,
+                        "network_fee_local": 0,
+                        "service_fee_usd": 0.12,
+                        "service_fee_local": 16,
+                        "partner_fee_usd": 0,
+                        "partner_fee_local": 0
+                      }
+                    },
+                    "instructions": {
+                      "available_after_accept": true,
+                      "note": "Accept this quote to create the local order and receive final payment instructions."
+                    },
+                    "audit": {
+                      "rail": "local_fiat",
+                      "provider_quote_id": "580e04c2-a136-5cca-be54-b49fcf80970c",
+                      "direction": "payin",
+                      "token_symbol": "BASE_USDC",
+                      "crypto_currency": "USDC",
+                      "crypto_network": "BASE"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported provider or rail resolution failed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "message": "elementpay partner order routing is not enabled yet",
+                  "data": {
+                    "route": {
+                      "family": "native",
+                      "direction": "payin",
+                      "mode": "override",
+                      "reason": "Provider override requested: rail.",
+                      "rail": "native"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "message": "Missing requirements for selected route",
+                  "data": {
+                    "missing_fields": [
+                      "wallet_address",
+                      "recipient or customer",
+                      "source or payment_method"
+                    ],
+                    "route": {
+                      "family": "ramp_provider",
+                      "direction": "payin",
+                      "mode": "auto",
+                      "reason": "Selected rail for KE KES OnRamp.",
+                      "rail": "local_fiat"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Provider rejected request or upstream unavailable",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "local_fiat_ng_sandbox_500": {
+                    "summary": "local fiat rail sandbox upstream 500",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": null
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": null
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "x-mint": {
+          "content": "Create a binding quote for a fiat \u2194 crypto order.\n\n<Steps>\n  <Step title=\"Create quote\">\n    `POST` with corridor, customer, and payment method details.\n  </Step>\n  <Step title=\"Show pricing\">\n    Display returned amounts and **payment instructions** to the user (OnRamp).\n  </Step>\n  <Step title=\"Accept\">\n    [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.\n  </Step>\n</Steps>\n\n### Discovery before quote\n- [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) \u2192 rails for the corridor\n- [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` \u2192 `providers[].id` for momo/bank\n- [`GET /partner/order-requirements`](/partner/order-requirements) \u2192 exact field names (`network_id` required for momo/bank)\n- [`GET /partner/banks`](/partner/banks) \u2192 bank institution UUIDs where applicable\n\n### Payment method by rail\n**`mobile_money`**\n- `payment_method.type=mobile_money`\n- `payment_method.phone_number` (E.164)\n- `payment_method.network_id` (UUID from catalog `providers[].id`)\n\n**`bank`**\n- `payment_method.type=bank`\n- `account_number`, `account_name`\n- `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)\n\n`provider` is optional \u2014 when omitted, ElementPay auto-routes by corridor.\n\n### Quote IDs\n- OnRamp: `yc_receive_<id>`\n- OffRamp: `yc_send_<id>`\n\nThe quote expires at `data.expires_at`."
+        }
+      }
+    },
+    "/partner/orders/{quote_id}/accept": {
+      "post": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Accept a partner order quote",
+        "description": "Accepts a quote returned by `/partner/orders/quote`. For local fiat rail, the `quote_id` already contains the provider and direction, so the request body can be `{}`. international bank quote ids work the same way. Accepting creates or returns the local ElementPay order, copies the API key webhook URL, and triggers partner webhook notifications as the order moves through `order.processing`, `order.settled`, `order.failed`, or `order.refunded`. This route is idempotent for already accepted local fiat rail previews: retries return the existing local order.",
+        "operationId": "partner_order_accept_partner_orders__quote_id__accept_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quote_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Quote id returned by `/partner/orders/quote`.",
+              "title": "Quote Id"
+            },
+            "description": "Quote id returned by `/partner/orders/quote`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PartnerOrderAcceptRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              },
+              "examples": {
+                "empty": {
+                  "summary": "Accept quote",
+                  "description": "Most callers can send an empty object; provider is inferred from quote_id.",
+                  "value": {}
+                },
+                "provider_assertion": {
+                  "summary": "Accept quote with provider assertion",
+                  "value": {
+                    "rail": "local_fiat"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Partner order quote accepted",
+            "content": {
+              "application/json": {
+                "schema": {},
+                "example": {
+                  "status": "success",
+                  "message": "Partner order quote accepted",
+                  "data": {
+                    "quote_id": "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c",
+                    "status": "processing",
+                    "order": {
+                      "order_id": "YC-580e04c2-a136-5cca-be54-b49fcf80970c",
+                      "status": "processing",
+                      "order_type": "OnRamp",
+                      "amount_fiat": 800,
+                      "amount_crypto": 5.94999,
+                      "currency": "KES",
+                      "token": "BASE_USDC",
+                      "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+                      "exchange_rate": 131.69,
+                      "psp_transaction_id": "580e04c2-a136-5cca-be54-b49fcf80970c"
+                    },
+                    "accepted": {
+                      "payment_instructions": {
+                        "type": "momo",
+                        "source": {
+                          "accountNumber": "+2541111111111",
+                          "networkName": "Mobile Wallet (M-PESA)"
+                        }
+                      }
+                    },
+                    "webhooks": {
+                      "events": [
+                        "order.processing",
+                        "order.settled",
+                        "order.failed",
+                        "order.refunded"
+                      ],
+                      "delivery": "ElementPay will notify the webhook_url configured on the API key."
+                    },
+                    "rail": "local_fiat"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid quote id or provider mismatch",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "message": "Unsupported quote_id. Expected `yc_receive_<preview_id>` or `yc_send_<preview_id>`."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Provider quote is not acceptable",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "not_accepted_or_terminal": {
+                    "summary": "local fiat rail preview cannot be synced as accepted",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": null
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": null
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Provider accept/lookup failed",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "accept_failed": {
+                    "summary": "local fiat rail accept failed upstream",
+                    "value": {
+                      "status": "error",
+                      "message": "Quote request failed",
+                      "data": null
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Quote request failed",
+                  "data": null
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Missing requirements for selected route",
+                  "data": {
+                    "field": "order_type"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Accept a previously created quote and create the local order.\n\nSend the same customer and payment method payload shape used at quote time (see [Test payloads](/sandbox/test-payloads)).\n\nOnRamp: final payment instructions are returned after accept when applicable."
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {},
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PartnerOrderAcceptRequest": {
+        "properties": {
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "local fiat rail",
+                  "international bank",
+                  "elementpay"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider",
+            "description": "Optional provider assertion. Usually inferred from quote_id."
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method",
+            "description": "Required for international bank OffRamp: form fields from the corridor's ``form_schema`` (returned in the quote response). Keys match the international bank FormSchema properties e.g. ``BankDetails``, ``AccountHolderName``, ``PaymentPurpose``."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PartnerOrderAcceptRequest",
+        "description": "Accept a partner quote. Empty body is supported when quote_id identifies the route.",
+        "examples": [
+          {},
+          {
+            "rail": "local_fiat"
+          }
+        ]
+      },
+      "PartnerOrderQuoteRequest": {
+        "properties": {
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "local fiat rail",
+                  "international bank",
+                  "elementpay",
+                  "native"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider",
+            "description": "Optional route override. Omit for ElementPay auto-routing. Use `elementpay` for native on-chain routes; `local fiat rail` and `international bank` for ramp providers."
+          },
+          "order_type": {
+            "enum": [
+              "OnRamp",
+              "OffRamp",
+              "onramp",
+              "offramp",
+              0,
+              1
+            ],
+            "title": "Order Type",
+            "description": "OnRamp/0 = fiat to crypto. OffRamp/1 = crypto to fiat."
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token",
+            "description": "Token contract address or route token hint. local fiat rail currently requires Base USDC or Polygon USDT address."
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id"
+          },
+          "channel_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Type"
+          },
+          "sequence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence Id"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 3,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": "other"
+          },
+          "customer_uid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Uid"
+          },
+          "customer_type": {
+            "type": "string",
+            "enum": [
+              "retail",
+              "institution"
+            ],
+            "title": "Customer Type",
+            "default": "retail"
+          },
+          "asset": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset",
+            "description": "Canonical crypto asset block. Use `token` for contract-address based routes and `currency` + `network` for provider currency routes."
+          },
+          "subject_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "organization"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Type",
+            "description": "Stable subject type for providers that require pre-approved PSP customer links (for example international bank USD/EUR IBAN payins)."
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id",
+            "description": "Stable subject id used to resolve provider approval/onboarding state."
+          },
+          "crypto_currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crypto Currency",
+            "description": "Provider crypto currency hint, e.g. USDC or USDC_TEST for international bank."
+          },
+          "crypto_network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crypto Network",
+            "description": "Provider network hint, e.g. Base or PolygonTestAmoy for international bank."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "local_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Amount"
+          },
+          "fiat_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiat Amount"
+          },
+          "crypto_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crypto Amount"
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer",
+            "description": "Provider-neutral customer details. Used to derive provider party details when provider-specific fields are omitted."
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method",
+            "description": "Provider-neutral fiat rail. For ``type: mobile_money`` use ``phone_number`` (MSISDN) and ``network_id`` (institution UUID from catalog ``providers[].id``). For ``type: bank`` use ``account_number``, ``account_name``, and ``network_id`` (UUID from ``GET /banks`` or catalog). Do not use top-level legacy fields."
+          },
+          "recipient": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination"
+          },
+          "wallet_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wallet Address"
+          },
+          "wallet_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wallet Tag"
+          },
+          "refund_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refund Address"
+          },
+          "sender_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Address"
+          },
+          "refund_to_source_address": {
+            "type": "boolean",
+            "title": "Refund To Source Address",
+            "default": false
+          },
+          "redirect_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redirect Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_type"
+        ],
+        "title": "PartnerOrderQuoteRequest",
+        "description": "Generic partner quote request for the `quote -> accept -> webhook` flow. `provider` is optional. When omitted, the partner order router selects the route from country, currency, order type, payment method, asset, and amount. New partner integrations should use the canonical `asset`, `customer`, and `payment_method` blocks. For local fiat rail momo/bank, ``payment_method.network_id`` is required (catalog or ``GET /banks``). For mobile money MSISDN, use ``payment_method.phone_number`` only \u2014 do not fall back to ``customer.phone``. Legacy provider-specific blocks (``destination``, etc.) are still accepted and mapped to the canonical request fields.",
+        "examples": [
+          {
+            "asset": {
+              "currency": "USDC",
+              "network": "BASE",
+              "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+            },
+            "country": "KE",
+            "currency": "KES",
+            "customer": {
+              "address": "Nairobi",
+              "country": "KE",
+              "dob": "02/01/1997",
+              "email": "jane@example.com",
+              "id_number": "A1234567",
+              "id_type": "passport",
+              "name": "Successful Jane Customer",
+              "phone": "+2541111111111",
+              "type": "user",
+              "uid": "sandbox-ke-onramp-success-001"
+            },
+            "local_amount": 800,
+            "order_type": "OnRamp",
+            "payment_method": {
+              "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+              "phone_number": "+2541111111111",
+              "type": "mobile_money"
+            },
+            "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+          },
+          {
+            "asset": {
+              "currency": "USDT",
+              "network": "POLYGON",
+              "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"
+            },
+            "country": "KE",
+            "crypto_amount": 20,
+            "currency": "KES",
+            "customer": {
+              "address": "Nairobi",
+              "country": "KE",
+              "dob": "02/01/1997",
+              "email": "jane@example.com",
+              "idNumber": "A1234567",
+              "idType": "passport",
+              "name": "Successful Jane Customer",
+              "phone": "+254712345678",
+              "type": "user",
+              "uid": "sandbox-ke-offramp-success-001"
+            },
+            "order_type": "OffRamp",
+            "payment_method": {
+              "account_name": "Successful Jane Customer",
+              "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+              "phone_number": "+2541111111111",
+              "type": "mobile_money"
+            },
+            "rail": "local_fiat",
+            "refund_address": "0x3333333333333333333333333333333333333333"
+          }
+        ]
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "JWTBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      },
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "partner",
+      "description": "Partner discovery, quotes, and order acceptance."
+    }
+  ]
+}

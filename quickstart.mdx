@@ -1,0 +1,106 @@
+# Quickstart
+
+Get a sandbox quote and accept flow working in minutes.
+
+## Prerequisites
+
+- Sandbox **API key** (`is_test_…`) from Element Pay
+- **`webhook_url`** configured on that key (recommended)
+- `curl` and `jq` (optional)
+
+## 1. Configure environment
+
+```bash
+export BASE="https://sandbox.elementpay.net/api/v1"
+export API_KEY="is_test_YOUR_KEY_HERE"
+```
+
+Every request:
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## 2. Discover Kenya corridors
+
+```bash
+curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data.african_markets'
+```
+
+Note a **`providers[].id`** for M-PESA (mobile money) — you will send it as `payment_method.network_id` on quote.
+
+## 3. Create a quote
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "currency": "KES",
+    "country": "KE",
+    "local_amount": 800,
+    "asset": {
+      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+      "currency": "USDC",
+      "network": "BASE"
+    },
+    "customer": {
+      "uid": "partner-ke-001",
+      "type": "user",
+      "name": "Jane Doe",
+      "country": "KE",
+      "phone": "+2541111111111",
+      "address": "Nairobi",
+      "dob": "02/01/1997",
+      "email": "jane@example.com",
+      "id_number": "A1234567",
+      "id_type": "passport"
+    },
+    "payment_method": {
+      "type": "mobile_money",
+      "phone_number": "+2541111111111",
+      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+    },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }' | jq '{quote_id: .data.quote_id, expires_at: .data.expires_at, instructions: .data.payment_instructions}'
+```
+
+Save `data.quote_id` (format `yc_receive_…`).
+
+<Warning>
+Replace `network_id` with a value from **your** sandbox catalog if the example UUID does not match your environment.
+</Warning>
+
+## 4. Accept the quote
+
+Wait ~2 seconds, then accept with an empty body:
+
+```bash
+export QUOTE_ID="yc_receive_..."   # from step 3
+
+curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq '.data'
+```
+
+## 5. Listen for webhooks
+
+Configure `webhook_url` on your API key. Element Pay POSTs:
+
+| Event | Meaning |
+|-------|---------|
+| `order.processing` | Accept succeeded; rail is executing |
+| `order.settled` | Fiat and crypto legs complete |
+| `order.failed` | Terminal failure |
+
+See [Webhooks](/webhooks) for payload shape and signature verification.
+
+## Next steps
+
+- [Kenya corridor guide](/corridors/kenya) — momo vs bank, sandbox magic numbers
+- [Sandbox test payloads](/sandbox/test-payloads) — NG, UG, OffRamp curls
+- [API reference](/api-reference/introduction) — full OpenAPI

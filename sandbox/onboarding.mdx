@@ -1,0 +1,66 @@
+# Sandbox onboarding
+
+Checklist for new partners integrating African fiat corridors.
+
+## What we need from you
+
+Send to **compliance@elementpay.net**:
+
+| Item | Example |
+|------|---------|
+| Company / product name | Acme Payments Ltd |
+| Corridors | KE OnRamp momo, NG bank OnRamp, KE OffRamp |
+| Sandbox webhook URL | `https://your-api.example.com/webhooks/elementpay` |
+| Technical contact email | dev@acme.com |
+
+## What we provision
+
+| Deliverable | Description |
+|-------------|-------------|
+| Sandbox API key | Prefix `is_test_…` |
+| Webhook secret | For `X-Webhook-Signature` verification |
+| Corridor enablement | Per your requested markets |
+
+## Email template (copy to partner)
+
+```
+Subject: Element Pay Partner API — sandbox access
+
+Hi <name>,
+
+Welcome to the Element Pay Partner API. Here is your sandbox access:
+
+Base URL:     https://sandbox.elementpay.net/api/v1
+API key:      is_test_<YOUR_KEY>
+Docs:         <your-mintlify-docs-url>
+Webhook URL:  <configured on our side from your submission>
+
+Quick test:
+1. GET  /partner/catalog?country=KE
+2. POST /partner/orders/quote   (see Quickstart)
+3. POST /partner/orders/{quote_id}/accept
+
+Settlement events POST to your webhook_url (order.processing, order.settled).
+
+Reply on this thread for production onboarding or additional corridors.
+
+— Element Pay
+```
+
+## Partner checklist
+
+- [ ] Store API key in secrets manager (not git)
+- [ ] Implement webhook receiver with signature verification
+- [ ] Run discovery on sandbox before hardcoding `network_id` values
+- [ ] Complete one OnRamp and one OffRamp smoke test per corridor
+- [ ] Confirm `order.settled` received before production request
+
+## Production
+
+Production keys (`is_live_…`) require:
+
+- Completed sandbox smoke tests
+- Signed commercial agreement (if applicable)
+- Production `webhook_url` and IP allowlisting (if required)
+
+Contact support when sandbox testing is complete.

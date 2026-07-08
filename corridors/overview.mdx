@@ -1,0 +1,62 @@
+# Corridors overview
+
+African local fiat corridors share the same integration pattern. Differences are field requirements, `network_id` values, and sandbox test identities.
+
+## Discovery endpoints
+
+| Endpoint | Use |
+|----------|-----|
+| `GET /partner/catalog` | **Preferred** — full tree for checkout UI |
+| `GET /partner/corridors` | Lightweight country/currency list |
+| `GET /partner/payment-methods` | Methods for one corridor |
+| `GET /partner/order-requirements` | Required customer/payment fields |
+| `GET /partner/banks` | Bank institution UUIDs (`payment_method_type=bank`) |
+| `GET /partner/rates/indicative` | Non-binding FX ticker |
+
+Always run discovery on **your** environment — `network_id` UUIDs are not portable across sandbox resets.
+
+## Order types
+
+| `order_type` | Direction | Customer action |
+|--------------|-----------|-----------------|
+| `OnRamp` | Fiat → crypto | Pays local fiat; receives stablecoin |
+| `OffRamp` | Crypto → fiat | Sends stablecoin; receives fiat to momo/bank |
+
+Provider lists in catalog **differ by direction** — filter with `?order_type=OnRamp` or `OffRamp`.
+
+## Payment rails
+
+### Mobile money
+
+- `payment_method.type`: `mobile_money`
+- `payment_method.phone_number`: E.164 MSISDN (routing identity)
+- `payment_method.network_id`: from `catalog.providers[].id`
+
+### Bank
+
+- `payment_method.type`: `bank`
+- `payment_method.network_id`: from `GET /partner/banks` or catalog
+- `account_number`, `account_name` required
+
+## Supported markets (indicative)
+
+Markets depend on your API key and environment. Call:
+
+```bash
+curl -sS "$BASE/partner/catalog" -H "X-API-Key: $API_KEY" | jq '.data.african_markets[].country'
+```
+
+Documented playbooks:
+
+- [Kenya](/corridors/kenya)
+- [Nigeria](/corridors/nigeria)
+- [Uganda](/corridors/uganda)
+
+## Token contract addresses
+
+| Environment | Typical OnRamp (USDC) | Typical OffRamp (USDT) |
+|-------------|----------------------|------------------------|
+| Sandbox | Base Sepolia USDC | Polygon USDT (confirm in catalog) |
+| Production | Base USDC `0x833589…` | Polygon USDT `0xc2132d…` |
+
+Pass `asset.token`, `asset.currency`, and `asset.network` on every quote.

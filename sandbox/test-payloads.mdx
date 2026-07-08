@@ -1,0 +1,78 @@
+# Sandbox test payloads
+
+Validated copy-paste payloads for sandbox QA. Replace `API_KEY`, `network_id`, and token addresses if your environment differs.
+
+## Setup
+
+```bash
+export BASE="https://sandbox.elementpay.net/api/v1"
+export API_KEY="is_test_YOUR_KEY"
+
+export BASE_USDC="0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913"
+export POLYGON_USDT="0xc2132d05d31c914a87c6611c10748aeb04b58e8f"
+export WALLET="0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+export REFUND="0xE1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4"
+
+# Verify on your sandbox via GET /partner/catalog
+export NG_BANK_NETWORK_ID="5f1af11b-305f-4420-8fce-65ed2725a409"
+export KE_MOMO_NETWORK_ID="7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+export KE_BANK_NETWORK_ID="30f11b2e-0905-4c09-ba5f-d05aa4e4a11c"
+export UG_MOMO_NETWORK_ID="04a3083a-567c-4a2b-aa39-fa8f19e64341"
+```
+
+## Quote → accept helper
+
+```bash
+quote_and_accept() {
+  local payload="$1"
+  curl -sS -X POST "$BASE/partner/orders/quote" \
+    -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+    -d "$payload" | tee /tmp/last-quote.json | jq '{quote_id:.data.quote_id, status:.data.status}'
+
+  export QUOTE_ID=$(jq -r '.data.quote_id' /tmp/last-quote.json)
+  sleep 2
+  curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
+    -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+    -d '{}' | jq '.data'
+}
+```
+
+## Scenarios
+
+| Corridor | Type | Rail | Notes |
+|----------|------|------|-------|
+| KE | OnRamp | momo | `+2541111111111` |
+| KE | OffRamp | momo | `Successful` in customer name for sandbox auto-deposit |
+| KE | OnRamp | bank | `account_number: 1111111111` |
+| NG | OnRamp | bank | BVN required; `account_number: 1111111111` |
+| UG | OnRamp | momo | `+256111111111` |
+
+## KE OnRamp momo (inline)
+
+```bash
+quote_and_accept '{
+  "order_type": "OnRamp",
+  "currency": "KES",
+  "country": "KE",
+  "local_amount": 800,
+  "asset": {"token": "'"$BASE_USDC"'", "currency": "USDC", "network": "BASE"},
+  "customer": {
+    "uid": "sandbox-ke-onramp-001",
+    "type": "user",
+    "name": "Jane Doe",
+    "country": "KE",
+    "phone": "+2541111111111",
+    "address": "Nairobi",
+    "dob": "02/01/1997",
+    "email": "jane@example.com",
+    "id_number": "A1234567",
+    "id_type": "passport"
+  },
+  "payment_method": {
+    "type": "mobile_money",
+    "phone_number": "+2541111111111",
+    "network_id": "'"$KE_MOMO_NETWORK_ID"'"
+  },
+  "wallet_address": "'"$WALLET"'"
+}'
+```

@@ -1,0 +1,67 @@
+# Webhooks
+
+Element Pay notifies your backend when order status changes. **Treat webhooks as the source of truth** for settlement — the HTTP accept response only confirms intent to proceed.
+
+## Configuration
+
+Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox and production separately).
+
+## Events
+
+| Header `X-Webhook-Event` | When |
+|--------------------------|------|
+| `order.processing` | Quote accepted; rail execution started |
+| `order.settled` | Order completed successfully |
+| `order.failed` | Terminal failure |
+| `order.refunded` | Refund issued (when applicable) |
+
+## HTTP delivery
+
+```http
+POST <your-webhook_url>
+Content-Type: application/json
+User-Agent: ElementPay/1.0 (+support@elementpay.net)
+X-Webhook-Event: order.settled
+X-Webhook-Id: <uuid>
+X-Webhook-Signature: t=<unix_ts>,v1=<base64_signature>
+```
+
+## Payload (example)
+
+```json
+{
+  "order_id": "95531bef5c8a3997d61f672193b73c458455b3d1649f37ec356e9db45676bc3c",
+  "status": "settled",
+  "amount_fiat": 800.0,
+  "currency": "KES",
+  "amount_crypto": 5.12,
+  "exchange_rate": 156.25,
+  "order_type": "OnRamp",
+  "wallet_address": "0x4F07419E6bfCCF8D256E8ef803Cc2653dfbB9558",
+  "phone_number": "2541111111111",
+  "created_at": "2026-07-07T10:00:00.000000Z",
+  "updated_at": "2026-07-07T10:00:15.000000Z"
+}
+```
+
+Fields vary by corridor and rail. Additional metadata may be nested under `metadata` depending on your integration version.
+
+## Signature verification
+
+Parse `X-Webhook-Signature`:
+
+```
+t=1710000000,v1=<base64_hmac>
+```
+
+1. Reject if `t` is older than **5 minutes** (replay protection).
+2. Compute HMAC-SHA256 over `{t}.{raw_body}` using your `webhook_secret`.
+3. Compare constant-time to `v1`.
+
+## Idempotency
+
+Use **`X-Webhook-Id`** to deduplicate deliveries. Your endpoint should return **2xx** quickly; heavy work can be async.
+
+## Local testing
+
+Use a tunnel (ngrok, Cloudflare Tunnel) pointing at your dev server, or log payloads in sandbox before going live.
