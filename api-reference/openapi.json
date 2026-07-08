@@ -2320,6 +2320,123 @@
         }
       }
     },
+    "/partner/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "partner"
+        ],
+        "summary": "Get a partner order",
+        "description": "Returns the current status of an order created via ``POST /partner/orders/{quote_id}/accept``. Scoped to the authenticated API key. Use webhooks as the primary source of truth; this endpoint is a backup for polling when delivery is delayed.",
+        "operationId": "partner_order_get_partner_orders__order_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Order id returned by quote accept (e.g. `rail-{preview_id}`).",
+              "title": "Order Id"
+            },
+            "description": "Order id returned by quote accept (e.g. `rail-{preview_id}`)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Partner order snapshot",
+            "content": {
+              "application/json": {
+                "schema": {},
+                "example": {
+                  "status": "success",
+                  "message": "Partner order",
+                  "data": {
+                    "order": {
+                      "order_id": "YC-580e04c2-a136-5cca-be54-b49fcf80970c",
+                      "quote_id": "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c",
+                      "status": "processing",
+                      "order_type": "OnRamp",
+                      "amount_fiat": 800,
+                      "amount_crypto": 5.94999,
+                      "currency": "KES",
+                      "token": "BASE_USDC",
+                      "wallet_address": "0x4F07419E6bfCCF8D256E8ef803Cc2653dfbB9558",
+                      "exchange_rate": 131.69,
+                      "created_at": "2026-07-07T10:00:00.000000Z",
+                      "updated_at": "2026-07-07T10:00:15.000000Z",
+                      "route": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found or not accessible with this API key",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "not_found": {
+                    "summary": "Unknown order",
+                    "value": {
+                      "status": "error",
+                      "message": "Order not found"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Order not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Missing requirements for selected route",
+                  "data": {
+                    "field": "order_type"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/partner/orders/{quote_id}/accept": {
       "post": {
         "tags": [

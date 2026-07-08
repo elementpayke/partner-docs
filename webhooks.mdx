@@ -1,6 +1,6 @@
 # Webhooks
 
-Element Pay notifies your backend when order status changes. **Treat webhooks as the source of truth** for settlement — the HTTP accept response only confirms intent to proceed.
+Element Pay notifies your backend when order status changes. **Treat webhooks as the source of truth** for settlement — the HTTP accept response only confirms intent to proceed. If a webhook is delayed, poll **`GET /partner/orders/{order_id}`** as a backup.
 
 ## Configuration
 
@@ -28,9 +28,11 @@ X-Webhook-Signature: t=<unix_ts>,v1=<base64_signature>
 
 ## Payload (example)
 
+Webhook bodies are **provider-neutral**: no internal routing metadata or upstream PSP blobs. Typical fields:
+
 ```json
 {
-  "order_id": "95531bef5c8a3997d61f672193b73c458455b3d1649f37ec356e9db45676bc3c",
+  "order_id": "YC-580e04c2-a136-5cca-be54-b49fcf80970c",
   "status": "settled",
   "amount_fiat": 800.0,
   "currency": "KES",
@@ -39,12 +41,13 @@ X-Webhook-Signature: t=<unix_ts>,v1=<base64_signature>
   "order_type": "OnRamp",
   "wallet_address": "0x4F07419E6bfCCF8D256E8ef803Cc2653dfbB9558",
   "phone_number": "2541111111111",
+  "settlement_transaction_hash": "0xabc...",
   "created_at": "2026-07-07T10:00:00.000000Z",
   "updated_at": "2026-07-07T10:00:15.000000Z"
 }
 ```
 
-Fields vary by corridor and rail. Additional metadata may be nested under `metadata` depending on your integration version.
+Fields vary by corridor and rail. `client_metadata` and other internal fields are not included on the public partner API.
 
 ## Signature verification
 

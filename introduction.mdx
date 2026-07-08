@@ -8,14 +8,16 @@ Integrate once against Element Pay — we route local African fiat (mobile money
 
 | Product | Markets | Flow |
 |---------|---------|------|
-| **OnRamp** | KE, NG, UG, TZ, ZA, … (see catalog) | Customer pays local fiat → receives stablecoin on your chosen network |
-| **OffRamp** | Same African corridors | Customer sends stablecoin → receives fiat to momo or bank |
+| **OnRamp** | African local fiat — **see catalog** (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin on your chosen network |
+| **OffRamp** | Same corridors when enabled for your key | Customer sends stablecoin → receives fiat to momo or bank |
+
+Supported **countries and payment methods** (momo vs bank, provider lists, min/max) are returned by discovery — start with `GET /partner/catalog`. Details: [Corridors overview](/corridors/overview). Extra markets: contact compliance.
 
 ## Core pattern
 
 Every order follows the same three steps:
 
-1. **Discover** — `GET /partner/catalog` (or granular discovery endpoints)
+1. **Discover** — `GET /partner/catalog` (countries, methods, providers)
 2. **Quote** — `POST /partner/orders/quote`
 3. **Accept** — `POST /partner/orders/{quote_id}/accept`
 

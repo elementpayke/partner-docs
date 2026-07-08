@@ -1,0 +1,89 @@
+# Sandbox success & failure
+
+Local fiat sandbox outcomes are **deterministic**. Use the values below so you can force `order.settled` or `order.failed` without real money movement.
+
+Sandbox forces outcomes with the test values in the tables below (`1111111111` / `0000000000`, and `+{countryCode}1111111111` / `+{countryCode}0000000000`). Treat them as Element Pay sandbox identifiers only.
+
+<Warning>
+**Sandbox-only — never send these on live.** Do **not** put `1111111111`, `0000000000`, or fake `+…1111111111` / `+…0000000000` phones on **production** quotes. Live must use the **real** customer mobile money MSISDN or bank account. Sending sandbox test account numbers in production will fail or mis-route settlement.
+</Warning>
+
+### Two different “account numbers” (don’t mix them up)
+
+| Context | What it is | Sandbox | Production |
+|---------|------------|---------|------------|
+| **Customer payout / identity on quote** (`payment_method.account_number` or momo `phone_number`) | Customer’s bank account or MSISDN for the rail | Use test numbers below | **Real** customer account / phone only |
+| **OnRamp bank deposit instructions** (from **accept** / quote payment instructions) | Temporary account **we return** for the customer to **pay into** | Returned by API | Returned by API — share with the customer; **do not invent** from `1111111111` |
+
+Sandbox “success/failure” tables below apply to the **customer identity** fields on the quote, not to inventing deposit destinations.
+
+## Rules that apply on every quote
+
+| Rule | Detail |
+|------|--------|
+| `customer.name` | **Two or more words** (e.g. `Jane Doe`). Single given name → `422`. |
+| Unique `customer.uid` | Use a **new uid per test run** (do not reuse across smoke tests). |
+| `payment_method.network_id` | Opaque UUID from **your** sandbox `GET /partner/catalog` or `GET /partner/banks` — do not hardcode from another environment. |
+| Momo identity | Route phone is `payment_method.phone_number` (E.164) — not a substitute for bank `account_number`. |
+| Bank identity | `payment_method.account_number` + `account_name` when `type` is `bank`. |
+| Nigeria retail | `additional_id_type: "bvn"` and `additional_id_number` (e.g. `12345678901`). |
+
+## Force success vs failure
+
+### Mobile money (`payment_method.phone_number`)
+
+| Result | KE | NG (when momo enabled) |
+|--------|----|-------------------------|
+| **Success** | `+2541111111111` | `+2341111111111` |
+| **Failure** | `+2540000000000` | `+2340000000000` |
+
+UG smoke (success-oriented): `+256111111111` — confirm via catalog for your key.
+
+Copy the same MSISDN onto `customer.phone` when the corridor expects both fields.
+
+### Bank (`payment_method.account_number`)
+
+| Result | Account number |
+|--------|----------------|
+| **Success** | `1111111111` |
+| **Failure** | `0000000000` |
+
+<Warning>
+Do **not** invent account numbers (e.g. `0123456789`). On sandbox the order can sit in `processing` / pending forever with no terminal webhook.
+</Warning>
+
+### OffRamp crypto deposit (skip sending on-chain)
+
+| Result | `customer.name` |
+|--------|-----------------|
+| **Success** (sandbox auto-credit) | Include **`Successful`**, e.g. `Successful Jane Doe` |
+| **Failure** | Include **`Failure`**, e.g. `Failure Jane Doe` |
+
+Without `Successful` in the name, OffRamp expects the customer to send crypto to the **accept** `payment_instructions` deposit address before expiry.
+
+## QA profiles (suggested)
+
+| Label | Expect | Key fields |
+|-------|--------|------------|
+| KE momo success | `order.settled` | `+2541111111111` |
+| KE momo failure | `order.failed` | `+2540000000000` (+ `Failure …` in name optional) |
+| KE bank success | `order.settled` (or instructions + settle) | `account_number: 1111111111` |
+| KE bank failure | `order.failed` | `account_number: 0000000000` |
+| NG bank success | `order.settled` | `1111111111` + BVN |
+| NG bank failure | `order.failed` | `0000000000` + BVN |
+| OffRamp success (no chain send) | `order.settled` | `Successful` in `customer.name` |
+| OffRamp failure | `order.failed` | `Failure` in `customer.name` and/or fail MSISDN / `0000000000` |
+
+## Field shape (not magic values)
+
+Always send valid-looking KYC on retail corridors even in sandbox: `email`, `address`, `dob` (`mm/dd/yyyy`), `id_number`, `id_type`. Missing required fields → `422` from [order-requirements](/corridors/overview), not a settlement failure.
+
+## After accept
+
+1. Prefer **webhooks** (`order.processing` → `order.settled` / `order.failed`).
+2. Backup poll: `GET /partner/orders/{order_id}`.
+3. Keep `quote_id`, `order_id`, and webhook bodies for each scenario before asking for production.
+
+## Copy-paste payloads
+
+See [Sandbox test payloads](/sandbox/test-payloads) and corridor pages ([Kenya](/corridors/kenya), [Nigeria](/corridors/nigeria)) for full curls using these values.

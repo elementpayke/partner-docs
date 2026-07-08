@@ -1,6 +1,8 @@
 # Sandbox test payloads
 
-Validated copy-paste payloads for sandbox QA. Replace `API_KEY`, `network_id`, and token addresses if your environment differs.
+Validated copy-paste payloads for sandbox QA. Replace `API_KEY` and `network_id` if your environment differs.
+
+**Default asset:** Base USDC (`BASE_USDC` below). Prefer that for all corridors. `POLYGON_USDT` is optional — only use when testing that rail explicitly.
 
 ## Setup
 
@@ -8,7 +10,9 @@ Validated copy-paste payloads for sandbox QA. Replace `API_KEY`, `network_id`, a
 export BASE="https://sandbox.elementpay.net/api/v1"
 export API_KEY="is_test_YOUR_KEY"
 
+# Recommended default for quotes
 export BASE_USDC="0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913"
+# Optional alternate rail
 export POLYGON_USDT="0xc2132d05d31c914a87c6611c10748aeb04b58e8f"
 export WALLET="0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
 export REFUND="0xE1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4"
@@ -39,13 +43,17 @@ quote_and_accept() {
 
 ## Scenarios
 
-| Corridor | Type | Rail | Notes |
-|----------|------|------|-------|
+See [Sandbox success & failure](/sandbox/success-failure) for the full success/failure matrix and production warnings.
+
+| Corridor | Type | Rail | Success trigger |
+|----------|------|------|-----------------|
 | KE | OnRamp | momo | `+2541111111111` |
-| KE | OffRamp | momo | `Successful` in customer name for sandbox auto-deposit |
+| KE | OffRamp | momo | `Successful` in `customer.name` (auto-deposit) |
 | KE | OnRamp | bank | `account_number: 1111111111` |
-| NG | OnRamp | bank | BVN required; `account_number: 1111111111` |
+| NG | OnRamp | bank | BVN + `account_number: 1111111111` |
 | UG | OnRamp | momo | `+256111111111` |
+
+Failure: momo `+2540000000000` / bank `0000000000` / OffRamp name contains `Failure`.
 
 ## KE OnRamp momo (inline)
 

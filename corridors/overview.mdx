@@ -38,25 +38,59 @@ Provider lists in catalog **differ by direction** — filter with `?order_type=O
 - `payment_method.network_id`: from `GET /partner/banks` or catalog
 - `account_number`, `account_name` required
 
-## Supported markets (indicative)
+## Supported markets (local fiat)
 
-Markets depend on your API key and environment. Call:
+**Source of truth for the partner:** call discovery on **your** API key and environment. Do not hardcode country lists from this page alone — corridors can be enabled per partner, and provider availability differs by OnRamp vs OffRamp.
 
 ```bash
-curl -sS "$BASE/partner/catalog" -H "X-API-Key: $API_KEY" | jq '.data.african_markets[].country'
+# Countries + methods + provider ids + min/max (preferred)
+curl -sS "$BASE/partner/catalog" -H "X-API-Key: $API_KEY" | jq '.data'
+
+# Lightweight country/currency list
+curl -sS "$BASE/partner/corridors" -H "X-API-Key: $API_KEY" | jq '.data'
+
+# Methods for one country
+curl -sS "$BASE/partner/payment-methods?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-Documented playbooks:
+Catalog shape (local African): under `onramp.countries` / `offramp.countries`, each country has `payment_methods.mobile_money` and/or `bank` with `providers[]` (`id` = `network_id` on quote).
+
+### African corridors on the local fiat rail (indicative)
+
+| Country | Currency | Typical rails |
+|---------|----------|----------------|
+| KE | KES | Mobile money, bank |
+| NG | NGN | Bank (retail BVN) |
+| UG | UGX | Mobile money |
+| TZ | TZS | Per catalog |
+| ZA | ZAR | Per catalog |
+| RW | RWF | Per catalog |
+| MW | MWK | Per catalog |
+| BW | BWP | Per catalog |
+
+OnRamp/OffRamp flags and exact providers (Safaricom, banks, etc.) come from **`GET /partner/catalog?order_type=…`**.
+
+Need a market not listed or missing in your catalog? Email **compliance@elementpay.net** — we enable corridors per partner; do not assume every country in our wider network is live for your key.
+
+### Documented playbooks
 
 - [Kenya](/corridors/kenya)
 - [Nigeria](/corridors/nigeria)
 - [Uganda](/corridors/uganda)
 
-## Token contract addresses
+Other countries: use catalog + [order-requirements](/api-reference/introduction); request enablement if empty.
 
-| Environment | Typical OnRamp (USDC) | Typical OffRamp (USDT) |
-|-------------|----------------------|------------------------|
-| Sandbox | Base Sepolia USDC | Polygon USDT (confirm in catalog) |
-| Production | Base USDC `0x833589…` | Polygon USDT `0xc2132d…` |
+## Supported stablecoins (asset)
 
-Pass `asset.token`, `asset.currency`, and `asset.network` on every quote.
+Pass **`asset.token`**, **`asset.currency`**, and **`asset.network`** on every quote.  
+Local fiat corridors currently support **two** contract addresses only:
+
+| Use | Currency | Network | Contract (`asset.token`) |
+|-----|----------|---------|--------------------------|
+| **Default (recommended)** | `USDC` | `BASE` | `0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913` |
+| Alternate | `USDT` | `POLYGON` | `0xc2132d05d31c914a87c6611c10748aeb04b58e8f` |
+
+**Partner guidance:** use **Base USDC** for all OnRamp and OffRamp sandbox examples unless we tell you otherwise. Quickstart and corridor samples use Base USDC. Polygon USDT remains available on the rail but can behave differently for direct settlement — stick to Base USDC unless QA has confirmed USDT for your corridor.
+
+Same addresses apply on sandbox and production for these rails.

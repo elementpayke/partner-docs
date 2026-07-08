@@ -51,7 +51,7 @@ Quote validation often returns:
 | Situation | Status | Action |
 |-----------|--------|--------|
 | Quote TTL passed | `410` | `POST /partner/orders/quote` again |
-| Accept after accept | `409` | Idempotent — use returned `merchant_order_id` |
+| Accept after accept | `409` | Idempotent — use returned `order_id` |
 | Amount below corridor minimum | `422` | Check `providers[].min_amount` in catalog |
 
 ## Support
