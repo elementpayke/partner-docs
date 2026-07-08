@@ -2,7 +2,7 @@
 
 Local fiat sandbox outcomes are **deterministic**. Use the values below so you can force `order.settled` or `order.failed` without real money movement.
 
-These values match Yellow Card’s published [Sandbox Testing](https://docs.yellowcard.engineering/docs/sandbox-testing-api) guide (`1111111111` / `0000000000` and `+{countryCode}1111111111` / `+{countryCode}0000000000`).
+Sandbox forces outcomes with the test values in the tables below (`1111111111` / `0000000000`, and `+{countryCode}1111111111` / `+{countryCode}0000000000`). Treat them as Element Pay sandbox identifiers only.
 
 <Warning>
 **Sandbox-only — never send these on live.** Do **not** put `1111111111`, `0000000000`, or fake `+…1111111111` / `+…0000000000` phones on **production** quotes. Live must use the **real** customer mobile money MSISDN or bank account. Sending sandbox test account numbers in production will fail or mis-route settlement.
