@@ -16,12 +16,14 @@ curl -sS "$BASE/partner/order-requirements?country=KE&currency=KES&order_type=On
 
 ## Sandbox test values
 
-| Field | Success value | Notes |
-|-------|---------------|-------|
-| Momo `phone_number` | `+2541111111111` | Sandbox success MSISDN |
-| Bank `account_number` | `1111111111` | Simulates success |
-| `customer.name` | Two words, e.g. `Jane Doe` | Required |
-| OffRamp `customer.name` | Include `Successful`, e.g. `Successful Jane Doe` | May auto-simulate crypto deposit on sandbox |
+Full matrix: [Sandbox success & failure](/sandbox/success-failure). **Sandbox only** — live uses real customer phones / accounts.
+
+| Field | Success | Failure |
+|-------|---------|---------|
+| Momo `phone_number` | `+2541111111111` | `+2540000000000` |
+| Bank `account_number` | `1111111111` | `0000000000` |
+| `customer.name` | Two+ words, e.g. `Jane Doe` | Same for OnRamp; failure phone/account drives fail |
+| OffRamp `customer.name` | Include **`Successful`**, e.g. `Successful Jane Doe` | Include **`Failure`** |
 
 ### Example network IDs (sandbox — verify via catalog)
 

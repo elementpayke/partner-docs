@@ -53,6 +53,7 @@
             "group": "Sandbox",
             "pages": [
               "sandbox/onboarding",
+              "sandbox/success-failure",
               "sandbox/test-payloads"
             ]
           }

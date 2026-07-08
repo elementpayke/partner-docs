@@ -52,8 +52,9 @@ Reply on this thread for production onboarding or additional corridors.
 - [ ] Store API key in secrets manager (not git)
 - [ ] Implement webhook receiver with signature verification
 - [ ] Run discovery on sandbox before hardcoding `network_id` values
-- [ ] Complete one OnRamp and one OffRamp smoke test per corridor
-- [ ] Confirm `order.settled` received before production request
+- [ ] Follow [Sandbox success & failure](/sandbox/success-failure) — use `1111111111` / `+2541111111111` (and failure counterparts). **Do not use these values in production.**
+- [ ] Complete one OnRamp **success** and one **failure**, and one OffRamp, per corridor you care about
+- [ ] Confirm `order.settled` / `order.failed` webhooks before production request
 
 ## Production
 

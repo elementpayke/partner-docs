@@ -19,13 +19,15 @@ curl -sS "$BASE/partner/banks?country=NG&currency=NGN&order_type=OnRamp&payment_
 
 ## Sandbox bank account
 
+Full matrix: [Sandbox success & failure](/sandbox/success-failure). Sandbox only.
+
 | `account_number` | Result |
 |------------------|--------|
 | `1111111111` | Success |
 | `0000000000` | Failure |
 
 <Warning>
-Do not use arbitrary account numbers like `0123456789` — orders may remain `pending` indefinitely on sandbox.
+Do not use arbitrary account numbers like `0123456789` — orders may remain `pending` indefinitely on sandbox. Never use these test accounts in production.
 </Warning>
 
 ## OnRamp quote (sketch)

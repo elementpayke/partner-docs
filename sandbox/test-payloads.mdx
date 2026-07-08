@@ -43,13 +43,17 @@ quote_and_accept() {
 
 ## Scenarios
 
-| Corridor | Type | Rail | Notes |
-|----------|------|------|-------|
+See [Sandbox success & failure](/sandbox/success-failure) for the full success/failure matrix and production warnings.
+
+| Corridor | Type | Rail | Success trigger |
+|----------|------|------|-----------------|
 | KE | OnRamp | momo | `+2541111111111` |
-| KE | OffRamp | momo | `Successful` in customer name for sandbox auto-deposit |
+| KE | OffRamp | momo | `Successful` in `customer.name` (auto-deposit) |
 | KE | OnRamp | bank | `account_number: 1111111111` |
-| NG | OnRamp | bank | BVN required; `account_number: 1111111111` |
+| NG | OnRamp | bank | BVN + `account_number: 1111111111` |
 | UG | OnRamp | momo | `+256111111111` |
+
+Failure: momo `+2540000000000` / bank `0000000000` / OffRamp name contains `Failure`.
 
 ## KE OnRamp momo (inline)
 
