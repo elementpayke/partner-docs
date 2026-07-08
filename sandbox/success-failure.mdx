@@ -2,9 +2,20 @@
 
 Local fiat sandbox outcomes are **deterministic**. Use the values below so you can force `order.settled` or `order.failed` without real money movement.
 
+These values match Yellow Card’s published [Sandbox Testing](https://docs.yellowcard.engineering/docs/sandbox-testing-api) guide (`1111111111` / `0000000000` and `+{countryCode}1111111111` / `+{countryCode}0000000000`).
+
 <Warning>
-These numbers and name tokens apply to **sandbox only**. Using `1111111111` / `+2541111111111` (or random accounts) in **production** will fail validation or settlement. Always use real customer MSISDNs and bank accounts live.
+**Sandbox-only — never send these on live.** Do **not** put `1111111111`, `0000000000`, or fake `+…1111111111` / `+…0000000000` phones on **production** quotes. Live must use the **real** customer mobile money MSISDN or bank account. Sending sandbox test account numbers in production will fail or mis-route settlement.
 </Warning>
+
+### Two different “account numbers” (don’t mix them up)
+
+| Context | What it is | Sandbox | Production |
+|---------|------------|---------|------------|
+| **Customer payout / identity on quote** (`payment_method.account_number` or momo `phone_number`) | Customer’s bank account or MSISDN for the rail | Use test numbers below | **Real** customer account / phone only |
+| **OnRamp bank deposit instructions** (from **accept** / quote payment instructions) | Temporary account **we return** for the customer to **pay into** | Returned by API | Returned by API — share with the customer; **do not invent** from `1111111111` |
+
+Sandbox “success/failure” tables below apply to the **customer identity** fields on the quote, not to inventing deposit destinations.
 
 ## Rules that apply on every quote
 

@@ -38,19 +38,48 @@ Provider lists in catalog **differ by direction** — filter with `?order_type=O
 - `payment_method.network_id`: from `GET /partner/banks` or catalog
 - `account_number`, `account_name` required
 
-## Supported markets (indicative)
+## Supported markets (local fiat)
 
-Markets depend on your API key and environment. Call:
+**Source of truth for the partner:** call discovery on **your** API key and environment. Do not hardcode country lists from this page alone — corridors can be enabled per partner, and provider availability differs by OnRamp vs OffRamp.
 
 ```bash
-curl -sS "$BASE/partner/catalog" -H "X-API-Key: $API_KEY" | jq '.data.african_markets[].country'
+# Countries + methods + provider ids + min/max (preferred)
+curl -sS "$BASE/partner/catalog" -H "X-API-Key: $API_KEY" | jq '.data'
+
+# Lightweight country/currency list
+curl -sS "$BASE/partner/corridors" -H "X-API-Key: $API_KEY" | jq '.data'
+
+# Methods for one country
+curl -sS "$BASE/partner/payment-methods?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-Documented playbooks:
+Catalog shape (local African): under `onramp.countries` / `offramp.countries`, each country has `payment_methods.mobile_money` and/or `bank` with `providers[]` (`id` = `network_id` on quote).
+
+### African corridors on the local fiat rail (indicative)
+
+| Country | Currency | Typical rails |
+|---------|----------|----------------|
+| KE | KES | Mobile money, bank |
+| NG | NGN | Bank (retail BVN) |
+| UG | UGX | Mobile money |
+| TZ | TZS | Per catalog |
+| ZA | ZAR | Per catalog |
+| RW | RWF | Per catalog |
+| MW | MWK | Per catalog |
+| BW | BWP | Per catalog |
+
+OnRamp/OffRamp flags and exact providers (Safaricom, banks, etc.) come from **`GET /partner/catalog?order_type=…`**.
+
+Need a market not listed or missing in your catalog? Email **compliance@elementpay.net** — we enable corridors per partner; do not assume every YC country is live for your key.
+
+### Documented playbooks
 
 - [Kenya](/corridors/kenya)
 - [Nigeria](/corridors/nigeria)
 - [Uganda](/corridors/uganda)
+
+Other countries: use catalog + [order-requirements](/api-reference/introduction); request enablement if empty.
 
 ## Supported stablecoins (asset)
 
