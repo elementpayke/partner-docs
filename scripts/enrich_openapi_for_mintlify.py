@@ -110,7 +110,7 @@ Lists bank/network institution options for a rail chosen via [`GET /partner/paym
 `country`, `currency`, `order_type` (`OnRamp` | `OffRamp`), and `payment_method_type`.
 
 ### Rails
-- **`bank`** (local fiat) — active networks only; use returned `institutions[].id` as `payment_method.network_id` on quote
+- **`bank`** (local fiat) — active networks only; use returned `banks[].id` as `payment_method.network_id` on quote
 - **`mobile_money`** — returns **422**; use [`GET /partner/catalog`](/partner/catalog) `providers[].id` for momo `network_id`
 - International bank types (e.g. `BankSepa`, `BankSwift`) — best-effort enum options from upstream form schema
 """,

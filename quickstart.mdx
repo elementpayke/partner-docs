@@ -37,11 +37,16 @@ Use **Base USDC** on every quote unless we tell you otherwise:
 ## 2. Discover Kenya corridors
 
 ```bash
+# Full checkout catalog (providers + min/max) — preferred for integration
 curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data.onramp.countries.KE.payment_methods.mobile_money.providers[] | {id, name}'
+
+# Lightweight country list only (no provider UUIDs)
+curl -sS "$BASE/partner/corridors?country=KE" \
   -H "X-API-Key: $API_KEY" | jq '.data.african_markets'
 ```
 
-Note a **`providers[].id`** for M-PESA (mobile money) — you will send it as `payment_method.network_id` on quote.
+Note a **`providers[].id`** for M-PESA (mobile money) from **catalog** — you will send it as `payment_method.network_id` on quote.
 
 ## 3. Create a quote
 
