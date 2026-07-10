@@ -14,7 +14,7 @@ Nigeria supports **bank transfer** for OnRamp and OffRamp. Retail customers requ
 
 ```bash
 curl -sS "$BASE/partner/banks?country=NG&currency=NGN&order_type=OnRamp&payment_method_type=bank" \
-  -H "X-API-Key: $API_KEY" | jq '.data.institutions[] | {id, name}'
+  -H "X-API-Key: $API_KEY" | jq '.data.banks[] | {id, name}'
 ```
 
 ## Sandbox bank account

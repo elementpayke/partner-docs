@@ -7,7 +7,7 @@ Kenya supports **M-PESA mobile money** and **bank** rails for OnRamp and OffRamp
 ```bash
 # OnRamp providers (momo + bank)
 curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
-  -H "X-API-Key: $API_KEY" | jq '.data.african_markets[0]'
+  -H "X-API-Key: $API_KEY" | jq '.data.onramp.countries.KE'
 
 # Field requirements
 curl -sS "$BASE/partner/order-requirements?country=KE&currency=KES&order_type=OnRamp" \
@@ -57,7 +57,7 @@ Use `payment_method.type: bank` and `network_id` from:
 
 ```bash
 curl -sS "$BASE/partner/banks?country=KE&currency=KES&order_type=OnRamp&payment_method_type=bank" \
-  -H "X-API-Key: $API_KEY" | jq '.data.institutions'
+  -H "X-API-Key: $API_KEY" | jq '.data.banks[] | {id, name}'
 ```
 
-For momo `network_id`, use catalog — **`GET /partner/banks` returns 422 for mobile_money**.
+Bank `network_id` values are also in catalog under `payment_methods.bank.providers[]`. For momo, use catalog only — **`GET /partner/banks` returns 422 for `mobile_money`**.

@@ -754,21 +754,26 @@
                   "status": "success",
                   "message": "Supported corridors and payment methods",
                   "data": {
-                    "african_markets": [
-                      {
-                        "country": "KE",
-                        "currency": "KES",
-                        "onramp": {
+                    "disclaimer": "Indicative catalog. Binding eligibility and price: POST /api/v1/partner/orders/quote.",
+                    "onramp": {
+                      "countries": {
+                        "KE": {
+                          "country_code": "KE",
+                          "country_name": "Kenya",
+                          "currency": "KES",
                           "enabled": true,
                           "payment_methods": {
                             "mobile_money": {
                               "enabled": true,
+                              "label": "Mobile Money",
+                              "quote_type": "mobile_money",
                               "providers": [
                                 {
-                                  "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
-                                  "name": "Safaricom M-PESA",
+                                  "code": "M PESA",
+                                  "name": "Mobile Wallet (M-PESA)",
                                   "enabled": true,
-                                  "min_amount": 100,
+                                  "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                                  "min_amount": 150,
                                   "max_amount": 250000,
                                   "currency": "KES"
                                 }
@@ -776,17 +781,23 @@
                             },
                             "bank": {
                               "enabled": true,
-                              "providers": []
+                              "label": "Bank Transfer",
+                              "quote_type": "bank",
+                              "providers": [
+                                {
+                                  "code": "NATIONAL_BANK_OF_KENYA",
+                                  "name": "NATIONAL BANK OF KENYA",
+                                  "enabled": true,
+                                  "id": "30f11b2e-0905-4c09-ba5f-d05aa4e4a11c",
+                                  "min_amount": 300,
+                                  "max_amount": 99999999,
+                                  "currency": "KES"
+                                }
+                              ]
                             }
                           }
-                        },
-                        "offramp": {
-                          "enabled": true
                         }
                       }
-                    ],
-                    "international_bank": {
-                      "currencies": []
                     }
                   }
                 },
@@ -797,21 +808,26 @@
                       "status": "success",
                       "message": "Supported corridors and payment methods",
                       "data": {
-                        "african_markets": [
-                          {
-                            "country": "KE",
-                            "currency": "KES",
-                            "onramp": {
+                        "disclaimer": "Indicative catalog. Binding eligibility and price: POST /api/v1/partner/orders/quote.",
+                        "onramp": {
+                          "countries": {
+                            "KE": {
+                              "country_code": "KE",
+                              "country_name": "Kenya",
+                              "currency": "KES",
                               "enabled": true,
                               "payment_methods": {
                                 "mobile_money": {
                                   "enabled": true,
+                                  "label": "Mobile Money",
+                                  "quote_type": "mobile_money",
                                   "providers": [
                                     {
-                                      "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
-                                      "name": "Safaricom M-PESA",
+                                      "code": "M PESA",
+                                      "name": "Mobile Wallet (M-PESA)",
                                       "enabled": true,
-                                      "min_amount": 100,
+                                      "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                                      "min_amount": 150,
                                       "max_amount": 250000,
                                       "currency": "KES"
                                     }
@@ -819,17 +835,13 @@
                                 },
                                 "bank": {
                                   "enabled": true,
+                                  "label": "Bank Transfer",
+                                  "quote_type": "bank",
                                   "providers": []
                                 }
                               }
-                            },
-                            "offramp": {
-                              "enabled": true
                             }
                           }
-                        ],
-                        "international_bank": {
-                          "currencies": []
                         }
                       }
                     }
@@ -1772,15 +1784,18 @@
                 },
                 "example": {
                   "status": "success",
-                  "message": "Partner banks (indicative)",
+                  "message": "Partner bank/network options (indicative)",
                   "data": {
+                    "disclaimer": "Indicative. Binding check: POST /api/v1/partner/orders/quote.",
                     "context": {
                       "country": "NG",
                       "currency": "NGN",
                       "order_type": "OnRamp",
                       "payment_method_type": "bank"
                     },
-                    "institutions": [
+                    "supported": true,
+                    "message": "Active bank networks for this corridor.",
+                    "banks": [
                       {
                         "id": "5f1af11b-305f-4420-8fce-65ed2725a409",
                         "name": "Access Bank"
@@ -1790,18 +1805,21 @@
                 },
                 "examples": {
                   "ng_bank_onramp": {
-                    "summary": "NG bank OnRamp institutions",
+                    "summary": "NG bank OnRamp banks",
                     "value": {
                       "status": "success",
-                      "message": "Partner banks (indicative)",
+                      "message": "Partner bank/network options (indicative)",
                       "data": {
+                        "disclaimer": "Indicative. Binding check: POST /api/v1/partner/orders/quote.",
                         "context": {
                           "country": "NG",
                           "currency": "NGN",
                           "order_type": "OnRamp",
                           "payment_method_type": "bank"
                         },
-                        "institutions": [
+                        "supported": true,
+                        "message": "Active bank networks for this corridor.",
+                        "banks": [
                           {
                             "id": "5f1af11b-305f-4420-8fce-65ed2725a409",
                             "name": "Access Bank"
@@ -1983,7 +2001,7 @@
           }
         },
         "x-mint": {
-          "content": "Lists bank/network institution options for a rail chosen via [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` | `OffRamp`), and `payment_method_type`.\n\n### Rails\n- **`bank`** (local fiat) \u2014 active networks only; use returned `institutions[].id` as `payment_method.network_id` on quote\n- **`mobile_money`** \u2014 returns **422**; use [`GET /partner/catalog`](/partner/catalog) `providers[].id` for momo `network_id`\n- International bank types (e.g. `BankSepa`, `BankSwift`) \u2014 best-effort enum options from upstream form schema"
+          "content": "Lists bank/network institution options for a rail chosen via [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` | `OffRamp`), and `payment_method_type`.\n\n### Rails\n- **`bank`** (local fiat) \u2014 active networks only; use returned `banks[].id` as `payment_method.network_id` on quote\n- **`mobile_money`** \u2014 returns **422**; use [`GET /partner/catalog`](/partner/catalog) `providers[].id` for momo `network_id`\n- International bank types (e.g. `BankSepa`, `BankSwift`) \u2014 best-effort enum options from upstream form schema"
         }
       }
     },
