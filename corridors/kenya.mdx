@@ -40,15 +40,25 @@ See [Quickstart](/quickstart) for a full curl.
 
 ## OffRamp (momo)
 
-Customer sends **Polygon USDT** to the deposit wallet returned on **accept** (not in the quote body).
+Use **Polygon USDT** on the quote:
 
-1. Quote with `order_type: OffRamp`, `crypto_amount`, `refund_address`
-2. Accept → read `data.accepted.payment_instructions.crypto_deposit`
-3. Customer sends exact amount before `expires_at`
+| Field | Value |
+|-------|--------|
+| `asset.currency` | `USDT` |
+| `asset.network` | `POLYGON` |
+| `asset.token` | `0xc2132d05d31c914a87c6611c10748aeb04b58e8f` |
+
+**Sandbox:** do **not** send crypto on-chain. Include **`Successful`** in `customer.name` and use success phone `+2541111111111` so the crypto leg auto-credits. Details: [Sandbox success & failure](/sandbox/success-failure).
+
+**Production:** after accept, the customer sends the exact crypto amount to the deposit wallet in `data.accepted.payment_instructions.crypto_deposit` before `expires_at`.
+
+1. Quote with `order_type: OffRamp`, `crypto_amount`, Polygon USDT `asset`, `refund_address`
+2. Accept → for live, read `payment_instructions.crypto_deposit`
+3. Sandbox: wait for webhook; production: customer sends exact amount before `expires_at`
 4. Webhook `order.settled` when fiat is paid out to momo
 
 <Warning>
-OffRamp deposit address is **per order** from accept response. Do not reuse addresses across orders.
+OffRamp deposit address is **per order** from accept. Do not reuse across orders. Sandbox on-chain sends (e.g. testnet USDC/USDT) are not a supported settle path — use the `Successful` name trigger instead.
 </Warning>
 
 ## Bank rail

@@ -61,6 +61,10 @@ Do **not** invent account numbers (e.g. `0123456789`). On sandbox the order can 
 
 Without `Successful` in the name, OffRamp expects the customer to send crypto to the **accept** `payment_instructions` deposit address before expiry.
 
+<Warning>
+Do **not** try to settle sandbox OffRamp by sending testnet crypto to the deposit wallet. Use the `Successful` name trigger. Real on-chain deposits are for **production** only.
+</Warning>
+
 ## QA profiles (suggested)
 
 | Label | Expect | Key fields |

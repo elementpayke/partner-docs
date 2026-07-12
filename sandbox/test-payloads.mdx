@@ -84,3 +84,35 @@ quote_and_accept '{
   "wallet_address": "'"$WALLET"'"
 }'
 ```
+
+## KE OffRamp momo (inline)
+
+Sandbox auto-credits the crypto leg when `Successful` is in `customer.name` — **do not** send on-chain after accept. Use Polygon USDT:
+
+```bash
+quote_and_accept '{
+  "order_type": "OffRamp",
+  "currency": "KES",
+  "country": "KE",
+  "crypto_amount": 20,
+  "asset": {"token": "'"$POLYGON_USDT"'", "currency": "USDT", "network": "POLYGON"},
+  "customer": {
+    "uid": "sandbox-ke-offramp-001",
+    "type": "user",
+    "name": "Successful Jane Doe",
+    "country": "KE",
+    "phone": "+2541111111111",
+    "address": "Nairobi",
+    "dob": "02/01/1997",
+    "email": "jane@example.com",
+    "id_number": "A1234567",
+    "id_type": "passport"
+  },
+  "payment_method": {
+    "type": "mobile_money",
+    "phone_number": "+2541111111111",
+    "network_id": "'"$KE_MOMO_NETWORK_ID"'"
+  },
+  "refund_address": "'"$REFUND"'"
+}'
+```

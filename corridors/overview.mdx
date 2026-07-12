@@ -20,7 +20,7 @@ Always run discovery on **your** environment — `network_id` UUIDs are not port
 | `order_type` | Direction | Customer action |
 |--------------|-----------|-----------------|
 | `OnRamp` | Fiat → crypto | Pays local fiat; receives stablecoin |
-| `OffRamp` | Crypto → fiat | Sends stablecoin; receives fiat to momo/bank |
+| `OffRamp` | Crypto → fiat | Sends stablecoin (production); receives fiat to momo/bank. In sandbox, OffRamp auto-credits when `Successful` is in `customer.name` — see [Sandbox success & failure](/sandbox/success-failure). |
 
 Provider lists in catalog **differ by direction** — filter with `?order_type=OnRamp` or `OffRamp`.
 
