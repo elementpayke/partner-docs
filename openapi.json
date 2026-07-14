@@ -2194,6 +2194,36 @@
                       "network_id": "5f1af11b-305f-4420-8fce-65ed2725a409"
                     }
                   }
+                },
+                "ke_offramp_institution_bank": {
+                  "summary": "KE OffRamp \u2014 institution (B2B) bank payout",
+                  "description": "Institution OffRamp: same quote shape as retail; required customer fields are uid, business_name, business_id, and email (no DOB / national ID / personal name). business_id is the legal registration or tax id of the paying business \u2014 not an Element Pay console id. Bank payee is payment_method.account_name + account_number + network_id (payee may be a different company). Sandbox: include Successful in customer.business_name for auto-credit (do not send on-chain). network_id example is National Bank of Kenya from sandbox catalog.",
+                  "value": {
+                    "order_type": "OffRamp",
+                    "customer_type": "institution",
+                    "currency": "KES",
+                    "country": "KE",
+                    "crypto_amount": 20,
+                    "asset": {
+                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                      "currency": "USDC",
+                      "network": "BASE"
+                    },
+                    "refund_address": "0xE1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4",
+                    "customer": {
+                      "uid": "sandbox-ke-inst-offramp-001",
+                      "type": "institution",
+                      "business_name": "Successful Acme Trading Ltd",
+                      "business_id": "PVT-1234567A",
+                      "email": "treasury@acme-trading.example"
+                    },
+                    "payment_method": {
+                      "type": "bank",
+                      "account_number": "1111111111",
+                      "account_name": "Acme Payee Holdings Ltd",
+                      "network_id": "30f11b2e-0905-4c09-ba5f-d05aa4e4a11c"
+                    }
+                  }
                 }
               }
             }
@@ -2966,7 +2996,7 @@
               }
             ],
             "title": "Customer",
-            "description": "Provider-neutral customer details. Used to derive provider party details when provider-specific fields are omitted."
+            "description": "Provider-neutral customer details. Retail: personal KYC fields (name, dob, id_number, \u2026). Institution (`type: institution` with top-level `customer_type: institution`): `uid`, `business_name`, `business_id` (legal registration/tax id of the paying business), and `email` \u2014 no DOB / national ID / personal name. Used to derive provider party details when provider-specific fields are omitted."
           },
           "payment_method": {
             "anyOf": [

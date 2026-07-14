@@ -54,16 +54,23 @@ Do **not** invent account numbers (e.g. `0123456789`). On sandbox the order can 
 
 ### OffRamp crypto deposit (skip sending on-chain)
 
+**Retail** (`customer_type` omitted or `retail`) — sandbox auto-credit uses `customer.name`:
+
 | Result | `customer.name` |
 |--------|-----------------|
 | **Success** (sandbox auto-credit) | Include **`Successful`**, e.g. `Successful Jane Doe` |
 | **Failure** | Include **`Failure`**, e.g. `Failure Jane Doe` |
 
-Without `Successful` in the name, OffRamp expects the customer to send crypto to the **accept** `payment_instructions` deposit address before expiry.
+Without `Successful` in retail `customer.name`, OffRamp stays in **`pending_settlement`** (awaiting crypto on the accept deposit address) rather than auto-settling. Do **not** try to settle sandbox OffRamp by sending testnet crypto to that wallet — use the `Successful` name trigger. Real on-chain deposits are for **production** only.
 
-<Warning>
-Do **not** try to settle sandbox OffRamp by sending testnet crypto to the deposit wallet. Use the `Successful` name trigger. Real on-chain deposits are for **production** only.
-</Warning>
+**Institution** (`customer_type: "institution"` / `customer.type: "institution"`) — sandbox auto-credit uses `customer.business_name` (institutions have no personal `name`):
+
+| Result | `customer.business_name` |
+|--------|--------------------------|
+| **Success** (sandbox auto-credit) | Include **`Successful`**, e.g. `Successful Acme Trading Ltd` |
+| **Failure** | Include **`Failure`**, e.g. `Failure Acme Trading Ltd` |
+
+Without `Successful` in `business_name`, OffRamp stays in **`pending_settlement`**. Do **not** send testnet crypto to settle sandbox OffRamp.
 
 ## QA profiles (suggested)
 
@@ -75,12 +82,15 @@ Do **not** try to settle sandbox OffRamp by sending testnet crypto to the deposi
 | KE bank failure | `order.failed` | `account_number: 0000000000` |
 | NG bank success | `order.settled` | `1111111111` + BVN |
 | NG bank failure | `order.failed` | `0000000000` + BVN |
-| OffRamp success (no chain send) | `order.settled` | `Successful` in `customer.name` |
-| OffRamp failure | `order.failed` | `Failure` in `customer.name` and/or fail MSISDN / `0000000000` |
+| OffRamp success (no chain send) | `order.settled` | Retail: `Successful` in `customer.name`; institution: `Successful` in `business_name` |
+| OffRamp (no auto-settle) | `pending_settlement` | Missing `Successful` in the applicable name field |
+| OffRamp failure | `order.failed` | `Failure` in name / `business_name` and/or fail MSISDN / `0000000000` |
 
 ## Field shape (not magic values)
 
-Always send valid-looking KYC on retail corridors even in sandbox: `email`, `address`, `dob` (`mm/dd/yyyy`), `id_number`, `id_type`. Missing required fields → `422` from [order-requirements](/corridors/overview), not a settlement failure.
+**Retail:** always send valid-looking KYC even in sandbox: `email`, `address`, `dob` (`mm/dd/yyyy`), `id_number`, `id_type`. Missing required fields → `422` from [order-requirements](/corridors/overview), not a settlement failure.
+
+**Institution:** same quote body shape; required customer fields are `uid`, `business_name`, `business_id`, and `email` (no DOB / national ID / personal `name`). `business_id` is the legal registration or tax id of the paying business, not an Element Pay console id. Bank payee is `payment_method.account_name` + `account_number` + `network_id` (payee may be a different company). See [Sandbox test payloads](/sandbox/test-payloads) and [Kenya](/corridors/kenya).
 
 ## After accept
 

@@ -50,10 +50,11 @@ See [Sandbox success & failure](/sandbox/success-failure) for the full success/f
 | KE | OnRamp | momo | `+2541111111111` |
 | KE | OffRamp | momo | `Successful` in `customer.name` (auto-deposit) |
 | KE | OnRamp | bank | `account_number: 1111111111` |
+| KE | OffRamp | bank (institution) | `Successful` in `customer.business_name` (auto-deposit) |
 | NG | OnRamp | bank | BVN + `account_number: 1111111111` |
 | UG | OnRamp | momo | `+256111111111` |
 
-Failure: momo `+2540000000000` / bank `0000000000` / OffRamp name contains `Failure`.
+Failure: momo `+2540000000000` / bank `0000000000` / OffRamp name contains `Failure` (retail `customer.name` or institution `business_name`).
 
 ## KE OnRamp momo (inline)
 
@@ -112,6 +113,37 @@ quote_and_accept '{
     "type": "mobile_money",
     "phone_number": "+2541111111111",
     "network_id": "'"$KE_MOMO_NETWORK_ID"'"
+  },
+  "refund_address": "'"$REFUND"'"
+}'
+```
+
+## KE OffRamp bank — institution (B2B)
+
+Same quote shape as retail OffRamp; institution KYC uses `business_name` / `business_id` / `email` / `uid` (no DOB or personal `name`). Bank payee is `payment_method.account_name` (can differ from the paying business). `business_id` is the legal registration/tax id — not an Element Pay console id. Base USDC; `network_id` example is National Bank of Kenya (verify via catalog).
+
+**Sandbox:** auto-credits the crypto leg when **`Successful`** is in `customer.business_name` (same pattern as retail `customer.name`) — **do not** send on-chain after accept. Without `Successful`, OffRamp stays `pending_settlement`. See [Sandbox success & failure](/sandbox/success-failure).
+
+```bash
+quote_and_accept '{
+  "order_type": "OffRamp",
+  "customer_type": "institution",
+  "currency": "KES",
+  "country": "KE",
+  "crypto_amount": 20,
+  "asset": {"token": "'"$BASE_USDC"'", "currency": "USDC", "network": "BASE"},
+  "customer": {
+    "uid": "sandbox-ke-inst-offramp-001",
+    "type": "institution",
+    "business_name": "Successful Acme Trading Ltd",
+    "business_id": "PVT-1234567A",
+    "email": "treasury@acme-trading.example"
+  },
+  "payment_method": {
+    "type": "bank",
+    "account_number": "1111111111",
+    "account_name": "Acme Payee Holdings Ltd",
+    "network_id": "'"$KE_BANK_NETWORK_ID"'"
   },
   "refund_address": "'"$REFUND"'"
 }'

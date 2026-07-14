@@ -9,8 +9,12 @@ Kenya supports **M-PESA mobile money** and **bank** rails for OnRamp and OffRamp
 curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
   -H "X-API-Key: $API_KEY" | jq '.data.onramp.countries.KE'
 
-# Field requirements
+# Field requirements (retail default)
 curl -sS "$BASE/partner/order-requirements?country=KE&currency=KES&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+# Institution (B2B) field requirements
+curl -sS "$BASE/partner/order-requirements?country=KE&currency=KES&order_type=OffRamp&customer_type=institution" \
   -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
@@ -71,3 +75,9 @@ curl -sS "$BASE/partner/banks?country=KE&currency=KES&order_type=OnRamp&payment_
 ```
 
 Bank `network_id` values are also in catalog under `payment_methods.bank.providers[]`. For momo, use catalog only — **`GET /partner/banks` returns 422 for `mobile_money`**.
+
+## Institution (B2B)
+
+Same OnRamp/OffRamp quote body as retail; set `customer_type: "institution"` and `customer.type: "institution"`. Required customer fields: `uid`, `business_name`, `business_id`, `email` — no DOB, national ID, or personal `name`. `business_id` is the paying business’s legal registration/tax id (not an Element Pay console id).
+
+For bank rails, the payee is `payment_method.account_name` + `account_number` + `network_id` (payee company may differ from the paying business). Discover exact fields with `customer_type=institution` on order-requirements (above). Copy-paste OffRamp bank example: [Sandbox test payloads](/sandbox/test-payloads).
