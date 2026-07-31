@@ -1,0 +1,72 @@
+# Book-transfers (fiat)
+
+Move funds **between two fiat accounts under your API key** (any entities you own qualify) with a **preview then confirm** pair. Both accounts must be `active` and share the same currency. See [Accounts & deposits](/deposit-accounts/accounts) to open and fund rails first.
+
+<Note>
+Book-transfers move the **same currency** between accounts; there is no conversion in this flow. To convert between currencies (for example EUR to USDC), see [Currency conversion](/deposit-accounts/currency-conversion).
+</Note>
+
+<Note>
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`. `$ACCOUNT_ID` is the **source** fiat account.
+</Note>
+
+## Preview
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/book-transfers/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_account_id": 21,
+    "amount": "25.00"
+  }' | jq '.data'
+```
+
+```json
+{
+  "preview_token": "<token>",
+  "currency": "EUR",
+  "from_account_id": 17,
+  "to_account_id": 21,
+  "amount": "25.00",
+  "fee": "0.00",
+  "receive_amount": "25.00",
+  "fee_status": "estimated",
+  "expires_at": "2026-07-29T16:35:00+00:00"
+}
+```
+
+## Confirm (with idempotency)
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/book-transfers" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preview_token": "<token>",
+    "idempotency_key": "partner-move-001"
+  }' | jq '.data'
+```
+
+```json
+{
+  "id": "<transfer_id>",
+  "status": "completed",
+  "from_account_id": 17,
+  "to_account_id": 21,
+  "currency": "EUR",
+  "amount": "25.00",
+  "fee": "0.00",
+  "receive_amount": "25.00",
+  "fee_status": "final",
+  "created_at": "2026-07-29T16:35:10+00:00"
+}
+```
+
+Re-confirming with the **same `idempotency_key`** returns the **same transfer id**, with no double debit. Book-transfer statuses: `pending` \| `completed` \| `failed` (as returned by confirm).
+
+## Next steps
+
+- [Currency conversion](/deposit-accounts/currency-conversion): convert fiat ↔ USDC
+- [Stablecoin sends](/deposit-accounts/sends): USDC out (beta)
+- [Overview](/deposit-accounts/overview): status vocabulary, webhooks, errors

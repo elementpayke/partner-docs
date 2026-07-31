@@ -1,0 +1,131 @@
+# International deposit accounts
+
+Open **bank deposit coordinates** (EUR / GBP / USD) and optional **USDC wallets** for your end-customers after entity KYC, under public Partner routes `/partner/entities/*`. Then show deposit instructions and move money between accounts under your API key.
+
+This is a **separate product** from:
+
+- African local-fiat **quote to accept** ([Quickstart](/quickstart), [Corridors](/corridors/overview))
+- Catalog **`international_bank`** EUR/USD payin via quote to accept (a one-shot ramp, not reusable deposit accounts)
+
+Use **one product per checkout**; do not mix entity deposit accounts with a local OnRamp/OffRamp quote in the same flow.
+
+<Note>
+**Shippable now:** entity KYC, open fiat/stablecoin deposit accounts, GET deposit instructions, fund (including **card acquiring** into fiat USD / GBP / EUR), same-currency **fiat book-transfers** between accounts under your API key (with idempotency), **currency conversion** (fiat ↔ USDC), plus status webhooks.  
+**Beta:** stablecoin **sends** (preview is stable; confirm/settlement is still stabilizing, see [Stablecoin sends](/deposit-accounts/sends)).  
+**Not this product:** the African quote-to-accept flow, external bank payouts, and virtual card issuing.
+</Note>
+
+## The flow
+
+<Steps>
+  <Step title="Entity KYC">
+    Create an individual or business, upload documents, submit, and wait for `approved`. See [Entity KYC](/deposit-accounts/kyc).
+  </Step>
+  <Step title="Open accounts">
+    Open fiat (EUR/GBP/USD) and/or stablecoin (USDC) rails, then fetch deposit instructions. See [Accounts & deposits](/deposit-accounts/accounts).
+  </Step>
+  <Step title="Fund and move money">
+    Fund via deposit instructions or [card acquiring](/deposit-accounts/card-acquiring) (fiat USD / GBP / EUR). Then [convert](/deposit-accounts/currency-conversion) between a fiat account and USDC, move the same currency with [fiat book-transfers](/deposit-accounts/book-transfers), or send USDC out with [stablecoin sends](/deposit-accounts/sends) (currently in beta).
+  </Step>
+</Steps>
+
+## When to use this
+
+| Use this when… | Prefer another product when… |
+|----------------|------------------------------|
+| Your customer needs reusable **deposit instructions** (IBAN / bank fields and/or an on-chain USDC address) after KYC | They pay **local African fiat** (momo/bank) for a one-shot ramp, see [Quickstart](/quickstart) |
+| You key customers by your own `customer_ref` and open rails after `approved` | You only need a binding FX quote for a single order |
+
+## Auth
+
+Same as all Partner APIs, see [Authentication](/authentication):
+
+```http
+X-API-Key: <your-api-key>
+Content-Type: application/json
+```
+
+```bash
+export BASE="https://sandbox.elementpay.net/api/v1"
+export API_KEY="is_test_YOUR_KEY_HERE"
+```
+
+## Concepts
+
+| Concept | Meaning |
+|---------|---------|
+| **Entity** | Your end-customer (individual or business), scoped to your API key, keyed by **`customer_ref`** |
+| **Entity status** | `pending` → `submitted` → `approved` \| `rejected` \| `suspended` |
+| **Account** | A deposit rail on an **approved** entity (fiat and/or stablecoin) |
+| **Fiat account** | EUR / GBP / USD, with `account_number` (and related bank fields) when ready |
+| **Stablecoin account** | USDC on `Base` or `Polygon`, with `wallet_address` when ready |
+| **Balance** | `balance: { available, current, currency }` on each account when known (may be `null` if the upstream refresh fails); fetched live on list/get |
+| **Partner account status** | `pending` until coordinates are usable, then `active` (also `failed` \| `closed`) |
+
+<Note>
+A USDC account is an **independent stablecoin ledger** with its own balance. It is **not** tied to a USD fiat account, and there is **no** shared balance pot. Open USD and USDC independently as needed.
+</Note>
+
+Partners **cannot** register their own wallet as the deposit address. Custody stays on the deposit rail Element Pay provisions.
+
+**Idempotency:** entity create is unique per API key + `customer_ref`. Account open is unique per `(entity, asset_type, currency, network)` (`network` empty for fiat): re-open returns the existing account (`200`); first open returns `201`.
+
+## Status vocabulary
+
+| Object | States |
+|--------|--------|
+| **Entity** | `pending` → `submitted` → `approved` \| `rejected` \| `suspended` |
+| **Account** | `pending` (no coordinates) → `active` (coordinates usable); also `failed` \| `closed` |
+| **Book-transfer** | `pending` \| `completed` \| `failed` (as returned by confirm) |
+| **Currency conversion** (order) | `processing` → `settled` \| `failed` |
+| **Send** (beta) | `processing` → `submitted` → `completed` \| `failed` |
+
+## Webhooks
+
+Configure `webhook_url` (and `webhook_secret`) on your API key. Signing is identical to order webhooks, see [Webhooks](/webhooks). Events for this product:
+
+| Event | When |
+|-------|------|
+| `entity.status.changed` | Entity KYC status changed |
+| `account.opened` | Deposit account created (rail first opened) |
+| `account.ready` | Deposit coordinates available (IBAN / `wallet_address`) |
+| `account.credited` | Inflow settled on an account (including card acquiring; net credit) |
+| `card_charge.status.changed` | Card charge status changed |
+| `account.send.completed` / `account.send.failed` | Stablecoin send terminal (**beta**) |
+
+These are **not** the same as legacy `deposit_account.ready` events from other international ramp products. [Currency conversion](/deposit-accounts/currency-conversion) instead emits **order** webhooks (`order.processing` / `order.settled` / `order.failed`).
+
+## Errors
+
+Same envelope as other Partner APIs ([Errors](/errors)):
+
+```json
+{
+  "status": "error",
+  "message": "Entity is not approved for account opening",
+  "data": {
+    "correlation_id": "req_...",
+    "upstream_http_status": 409
+  }
+}
+```
+
+Messages are safe for integrators. Do not surface raw upstream payloads to end-users.
+
+## Sandbox notes
+
+- Individuals often reach `approved` without liveness.
+- Business KYB may remain `submitted` longer (manual / program-specific).
+- `USD` fiat accounts may stay `pending` in sandbox and not fully provision or settle yet; use `EUR` or `GBP` for the full fiat flow, and contact support if a `USD` account stays `pending`.
+- New accounts start at `0.00`; there is **no** free USDC grant in sandbox. Fund by an on-chain deposit to the wallet address, or an internal ops / FX seed (sandbox only), before testing a send.
+- Stablecoin **send confirm** may still hit a transient upstream error in sandbox while the dependency stabilizes; treat sends as beta.
+
+## Next steps
+
+- [Entity KYC](/deposit-accounts/kyc): individual + business onboarding
+- [Accounts & deposits](/deposit-accounts/accounts): open rails, deposit instructions, funding
+- [Card acquiring](/deposit-accounts/card-acquiring): charge a card into a fiat account
+- [Currency conversion](/deposit-accounts/currency-conversion): convert fiat ↔ USDC
+- [Book-transfers](/deposit-accounts/book-transfers): same-currency fiat moves
+- [Stablecoin sends](/deposit-accounts/sends): USDC out (beta)
+- [Webhooks](/webhooks) · [Authentication](/authentication) · [API reference](/api-reference/introduction)

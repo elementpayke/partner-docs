@@ -1,0 +1,189 @@
+# Currency conversion
+
+Convert between a fiat deposit account and a USDC account for one of your entities, using the shared **quote then accept** orders API. Both balances stay on the entity's deposit accounts; no external wallet is involved.
+
+<Note>
+Currency conversion uses the shared **`/partner/orders`** surface (the same quote-to-accept API as other partner ramps), **not** `/partner/entities/...`. The conversion rail is selected by a `network_id` from discovery plus the entity's account ids.
+</Note>
+
+Generally available for **EUR / GBP / USD ↔ USDC**. Before you convert, the entity must be `approved` and the **debit** account must be [funded](/deposit-accounts/accounts#fund-an-account):
+
+- **Fiat → USDC** (`OnRamp`): debit a funded **fiat** account, credit a USDC account.
+- **USDC → fiat** (`OffRamp`): debit a funded **USDC** account, credit a fiat account.
+
+Fiat-to-fiat conversion (for example EUR to GBP) is **not** supported.
+
+<Note>
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`.
+</Note>
+
+## 1. Discover the rail (`network_id`)
+
+Find the conversion rail in discovery and use its id as `payment_method.network_id`:
+
+```bash
+curl -sS "$BASE/partner/catalog" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Look for entries named like **"EUR account to USDC"** (for `OnRamp`) or **"USDC to EUR account"** (for `OffRamp`), and use the matching id. `GET /partner/banks` returns the same rail ids.
+
+## 2. Quote
+
+A quote is **short-lived**: the partner TTL is capped by the upstream FX quote lifetime (about 2 to 3 minutes in sandbox). Always read `expires_at` and accept promptly.
+
+### Fiat → USDC (OnRamp)
+
+`account_id` is the **fiat** debit account. The USDC credit account is ensured automatically, so do **not** send `destination_account_id`.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "currency": "EUR",
+    "local_amount": 10,
+    "asset": { "currency": "USDC" },
+    "payment_method": {
+      "type": "bank",
+      "network_id": "<EUR-to-USDC rail id>",
+      "entity_id": 18,
+      "account_id": 42
+    }
+  }' | jq '.data'
+```
+
+### USDC → fiat (OffRamp)
+
+`account_id` is the **USDC** debit account. `destination_account_id` is the fiat credit account; if omitted, the first fiat rail for `currency` on that entity is used.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OffRamp",
+    "currency": "EUR",
+    "crypto_amount": 10,
+    "asset": { "currency": "USDC" },
+    "payment_method": {
+      "type": "bank",
+      "network_id": "<USDC-to-EUR rail id>",
+      "entity_id": 18,
+      "account_id": 55,
+      "destination_account_id": 42
+    }
+  }' | jq '.data'
+```
+
+### Quote request fields
+
+| Field | Role |
+|-------|------|
+| `order_type` | `OnRamp` (fiat → USDC) or `OffRamp` (USDC → fiat) |
+| `currency` | The **fiat** currency: debit currency on OnRamp, credit currency on OffRamp |
+| `local_amount` | Fiat debit amount (OnRamp), major units |
+| `crypto_amount` | USDC debit amount (OffRamp), major units |
+| `asset.currency` | Must be `USDC` |
+| `payment_method.type` | `bank` |
+| `payment_method.network_id` | Conversion rail id from discovery |
+| `payment_method.entity_id` | The entity that owns the accounts |
+| `payment_method.account_id` | The **debit** account (fiat on OnRamp, USDC on OffRamp) |
+| `payment_method.destination_account_id` | OffRamp only, optional: fiat credit account |
+
+### Quote response
+
+```json
+{
+  "quote_id": "<quote_id>",
+  "order_type": "OnRamp",
+  "expires_at": "2026-07-30T12:03:00Z",
+  "rate": 1.08,
+  "user_pays": { "amount": "10.00", "currency": "EUR" },
+  "user_receives": { "amount": "10.80", "currency": "USDC" },
+  "limits": { "min_amount": 1.0 },
+  "payment_method": { "network_id": "<rail id>" }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `quote_id` | Opaque id to accept with. Treat as a token; do not parse it |
+| `expires_at` | Accept before this timestamp |
+| `rate` | FX rate applied |
+| `user_pays` / `user_receives` | Debit and credit amounts with currencies |
+| `limits.min_amount` | Minimum debit amount (currently `1.00`) |
+
+There is **no** partner `fee` field on this quote; the receive amount is in `user_receives`.
+
+## 3. Accept
+
+Accept before `expires_at`. An empty body is fine.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/<quote_id>/accept" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq '.data'
+```
+
+```json
+{
+  "quote_id": "<quote_id>",
+  "accepted": {
+    "status": "settled",
+    "reference": "<opaque transfer ref>"
+  },
+  "order": {
+    "order_id": "<order_id>",
+    "status": "settled",
+    "order_type": "OnRamp"
+  }
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| `processing` | Settlement submitted; not yet terminal |
+| `settled` | Conversion completed (common in sandbox when upstream is already done) |
+| `failed` | Conversion failed (delivered via later update / webhook) |
+
+Sandbox conversions (including USD, both directions) often return `settled` immediately, but still handle `processing` and confirm terminal state via webhook or GET.
+
+## 4. Status, idempotency & webhooks
+
+**Status:** poll `GET /partner/orders/{order_id}` as a backup; prefer webhooks.
+
+**Idempotency:** accept is keyed by **`quote_id`** (there is no `X-Idempotency-Key` here).
+
+| Situation | Result |
+|-----------|--------|
+| Re-accept after success | Same order replayed (`200`) |
+| Accept while a settle is in progress | `409` (accept already in progress) |
+| Accept an expired quote | `410` |
+
+**Webhooks:** conversions emit **order** webhooks (same signing as other orders), not conversion-specific events:
+
+- `order.processing`
+- `order.settled`
+- `order.failed`
+
+Order webhooks carry `X-Webhook-Event`, `X-Webhook-Id`, and `X-Webhook-Signature` (no `X-Idempotency-Key`). See [Webhooks](/webhooks). `account.credited` is for inbound deposits, not the conversion path; after settlement, both account balances move, so read them with `GET /partner/entities/{id}/accounts/{account_id}`.
+
+## Constraints
+
+| Topic | Value |
+|-------|-------|
+| Directions | Fiat → USDC (`OnRamp`), USDC → fiat (`OffRamp`) |
+| Currencies (GA) | `EUR`, `GBP`, `USD` ↔ `USDC` |
+| Fiat ↔ fiat | Not supported |
+| Minimum | `1.00` major units of the **debit** currency |
+| Maximum | None |
+| Quote lifetime | Short (about 2 to 3 minutes in sandbox); accept promptly |
+
+## Next steps
+
+- [Accounts & deposits](/deposit-accounts/accounts): open and fund the accounts you convert between
+- [Book-transfers](/deposit-accounts/book-transfers): move the same currency between accounts
+- [Overview](/deposit-accounts/overview): status vocabulary, webhooks, errors

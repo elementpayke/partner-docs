@@ -1,0 +1,169 @@
+# Card acquiring
+
+Charge a customer's card to **fund a fiat deposit account** (USD, GBP, or EUR). This is **card acquiring** (a deposit into the account), not virtual card issuing.
+
+One-shot charge: there is no preview or quote step. Open an active fiat rail first ([Accounts & deposits](/deposit-accounts/accounts)), then `POST` a charge and confirm status with `GET` and webhooks.
+
+<Note>
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`. `$ACCOUNT_ID` must be an **active fiat** USD / GBP / EUR account (not stablecoin).
+</Note>
+
+## Product rules
+
+| Rule | Detail |
+|------|--------|
+| **Rails** | Fiat `USD`, `GBP`, `EUR` only. Stablecoin accounts return `422`. |
+| **Shape** | Single `POST .../card-charges` (no preview). |
+| **Idempotency** | `reference` must be unique per account. Reusing the same `reference` returns the existing charge. Upstream may also return `409` on a duplicate reference. |
+| **Response fields** | `charge_id`, `status`, `amount`, `charge_amount`, `fee`, `last_four`, `card_brand`, `next_action` |
+| **Fees** | `charge_amount` = customer debit. `fee` = acquiring fee. Account credit is **net** (`charge_amount − fee`). Sandbox example: debit `10.00`, fee `0.75` → about `9.25` net credit. |
+| **Confirm paid** | After a webhook or a 3DS `return_url` redirect, always **re-GET** the charge. Do not treat `return_url` alone as paid. |
+
+Statuses you will see: `processing` → `requires_action` (3DS) → `completed` \| `failed` \| `cancelled`.
+
+## Auth model
+
+| Environment | Recommendation |
+|-------------|----------------|
+| **Production** | Prefer `auth_model: "3ds_required"` with `return_url` and `browser_info`. |
+| **Sandbox quick path** | Use `auth_model: "3ds_disabled"` with the Non-3DS test cards below. |
+
+When `auth_model` is `3ds_required`, send `return_url` (required) and `browser_info` (browser data for the challenge). A successful create that needs a challenge returns `status: "requires_action"` and `next_action: { "type": "redirect_to_url", "url": "…" }`. Redirect the customer, then re-GET the charge (and/or wait for webhooks).
+
+## Sandbox test cards
+
+Use any future expiry (for example `12` / `2030`) and any CVV (for example `123`) unless a scenario notes otherwise. Spaces in the PAN are optional (`4000 0000 0000 2701` is the same as `4000000000002701`).
+
+| Scenario | Brand | Number | auth_model | Notes |
+|----------|-------|--------|------------|-------|
+| Success Non-3DS | Visa | `4000000000002701` | `3ds_disabled` | Happy path; Try-it default |
+| Success Non-3DS | Mastercard | `5200000000002235` | `3ds_disabled` | Happy path, alternate brand |
+| Success 3DS | Visa | `4000000000002503` | `3ds_required` | Expect `requires_action` + `next_action.url`; redirect, then re-GET |
+| Declined Non-3DS | Visa | `4008370896662369` | `3ds_disabled` | Expect `failed` |
+| Declined 3DS | Mastercard | `5333463046218753` | `3ds_required` | Challenge / decline path; re-GET after return |
+
+## Charge a card (Non-3DS success)
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/card-charges" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "10.00",
+    "reference": "order-card-001",
+    "description": "Wallet top-up",
+    "auth_model": "3ds_disabled",
+    "card": {
+      "number": "4000000000002701",
+      "expiry_month": "12",
+      "expiry_year": "2030",
+      "cvv": "123",
+      "holder_name": "Jane Doe"
+    },
+    "billing_address": {
+      "line_1": "350 Fifth Avenue",
+      "city": "New York",
+      "state": "NY",
+      "country": "US",
+      "postal_code": "10118"
+    },
+    "customer": {
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane@example.com"
+    }
+  }' | jq '.data'
+```
+
+Typical completed response (sandbox):
+
+```json
+{
+  "charge_id": 8,
+  "entity_id": 11,
+  "account_id": 17,
+  "status": "completed",
+  "reference": "order-card-001",
+  "currency": "EUR",
+  "amount": "10.00",
+  "charge_amount": "10.00",
+  "fee": "0.75",
+  "last_four": "2701",
+  "card_brand": "visa",
+  "next_action": null,
+  "auth_model": "3ds_disabled"
+}
+```
+
+Account credit is net: `10.00 − 0.75 ≈ 9.25`. Confirm with `GET` on the account or the `account.credited` webhook (`credit.amount` is the net).
+
+## Get a charge
+
+```bash
+export CHARGE_ID="8"
+
+curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/card-charges/$CHARGE_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Use this after webhooks and after any 3DS return to refresh status from upstream.
+
+## 3DS success (short)
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/card-charges" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "10.00",
+    "reference": "order-card-3ds-001",
+    "auth_model": "3ds_required",
+    "return_url": "https://your-app.example/card-return",
+    "browser_info": {
+      "user_agent": "Mozilla/5.0",
+      "accept_header": "text/html",
+      "language": "en-US",
+      "java_enabled": false,
+      "color_depth": 24,
+      "screen_height": 1080,
+      "screen_width": 1920,
+      "timezone_offset": 0
+    },
+    "card": {
+      "number": "4000000000002503",
+      "expiry_month": "12",
+      "expiry_year": "2030",
+      "cvv": "123",
+      "holder_name": "Jane Doe"
+    },
+    "billing_address": {
+      "line_1": "350 Fifth Avenue",
+      "city": "New York",
+      "state": "NY",
+      "country": "US",
+      "postal_code": "10118"
+    },
+    "customer": {
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane@example.com"
+    }
+  }' | jq '.data'
+```
+
+Expect `status: "requires_action"` and `next_action.url`. Redirect the customer to that URL. When they return to `return_url`, **re-GET** the charge (and/or wait for webhooks). Do not mark the payment paid from the redirect alone.
+
+## Webhooks
+
+| Event | When |
+|-------|------|
+| `card_charge.status.changed` | Charge status changed (including `requires_action`, `completed`, `failed`) |
+| `account.credited` | Inflow settled; for card funding, `source` is `card_charge` and `credit.amount` is the **net** credit |
+
+Treat webhooks as best-effort. Always confirm with `GET .../card-charges/{charge_id}`. See [Webhooks](/webhooks).
+
+## Next steps
+
+- [Accounts & deposits](/deposit-accounts/accounts): open a fiat USD / GBP / EUR rail
+- [Overview](/deposit-accounts/overview): concepts and status vocabulary
+- [API reference](/api-reference/introduction): Try-it for `POST` / `GET` card-charges
