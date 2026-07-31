@@ -16,8 +16,11 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`.
 Only `EUR`, `GBP`, and `USD` are generally available for opening fiat deposit accounts. Other currencies that appear in discovery or in [currency conversion](/deposit-accounts/currency-conversion) are **not** openable as deposit accounts unless explicitly enabled for your integration; opening an unsupported currency returns `422` with the supported list.
 
 <Warning>
-In **sandbox**, `USD` fiat accounts may stay `pending` and not fully provision or settle yet. Use `EUR` or `GBP` to exercise the full fiat flow. If a `USD` account stays `pending`, contact support for guidance.
+In **sandbox**, `USD` fiat accounts may stay `pending` and not fully provision yet. Use `EUR` or `GBP` to exercise the full fiat flow. If a `USD` account stays `pending`, contact support. In **production**, USD follows the normal `pending` → `active` path once deposit details are ready.
 </Warning>
+
+<!-- INTERNAL TODO USD-ACTIVE-SANDBOX: partner will make sandbox USD active; then remove/soften the sandbox USD pending Warning and allow issuing/card-funding sandbox QA on USD. Do not tell integrators about the upcoming fix until it ships. -->
+
 
 ## Open accounts (approved entities only)
 
@@ -84,7 +87,7 @@ Deposit instructions are the primary way to fund an account today. More funding 
 | Method | Rail | How the customer funds |
 |--------|------|------------------------|
 | **Bank transfer to deposit coordinates** | Fiat | Send a bank transfer in the account currency to the `account_number` / bank fields returned by deposit instructions |
-| **Card funding** | Fiat USD / GBP / EUR | Charge the customer's card into the account ([Card funding](/deposit-accounts/card-funding)). When a credit applies, net is modeled as `charge_amount − fee`. In **sandbox**, do not assume `balance.available` rises when the charge is `completed` (see that page). |
+| **Card funding** | Fiat USD / GBP / EUR | Charge the customer's card into the account ([Card funding](/deposit-accounts/card-funding)). `completed` means the charge succeeded; available balance updates after settlement (~six days). |
 | **On-chain transfer** | Stablecoin | Send `USDC` on the stated `network` to the returned `wallet_address` |
 
 When an inflow settles, you receive the **`account.credited`** webhook ([Webhooks](/webhooks)). For card funding, that event includes `source: "card_charge"` and `credit.amount` is the net credit.

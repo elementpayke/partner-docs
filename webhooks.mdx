@@ -130,7 +130,7 @@ Entity, account, and send events wrap a typed object and add an `event_type` fie
 }
 ```
 
-`account.credited` fires for fiat bank inflows, on-chain USDC deposits, and **card funding** when/if a credit is dispatched. For card funding, the payload includes `source: "card_charge"` and `credit.amount` is the **net** credit (`charge_amount − fee`). Always re-GET the charge after this event; do not treat the webhook alone as final. In sandbox, a `completed` card charge may arrive without an immediate balance increase or `account.credited` (see [Card funding](/deposit-accounts/card-funding)).
+`account.credited` fires for fiat bank inflows, on-chain USDC deposits, and **card funding** when settlement posts. For card funding, the payload includes `source: "card_charge"` and `credit.amount` is the **net** credit (`charge_amount − fee`). A charge can be `completed` days before this credit appears. Always re-GET the charge after status webhooks; do not treat `return_url` alone as paid. See [Card funding](/deposit-accounts/card-funding).
 
 ```json
 {
