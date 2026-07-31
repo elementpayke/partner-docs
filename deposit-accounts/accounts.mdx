@@ -84,7 +84,7 @@ Deposit instructions are the primary way to fund an account today. More funding 
 | Method | Rail | How the customer funds |
 |--------|------|------------------------|
 | **Bank transfer to deposit coordinates** | Fiat | Send a bank transfer in the account currency to the `account_number` / bank fields returned by deposit instructions |
-| **Card funding** | Fiat USD / GBP / EUR | Charge the customer's card into the account ([Card funding](/deposit-accounts/card-funding)). Account credit is **net** of the card fee. |
+| **Card funding** | Fiat USD / GBP / EUR | Charge the customer's card into the account ([Card funding](/deposit-accounts/card-funding)). When a credit applies, net is modeled as `charge_amount − fee`. In **sandbox**, do not assume `balance.available` rises when the charge is `completed` (see that page). |
 | **On-chain transfer** | Stablecoin | Send `USDC` on the stated `network` to the returned `wallet_address` |
 
 When an inflow settles, you receive the **`account.credited`** webhook ([Webhooks](/webhooks)). For card funding, that event includes `source: "card_charge"` and `credit.amount` is the net credit.

@@ -9883,7 +9883,7 @@
               "title": "Account Id"
             },
             "description": "Partner account id",
-            "example": 17
+            "example": 16
           }
         ],
         "requestBody": {
@@ -10012,7 +10012,7 @@
               "title": "Account Id"
             },
             "description": "Partner account id",
-            "example": 17
+            "example": 16
           },
           {
             "name": "charge_id",
