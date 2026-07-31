@@ -17,7 +17,7 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`.
 **Settlement timing:** `status: "completed"` means the card charge succeeded. Available balance updates only after settlement (typically about **six days**). Do not treat an unchanged `GET …/accounts/{id}` `balance.available` right after create as a failed charge. For UX, key off charge status and `card_charge.status.changed`, then balance or `account.credited` once settlement posts—not an immediate balance poll alone.
 </Warning>
 
-<!-- INTERNAL TODO USD-ACTIVE-SANDBOX: when sandbox USD is reliably active, drop any EUR/GBP-only Try-it hints that imply USD cannot be used in sandbox for card funding. -->
+{/* INTERNAL TODO USD-ACTIVE-SANDBOX: when sandbox USD is reliably active, drop any EUR/GBP-only Try-it hints that imply USD cannot be used in sandbox for card funding. */}
 
 
 ## Product rules
