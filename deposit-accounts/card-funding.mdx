@@ -14,7 +14,7 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`.
 </Note>
 
 <Warning>
-**Sandbox caveat (verified 2026-07-31):** a charge can return HTTP `201` with `status: "completed"`, `charge_amount`, and `fee` while `GET …/accounts/{id}` `balance.available` stays unchanged (delta `0`). Treat charge `status` (and a fresh `GET` on the charge) as the payment outcome. Do **not** assume the account balance will rise immediately (or at all) in sandbox after a completed card charge. For “funded” UX in sandbox, rely on charge status plus webhooks (`card_charge.status.changed`, and `account.credited` when/if dispatched), not balance polling alone. Commercial / live ledger settlement is **TBD** pending provider confirmation.
+**Sandbox caveat:** a charge can return HTTP `201` with `status: "completed"`, `charge_amount`, and `fee` while `GET …/accounts/{id}` `balance.available` stays unchanged (delta `0`). Treat charge `status` (and a fresh `GET` on the charge) as the payment outcome. Do **not** assume the account balance will rise immediately (or at all) in sandbox after a completed card charge. For “funded” UX in sandbox, rely on charge status plus webhooks (`card_charge.status.changed`, and `account.credited` when/if dispatched), not balance polling alone.
 </Warning>
 
 ## Product rules
