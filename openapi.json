@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Element Pay Partner API",
-    "description": "Provider-neutral partner APIs for fiat \u2194 crypto corridors and deposit accounts. Discover corridors, create a binding quote, accept it, and receive webhooks. Onboard entities, open fiat and USDC deposit accounts, move funds with same-currency book transfers, convert between fiat and USDC via quote/accept, and send USDC (beta). African local fiat is auto-routed by corridor.",
+    "description": "Provider-neutral partner APIs for fiat \u2194 crypto corridors and deposit accounts. Discover corridors, create a binding quote, accept it, and receive webhooks. Onboard entities, open fiat and USDC deposit accounts, move funds with same-currency book transfers, convert between fiat and USDC via quote/accept, send USDC (beta), fund fiat accounts via card charges, and issue disposable or virtual cards on active USD accounts. African local fiat is auto-routed by corridor.",
     "version": "1.0.0"
   },
   "servers": [
@@ -10079,6 +10079,678 @@
           }
         }
       }
+    },
+    "/partner/entities/{entity_id}/accounts/{account_id}/cards": {
+      "post": {
+        "tags": [
+          "partner-entities"
+        ],
+        "summary": "Issue a disposable or virtual card",
+        "description": "Issue a card on an **active USD fiat** account (`type`: disposable or virtual). EUR/GBP accounts are rejected. `amount` is a placeholder for future behavior \u2014 the card is not pre-funded; it spends against the funding account balance. PAN/CVV are returned once on create only.",
+        "operationId": "partner_create_issued_card_partner_entities__entity_id__accounts__account_id__cards_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner entity id",
+              "examples": [
+                11
+              ],
+              "title": "Entity Id"
+            },
+            "description": "Partner entity id",
+            "example": 11
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner account id (active fiat USD required for card issuing)",
+              "examples": [
+                17
+              ],
+              "title": "Account Id"
+            },
+            "description": "Partner account id (active fiat USD required for card issuing)",
+            "example": 17
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntityIssuedCardCreateRequest"
+              },
+              "example": {
+                "amount": "10.00",
+                "card_name": "Vendor one-time",
+                "cardholder": {
+                  "email": "jane@example.com",
+                  "first_name": "Jane",
+                  "last_name": "Doe",
+                  "phone_number": "+12125550198"
+                },
+                "expiration_month": "12",
+                "expiration_year": "27",
+                "reference": "card-issue-001",
+                "type": "disposable"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "partner-entities"
+        ],
+        "summary": "List issued cards for this account",
+        "operationId": "partner_list_issued_cards_partner_entities__entity_id__accounts__account_id__cards_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner entity id",
+              "examples": [
+                11
+              ],
+              "title": "Entity Id"
+            },
+            "description": "Partner entity id",
+            "example": 11
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner account id (active fiat USD required for card issuing)",
+              "examples": [
+                17
+              ],
+              "title": "Account Id"
+            },
+            "description": "Partner account id (active fiat USD required for card issuing)",
+            "example": 17
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}": {
+      "get": {
+        "tags": [
+          "partner-entities"
+        ],
+        "summary": "Get an issued card (status refresh; no PAN/CVV)",
+        "operationId": "partner_get_issued_card_partner_entities__entity_id__accounts__account_id__cards__card_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner entity id",
+              "examples": [
+                11
+              ],
+              "title": "Entity Id"
+            },
+            "description": "Partner entity id",
+            "example": 11
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner account id (active fiat USD required for card issuing)",
+              "examples": [
+                17
+              ],
+              "title": "Account Id"
+            },
+            "description": "Partner account id (active fiat USD required for card issuing)",
+            "example": 17
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner issued card id",
+              "examples": [
+                4
+              ],
+              "title": "Card Id"
+            },
+            "description": "Partner issued card id",
+            "example": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/transactions": {
+      "get": {
+        "tags": [
+          "partner-entities"
+        ],
+        "summary": "List transactions for an issued card",
+        "description": "List spend history for an issued card. Sandbox does not currently support generating card spend, so this list is typically empty in sandbox.",
+        "operationId": "partner_list_issued_card_transactions_partner_entities__entity_id__accounts__account_id__cards__card_id__transactions_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner entity id",
+              "examples": [
+                11
+              ],
+              "title": "Entity Id"
+            },
+            "description": "Partner entity id",
+            "example": 11
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner account id (active fiat USD required for card issuing)",
+              "examples": [
+                17
+              ],
+              "title": "Account Id"
+            },
+            "description": "Partner account id (active fiat USD required for card issuing)",
+            "example": 17
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner issued card id",
+              "examples": [
+                4
+              ],
+              "title": "Card Id"
+            },
+            "description": "Partner issued card id",
+            "example": 4
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/freeze": {
+      "post": {
+        "tags": [
+          "partner-entities"
+        ],
+        "summary": "Freeze an issued card",
+        "operationId": "partner_freeze_issued_card_partner_entities__entity_id__accounts__account_id__cards__card_id__freeze_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner entity id",
+              "examples": [
+                11
+              ],
+              "title": "Entity Id"
+            },
+            "description": "Partner entity id",
+            "example": 11
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner account id (active fiat USD required for card issuing)",
+              "examples": [
+                17
+              ],
+              "title": "Account Id"
+            },
+            "description": "Partner account id (active fiat USD required for card issuing)",
+            "example": 17
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner issued card id",
+              "examples": [
+                4
+              ],
+              "title": "Card Id"
+            },
+            "description": "Partner issued card id",
+            "example": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/unfreeze": {
+      "post": {
+        "tags": [
+          "partner-entities"
+        ],
+        "summary": "Unfreeze an issued card",
+        "operationId": "partner_unfreeze_issued_card_partner_entities__entity_id__accounts__account_id__cards__card_id__unfreeze_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner entity id",
+              "examples": [
+                11
+              ],
+              "title": "Entity Id"
+            },
+            "description": "Partner entity id",
+            "example": 11
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner account id (active fiat USD required for card issuing)",
+              "examples": [
+                17
+              ],
+              "title": "Account Id"
+            },
+            "description": "Partner account id (active fiat USD required for card issuing)",
+            "example": 17
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Partner issued card id",
+              "examples": [
+                4
+              ],
+              "title": "Card Id"
+            },
+            "description": "Partner issued card id",
+            "example": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11925,6 +12597,240 @@
           "cvv"
         ],
         "title": "PartnerEntityCardDetails"
+      },
+      "PartnerEntityIssuedCardCreateRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Card kind: disposable (single-use) or virtual (reusable)"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount",
+            "description": "Placeholder for future behavior (major units, e.g. 10.00). The card is not pre-funded or topped up; it spends against the USD funding account balance."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Reference"
+          },
+          "card_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Name"
+          },
+          "cardholder": {
+            "$ref": "#/components/schemas/PartnerEntityIssuedCardholder"
+          },
+          "expiration_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiration Month",
+            "description": "MM \u2014 required for disposable"
+          },
+          "expiration_year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiration Year",
+            "description": "YY or YYYY \u2014 required for disposable"
+          },
+          "spending_controls": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartnerEntityIssuedCardSpendingControls"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional spend limits; applied for virtual cards only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "amount",
+          "reference",
+          "cardholder"
+        ],
+        "title": "PartnerEntityIssuedCardCreateRequest",
+        "description": "Issue a disposable or virtual card on an active USD fiat account.",
+        "examples": [
+          {
+            "amount": "10.00",
+            "card_name": "Vendor one-time",
+            "cardholder": {
+              "email": "jane@example.com",
+              "first_name": "Jane",
+              "last_name": "Doe",
+              "phone_number": "+12125550198"
+            },
+            "expiration_month": "12",
+            "expiration_year": "27",
+            "reference": "card-issue-001",
+            "type": "disposable"
+          },
+          {
+            "amount": "10.00",
+            "card_name": "Team card",
+            "cardholder": {
+              "email": "jane@example.com",
+              "first_name": "Jane",
+              "last_name": "Doe",
+              "phone_number": "+12125550198"
+            },
+            "reference": "card-issue-virtual-001",
+            "spending_controls": {
+              "billing_cycle": "Weekly",
+              "billing_cycle_day": "Sunday",
+              "daily_amount_limit": "50.00",
+              "daily_transaction_count": 5,
+              "transaction_amount_limit": "10.00"
+            },
+            "type": "virtual"
+          }
+        ],
+        "example": {
+          "amount": "10.00",
+          "card_name": "Vendor one-time",
+          "cardholder": {
+            "email": "jane@example.com",
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "phone_number": "+12125550198"
+          },
+          "expiration_month": "12",
+          "expiration_year": "27",
+          "reference": "card-issue-001",
+          "type": "disposable"
+        }
+      },
+      "PartnerEntityIssuedCardSpendingControls": {
+        "properties": {
+          "billing_cycle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Cycle",
+            "description": "e.g. Weekly, Monthly"
+          },
+          "billing_cycle_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Cycle Day",
+            "description": "e.g. Sunday"
+          },
+          "daily_amount_limit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Amount Limit",
+            "description": "Major units, e.g. 50.00"
+          },
+          "daily_transaction_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Transaction Count"
+          },
+          "transaction_amount_limit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Amount Limit",
+            "description": "Major units"
+          },
+          "cycle_transaction_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Transaction Count"
+          }
+        },
+        "type": "object",
+        "title": "PartnerEntityIssuedCardSpendingControls",
+        "description": "Optional controls for virtual cards (major units for amount limits)."
+      },
+      "PartnerEntityIssuedCardholder": {
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone_number": {
+            "type": "string",
+            "title": "Phone Number",
+            "description": "E.164, e.g. +12125550198"
+          }
+        },
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name",
+          "email",
+          "phone_number"
+        ],
+        "title": "PartnerEntityIssuedCardholder"
       }
     },
     "securitySchemes": {
