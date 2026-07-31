@@ -88,6 +88,7 @@ Deposit instructions are the primary way to fund an account today. More funding 
 |--------|------|------------------------|
 | **Bank transfer to deposit coordinates** | Fiat | Send a bank transfer in the account currency to the `account_number` / bank fields returned by deposit instructions |
 | **Card funding** | Fiat USD / GBP / EUR | Charge the customer's card into the account ([Card funding](/deposit-accounts/card-funding)). `completed` means the charge succeeded; available balance updates after settlement (~six days). |
+| **Card issuing** | Fiat **USD** only (`active`) | Issue disposable / virtual cards that spend against the USD account ([Card issuing](/deposit-accounts/card-issuing)). EUR/GBP funding does not unlock issuing. |
 | **On-chain transfer** | Stablecoin | Send `USDC` on the stated `network` to the returned `wallet_address` |
 
 When an inflow settles, you receive the **`account.credited`** webhook ([Webhooks](/webhooks)). For card funding, that event includes `source: "card_charge"` and `credit.amount` is the net credit.
@@ -113,6 +114,8 @@ Never invent IBANs or wallet addresses.
 
 ## Next steps
 
+- [Card funding](/deposit-accounts/card-funding): charge a card into a fiat account
+- [Card issuing](/deposit-accounts/card-issuing): disposable / virtual cards on active USD
 - [Book-transfers](/deposit-accounts/book-transfers): move funds between your fiat accounts
 - [Stablecoin sends](/deposit-accounts/sends): USDC out (beta)
 - [Overview](/deposit-accounts/overview): status vocabulary, webhooks, errors

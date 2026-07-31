@@ -10,7 +10,7 @@ Integrate once against Element Pay — we route local African fiat (mobile money
 |---------|---------|------|
 | **OnRamp** | African local fiat — **see catalog** (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin on your chosen network |
 | **OffRamp** | Same corridors when enabled for your key | Customer sends stablecoin → receives fiat to momo or bank |
-| **International deposit accounts** | EUR / GBP / USD (+ optional USDC wallet) | Entity KYC → open deposit accounts (`/partner/entities/*`) → deposit instructions / **card funding** → same-currency fiat book-transfers; stablecoin sends in **beta** |
+| **International deposit accounts** | EUR / GBP / USD (+ optional USDC wallet) | Entity KYC → open deposit accounts (`/partner/entities/*`) → deposit instructions / **card funding** → **card issuing** (active USD) → same-currency fiat book-transfers; stablecoin sends in **beta** |
 
 Supported **countries and payment methods** (momo vs bank, provider lists, min/max) for African ramps are returned by discovery — start with `GET /partner/catalog`. Details: [Corridors overview](/corridors/overview). Deposit accounts: [International deposit accounts](/deposit-accounts/overview). Extra markets: contact compliance.
 

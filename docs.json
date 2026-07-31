@@ -47,6 +47,7 @@
               "deposit-accounts/kyc",
               "deposit-accounts/accounts",
               "deposit-accounts/card-funding",
+              "deposit-accounts/card-issuing",
               "deposit-accounts/currency-conversion",
               "deposit-accounts/book-transfers",
               "deposit-accounts/sends"

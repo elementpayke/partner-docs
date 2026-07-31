@@ -10,7 +10,7 @@ This is a **separate product** from:
 Use **one product per checkout**; do not mix entity deposit accounts with a local OnRamp/OffRamp quote in the same flow.
 
 <Note>
-**Shippable now:** entity KYC, open fiat/stablecoin deposit accounts, GET deposit instructions, fund (including **card funding** into fiat USD / GBP / EUR), same-currency **fiat book-transfers** between accounts under your API key (with idempotency), **currency conversion** (fiat ↔ USDC), plus status webhooks. **Card issuing** is available in **production** on an active USD account (sandbox issuing not supported end-to-end yet).  
+**Shippable now:** entity KYC, open fiat/stablecoin deposit accounts, GET deposit instructions, fund (including **card funding** into fiat USD / GBP / EUR), **card issuing** on an **active USD** account ([Card issuing](/deposit-accounts/card-issuing); sandbox e2e may be limited), same-currency **fiat book-transfers**, **currency conversion** (fiat ↔ USDC), plus status webhooks.  
 **Beta:** stablecoin **sends** (preview is stable; confirm/settlement is still stabilizing, see [Stablecoin sends](/deposit-accounts/sends)).  
 **Not this product:** the African quote-to-accept flow and external bank payouts.
 </Note>
@@ -25,7 +25,7 @@ Use **one product per checkout**; do not mix entity deposit accounts with a loca
     Open fiat (EUR/GBP/USD) and/or stablecoin (USDC) rails, then fetch deposit instructions. See [Accounts & deposits](/deposit-accounts/accounts).
   </Step>
   <Step title="Fund and move money">
-    Fund via deposit instructions or [card funding](/deposit-accounts/card-funding) (fiat USD / GBP / EUR). Then [convert](/deposit-accounts/currency-conversion) between a fiat account and USDC, move the same currency with [fiat book-transfers](/deposit-accounts/book-transfers), or send USDC out with [stablecoin sends](/deposit-accounts/sends) (currently in beta).
+    Fund via deposit instructions or [card funding](/deposit-accounts/card-funding) (fiat USD / GBP / EUR). Issue cards on an **active USD** account with [card issuing](/deposit-accounts/card-issuing). Then [convert](/deposit-accounts/currency-conversion) between a fiat account and USDC, move the same currency with [fiat book-transfers](/deposit-accounts/book-transfers), or send USDC out with [stablecoin sends](/deposit-accounts/sends) (currently in beta).
   </Step>
 </Steps>
 
@@ -116,12 +116,11 @@ Messages are safe for integrators. Do not surface raw upstream payloads to end-u
 
 - Individuals often reach `approved` without liveness.
 - Business KYB may remain `submitted` longer (manual / program-specific).
-- `USD` fiat accounts may stay `pending` in sandbox; use `EUR` or `GBP` for the full fiat flow, and contact support if a `USD` account stays `pending`. Production USD follows the normal `pending` → `active` path.
-- **Card issuing** is available in **production** on an **active USD** fiat account (not EUR/GBP). Sandbox issuing is not supported end-to-end today.
+- `USD` fiat accounts may stay `pending` in sandbox; use `EUR` or `GBP` for the full fiat flow, and contact support if a `USD` account stays `pending`. Production USD follows the normal `pending` → `active` path. **Card issuing** needs **active USD**—see [Card issuing](/deposit-accounts/card-issuing).
 - New accounts start at `0.00`; there is **no** free USDC grant in sandbox. Fund by an on-chain deposit to the wallet address, or an internal ops / FX seed (sandbox only), before testing a send.
 - Stablecoin **send confirm** may still hit a transient upstream error in sandbox while the dependency stabilizes; treat sends as beta.
 
-{/* INTERNAL TODO USD-ACTIVE-SANDBOX + ISSUING-SANDBOX: when sandbox USD is active, update the two bullets above and add/expand card-issuing sandbox guidance. */}
+{/* INTERNAL TODO USD-ACTIVE-SANDBOX + ISSUING-SANDBOX: when sandbox USD is active, update the USD pending note and expand card-issuing sandbox QA. */}
 {/* INTERNAL TODO CRYPTO-FUND-SESSIONS / USDC-FUND-SIM: when hosted crypto funding or a public USDC sim ships, update Fund an account. */}
 
 
@@ -130,6 +129,7 @@ Messages are safe for integrators. Do not surface raw upstream payloads to end-u
 - [Entity KYC](/deposit-accounts/kyc): individual + business onboarding
 - [Accounts & deposits](/deposit-accounts/accounts): open rails, deposit instructions, funding
 - [Card funding](/deposit-accounts/card-funding): charge a card into a fiat account
+- [Card issuing](/deposit-accounts/card-issuing): disposable / virtual cards on active USD
 - [Currency conversion](/deposit-accounts/currency-conversion): convert fiat ↔ USDC
 - [Book-transfers](/deposit-accounts/book-transfers): same-currency fiat moves
 - [Stablecoin sends](/deposit-accounts/sends): USDC out (beta)

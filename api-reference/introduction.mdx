@@ -39,9 +39,15 @@ Interactive reference for the Element Pay Partner API — discovery, quotes, ord
 | `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/sends/{send_id}` |
 | `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/card-charges` |
 | `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/card-charges/{charge_id}` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/transactions` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/freeze` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/unfreeze` |
 
 <Note>
-The **`/partner/entities/*`** surface (international deposit accounts / entity KYC, deposit instructions, book-transfers, stablecoin sends, and card funding) is exported into this site’s `openapi.json` under the `partner-entities` tag, so every endpoint above has its own Try-it page. For end-to-end walkthroughs, see [International deposit accounts](/deposit-accounts/overview) and [Card funding](/deposit-accounts/card-funding).
+The **`/partner/entities/*`** surface (international deposit accounts / entity KYC, deposit instructions, book-transfers, stablecoin sends, card funding, and card issuing) is exported into this site’s `openapi.json` under the `partner-entities` tag, so every endpoint above has its own Try-it page. For end-to-end walkthroughs, see [International deposit accounts](/deposit-accounts/overview), [Card funding](/deposit-accounts/card-funding), and [Card issuing](/deposit-accounts/card-issuing).
 </Note>
 
 ## Try it
