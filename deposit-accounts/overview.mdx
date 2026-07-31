@@ -10,7 +10,7 @@ This is a **separate product** from:
 Use **one product per checkout**; do not mix entity deposit accounts with a local OnRamp/OffRamp quote in the same flow.
 
 <Note>
-**Shippable now:** entity KYC, open fiat/stablecoin deposit accounts, GET deposit instructions, fund (including **card acquiring** into fiat USD / GBP / EUR), same-currency **fiat book-transfers** between accounts under your API key (with idempotency), **currency conversion** (fiat ↔ USDC), plus status webhooks.  
+**Shippable now:** entity KYC, open fiat/stablecoin deposit accounts, GET deposit instructions, fund (including **card funding** into fiat USD / GBP / EUR), same-currency **fiat book-transfers** between accounts under your API key (with idempotency), **currency conversion** (fiat ↔ USDC), plus status webhooks.  
 **Beta:** stablecoin **sends** (preview is stable; confirm/settlement is still stabilizing, see [Stablecoin sends](/deposit-accounts/sends)).  
 **Not this product:** the African quote-to-accept flow, external bank payouts, and virtual card issuing.
 </Note>
@@ -25,7 +25,7 @@ Use **one product per checkout**; do not mix entity deposit accounts with a loca
     Open fiat (EUR/GBP/USD) and/or stablecoin (USDC) rails, then fetch deposit instructions. See [Accounts & deposits](/deposit-accounts/accounts).
   </Step>
   <Step title="Fund and move money">
-    Fund via deposit instructions or [card acquiring](/deposit-accounts/card-acquiring) (fiat USD / GBP / EUR). Then [convert](/deposit-accounts/currency-conversion) between a fiat account and USDC, move the same currency with [fiat book-transfers](/deposit-accounts/book-transfers), or send USDC out with [stablecoin sends](/deposit-accounts/sends) (currently in beta).
+    Fund via deposit instructions or [card funding](/deposit-accounts/card-funding) (fiat USD / GBP / EUR). Then [convert](/deposit-accounts/currency-conversion) between a fiat account and USDC, move the same currency with [fiat book-transfers](/deposit-accounts/book-transfers), or send USDC out with [stablecoin sends](/deposit-accounts/sends) (currently in beta).
   </Step>
 </Steps>
 
@@ -89,7 +89,7 @@ Configure `webhook_url` (and `webhook_secret`) on your API key. Signing is ident
 | `entity.status.changed` | Entity KYC status changed |
 | `account.opened` | Deposit account created (rail first opened) |
 | `account.ready` | Deposit coordinates available (IBAN / `wallet_address`) |
-| `account.credited` | Inflow settled on an account (including card acquiring; net credit) |
+| `account.credited` | Inflow settled on an account (including card funding; net credit) |
 | `card_charge.status.changed` | Card charge status changed |
 | `account.send.completed` / `account.send.failed` | Stablecoin send terminal (**beta**) |
 
@@ -124,7 +124,7 @@ Messages are safe for integrators. Do not surface raw upstream payloads to end-u
 
 - [Entity KYC](/deposit-accounts/kyc): individual + business onboarding
 - [Accounts & deposits](/deposit-accounts/accounts): open rails, deposit instructions, funding
-- [Card acquiring](/deposit-accounts/card-acquiring): charge a card into a fiat account
+- [Card funding](/deposit-accounts/card-funding): charge a card into a fiat account
 - [Currency conversion](/deposit-accounts/currency-conversion): convert fiat ↔ USDC
 - [Book-transfers](/deposit-accounts/book-transfers): same-currency fiat moves
 - [Stablecoin sends](/deposit-accounts/sends): USDC out (beta)

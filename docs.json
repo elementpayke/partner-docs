@@ -46,7 +46,7 @@
               "deposit-accounts/overview",
               "deposit-accounts/kyc",
               "deposit-accounts/accounts",
-              "deposit-accounts/card-acquiring",
+              "deposit-accounts/card-funding",
               "deposit-accounts/currency-conversion",
               "deposit-accounts/book-transfers",
               "deposit-accounts/sends"
@@ -99,6 +99,10 @@
     {
       "source": "/deposit-accounts/international",
       "destination": "/deposit-accounts/overview"
+    },
+    {
+      "source": "/deposit-accounts/card-acquiring",
+      "destination": "/deposit-accounts/card-funding"
     }
   ],
   "footer": {

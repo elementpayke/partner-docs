@@ -1,6 +1,6 @@
-# Card acquiring
+# Card funding
 
-Charge a customer's card to **fund a fiat deposit account** (USD, GBP, or EUR). This is **card acquiring** (a deposit into the account), not virtual card issuing.
+Charge a customer's card to **fund a fiat deposit account** (USD, GBP, or EUR). Card funding deposits into the account. This is **not** virtual card issuing.
 
 One-shot charge: there is no preview or quote step. Open an active fiat rail first ([Accounts & deposits](/deposit-accounts/accounts)), then `POST` a charge and confirm status with `GET` and webhooks.
 
@@ -16,7 +16,7 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`.
 | **Shape** | Single `POST .../card-charges` (no preview). |
 | **Idempotency** | `reference` must be unique per account. Reusing the same `reference` returns the existing charge. Upstream may also return `409` on a duplicate reference. |
 | **Response fields** | `charge_id`, `status`, `amount`, `charge_amount`, `fee`, `last_four`, `card_brand`, `next_action` |
-| **Fees** | `charge_amount` = customer debit. `fee` = acquiring fee. Account credit is **net** (`charge_amount − fee`). Sandbox example: debit `10.00`, fee `0.75` → about `9.25` net credit. |
+| **Fees** | `charge_amount` = customer debit. `fee` = card processing fee. Account credit is **net** (`charge_amount − fee`). Sandbox example: debit `10.00`, fee `0.75` → about `9.25` net credit. |
 | **Confirm paid** | After a webhook or a 3DS `return_url` redirect, always **re-GET** the charge. Do not treat `return_url` alone as paid. |
 
 Statuses you will see: `processing` → `requires_action` (3DS) → `completed` \| `failed` \| `cancelled`.

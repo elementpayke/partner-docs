@@ -25,7 +25,7 @@ Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox 
 | `account.opened` | Deposit account created |
 | `account.ready` | Deposit coordinates available (IBAN / wallet) |
 | `account.credited` | Inflow settled on an account |
-| `card_charge.status.changed` | Card charge status changed (acquiring) |
+| `card_charge.status.changed` | Card charge status changed (card funding) |
 | `account.send.completed` | Stablecoin send terminal success (beta) |
 | `account.send.failed` | Stablecoin send terminal failure (beta) |
 
@@ -130,7 +130,7 @@ Entity, account, and send events wrap a typed object and add an `event_type` fie
 }
 ```
 
-`account.credited` fires for fiat bank inflows, on-chain USDC deposits, and **card acquiring**. For card funding, the payload includes `source: "card_charge"` and `credit.amount` is the **net** credit (`charge_amount − fee`). Always re-GET the charge after this event; do not treat the webhook alone as final.
+`account.credited` fires for fiat bank inflows, on-chain USDC deposits, and **card funding**. For card funding, the payload includes `source: "card_charge"` and `credit.amount` is the **net** credit (`charge_amount − fee`). Always re-GET the charge after this event; do not treat the webhook alone as final.
 
 ```json
 {
@@ -153,7 +153,7 @@ Entity, account, and send events wrap a typed object and add an `event_type` fie
 }
 ```
 
-`card_charge.status.changed` covers transitions including `requires_action`, `completed`, and `failed`. After a 3DS `return_url` redirect or this webhook, always `GET .../card-charges/{charge_id}`. See [Card acquiring](/deposit-accounts/card-acquiring).
+`card_charge.status.changed` covers transitions including `requires_action`, `completed`, and `failed`. After a 3DS `return_url` redirect or this webhook, always `GET .../card-charges/{charge_id}`. See [Card funding](/deposit-accounts/card-funding).
 
 ```json
 {
