@@ -26,8 +26,8 @@ Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox 
 | `account.ready` | Deposit coordinates available (IBAN / wallet) |
 | `account.credited` | Inflow settled on an account |
 | `card_charge.status.changed` | Card charge status changed (card funding) |
-| `account.send.completed` | Stablecoin send terminal success (beta) |
-| `account.send.failed` | Stablecoin send terminal failure (beta) |
+| `account.send.completed` | Stablecoin send terminal success |
+| `account.send.failed` | Stablecoin send terminal failure |
 
 These entity/account events carry an extra **`X-Idempotency-Key`** header (equal to `X-Webhook-Id`) and an `event_type` field in the body; signing is otherwise identical to order webhooks. They are **not** the same as legacy `deposit_account.ready` from other international ramp products. See [International deposit accounts](/deposit-accounts/overview).
 

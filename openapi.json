@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Element Pay Partner API",
-    "description": "Provider-neutral partner APIs for fiat \u2194 crypto corridors and deposit accounts. Discover corridors, create a binding quote, accept it, and receive webhooks. Onboard entities, open fiat and USDC deposit accounts, move funds with same-currency book transfers, convert between fiat and USDC via quote/accept, send USDC (beta), fund fiat accounts via card charges, and issue disposable or virtual cards on active USD accounts. African local fiat is auto-routed by corridor.",
+    "description": "Provider-neutral partner APIs for fiat \u2194 crypto corridors and deposit accounts. Discover corridors, create a binding quote, accept it, and receive webhooks. Onboard entities, open fiat and USDC deposit accounts, move funds with same-currency book transfers, convert between fiat and USDC via quote/accept, send USDC, fund fiat accounts via card charges, and issue disposable or virtual cards on active USD accounts. African local fiat is auto-routed by corridor.",
     "version": "1.0.0"
   },
   "servers": [
@@ -8019,7 +8019,7 @@
         },
         "responses": {
           "201": {
-            "description": "Stablecoin send preview (beta)",
+            "description": "Stablecoin send preview",
             "content": {
               "application/json": {
                 "schema": {
@@ -8325,7 +8325,7 @@
         "tags": [
           "partner-entities"
         ],
-        "summary": "Confirm a stablecoin send (beta)",
+        "summary": "Confirm a stablecoin send",
         "operationId": "partner_confirm_send_partner_entities__entity_id__accounts__account_id__sends_post",
         "security": [
           {
@@ -8370,7 +8370,7 @@
         },
         "responses": {
           "201": {
-            "description": "Stablecoin send submitted (beta)",
+            "description": "Stablecoin send submitted",
             "content": {
               "application/json": {
                 "schema": {
@@ -8722,7 +8722,7 @@
         "tags": [
           "partner-entities"
         ],
-        "summary": "Get a stablecoin send (beta)",
+        "summary": "Get a stablecoin send",
         "operationId": "partner_get_send_partner_entities__entity_id__accounts__account_id__sends__send_id__get",
         "security": [
           {
@@ -8763,7 +8763,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Stablecoin send status (beta)",
+            "description": "Stablecoin send status",
             "content": {
               "application/json": {
                 "schema": {
@@ -12856,7 +12856,7 @@
     },
     {
       "name": "partner-entities",
-      "description": "Entity onboarding, deposit accounts, deposit instructions, same-currency book transfers, card acquiring into fiat accounts, and stablecoin sends (beta)."
+      "description": "Entity onboarding, deposit accounts, deposit instructions, same-currency book transfers, card acquiring into fiat accounts, and stablecoin sends."
     }
   ]
 }

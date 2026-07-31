@@ -1,10 +1,12 @@
-# Stablecoin sends (beta)
+# Stablecoin sends
 
 Send USDC from a stablecoin account to an external or in-network wallet. Same **preview then confirm** shape as [book-transfers](/deposit-accounts/book-transfers), using `to_address` instead of `to_account_id`.
 
 <Warning>
-**Beta.** Preview is stable, but confirm/settlement is still stabilizing and may return a transient upstream error in sandbox. Do not present sends as generally available until confirm settles green in your environment. Treat the `account.send.completed` / `account.send.failed` webhooks as the source of truth.
+**Sandbox limitation:** confirm/settlement can hit a transient upstream error in sandbox even when preview succeeds. **Production** sends work on a funded USDC account. Treat `account.send.completed` / `account.send.failed` (or GET send) as the source of truth—do not rely on sandbox alone for send QA.
 </Warning>
+
+{/* INTERNAL TODO: when sandbox send confirm is reliable, soften/remove the sandbox limitation Warning above. */}
 
 - **Minimum:** `1.00` USDC. Smaller amounts fail fast at preview with `422 { field: "amount", minimum: "1.00" }`.
 - **Network** must match the account (`Base` \| `Polygon`).
@@ -12,7 +14,7 @@ Send USDC from a stablecoin account to an external or in-network wallet. Same **
 - **Send statuses:** `processing` → `submitted` → `completed` \| `failed`.
 
 <Note>
-All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`. `$ACCOUNT_ID` is the source **stablecoin** account, funded first (see [Fund an account](/deposit-accounts/accounts#fund-an-account)).
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production). `$ACCOUNT_ID` is the source **stablecoin** account, funded first (see [Fund an account](/deposit-accounts/accounts#fund-an-account)).
 </Note>
 
 ## Preview
@@ -60,3 +62,4 @@ Confirm requires a funded USDC balance (see [Fund an account](/deposit-accounts/
 
 - [Accounts & deposits](/deposit-accounts/accounts): open and fund a stablecoin rail
 - [Overview](/deposit-accounts/overview): status vocabulary, webhooks, errors
+- [API reference](/api-reference/introduction): Try-it for preview / confirm / get send
