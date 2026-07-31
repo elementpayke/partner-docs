@@ -39,9 +39,18 @@ Statuses you will see: `processing` → `requires_action` (3DS) → `completed` 
 | Value | When |
 |-------|------|
 | `3ds_disabled` | Non-3DS test cards (sandbox quick path) |
-| `3ds_required` | Requires HTTPS `return_url`. The hosted challenge is on the provider; `return_url` is only the browser landing page after the challenge. Then **GET** the charge. |
+| `3ds_required` | Requires HTTPS `return_url` **and** a full `browser_info` object. The hosted challenge is on the provider; `return_url` is only the browser landing page after the challenge. Then **GET** the charge. |
 
-Production should prefer `3ds_required` with `return_url` and `browser_info`. A create that needs a challenge returns `status: "requires_action"` and `next_action: { "type": "redirect_to_url", "url": "…" }`. Redirect the customer, then re-GET.
+Production should prefer `3ds_required`. Send both:
+
+- `return_url` (HTTPS)
+- `browser_info` (full object: for example `user_agent`, `accept_header`, `language`, `java_enabled`, `color_depth`, `screen_height`, `screen_width`, `timezone_offset`)
+
+If the create response has `status: "requires_action"` and `next_action.url`, redirect the customer to that URL, then re-GET. If `next_action` is absent, still re-GET (and/or wait for webhooks); do not assume the first response is final.
+
+<Note>
+**Sandbox 3DS:** the success 3DS test PAN (`4000000000002503`) may return `completed` with **no** `next_action`. Partners must still branch on `requires_action` when it is present, and **always re-GET** the charge either way.
+</Note>
 
 ## Sandbox test cards
 
@@ -181,7 +190,9 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/card-ch
   }' | jq '.data'
 ```
 
-Expect `status: "requires_action"` and `next_action.url`. Redirect the customer to that URL (hosted challenge). When they land on `return_url`, **re-GET** the charge (and/or wait for webhooks).
+`auth_model: "3ds_required"` requires both `return_url` (HTTPS) and a full `browser_info` object (as in the curl below).
+
+If the response is `requires_action` with `next_action.url`, redirect the customer to that URL (hosted challenge), then **re-GET**. In sandbox, the success 3DS PAN may instead complete immediately with `next_action: null`; still **re-GET** (and/or wait for webhooks). Never treat `return_url` query params alone as paid.
 
 ## Webhooks
 
