@@ -2,7 +2,7 @@
 
 Issue **disposable** or **virtual** cards on an **active fiat USD** deposit account. The card spends against that account’s balance. This is **not** [card funding](/deposit-accounts/card-funding) (acquiring into an account).
 
-Interactive request/response shapes live in the [API reference](/api-reference/introduction) Try-it for each operation below—use those rather than hardcoding schemas from this guide.
+Interactive request/response shapes live in the [API reference](/api-reference/introduction) Try-it for each operation below. Use those rather than hardcoding schemas from this guide.
 
 | Method | Path |
 |--------|------|
@@ -20,15 +20,15 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` 
 ## Prerequisites
 
 1. Entity is `approved` ([Entity KYC](/deposit-accounts/kyc)).
-2. Open a **fiat USD** account and wait until `status` is `active` ([Accounts & deposits](/deposit-accounts/accounts)—`account.ready` or poll GET).
+2. Open a **fiat USD** account and wait until `status` is `active` ([Accounts & deposits](/deposit-accounts/accounts); `account.ready` or poll GET).
 3. Then call `POST …/cards` on that account.
 
 <Warning>
-**USD only.** Issuing requires an **active fiat USD** funding account. EUR / GBP (and card funding or IBAN funding of those rails) do **not** unlock issuing—those requests return `422`. If the USD account is still `pending`, create / list / lifecycle calls fail readiness checks; wait until `active`.
+**USD only.** Issuing requires an **active fiat USD** funding account. EUR / GBP (and card funding or IBAN funding of those rails) do **not** unlock issuing; those requests return `422`. If the USD account is still `pending`, create / list / lifecycle calls fail readiness checks; wait until `active`.
 </Warning>
 
 <Note>
-**Production** issuing is available on active USD. In **sandbox**, USD rails may stay `pending`, and sandbox cannot generate card spend—e2e issuing QA may be limited. Prefer production USD readiness for full issuing flows.
+**Production** issuing is available on active USD. In **sandbox**, USD rails may stay `pending`, and sandbox cannot generate card spend, so e2e issuing QA may be limited. Prefer production USD readiness for full issuing flows.
 </Note>
 
 {/* INTERNAL TODO USD-ACTIVE-SANDBOX + ISSUING-SANDBOX: when sandbox USD is active, soften the sandbox note above and expand sandbox QA guidance. */}
@@ -38,12 +38,12 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` 
 | `type` | Behavior |
 |--------|----------|
 | `disposable` | Single-use. Requires `expiration_month` and `expiration_year`. |
-| `virtual` | Reusable. Optional `spending_controls` (daily limits, cycle, etc.—see Try-it schema). |
+| `virtual` | Reusable. Optional `spending_controls` (daily limits, cycle, etc.; see Try-it schema). |
 
 ## `amount` is not a wallet load
 
 <Warning>
-**`amount` is optional / may be null** — it is **not** a prepaid top-up. The card spends against the **active USD** account balance. Sending `amount` does not load a separate card wallet.
+**`amount` is optional / may be null.** It is **not** a prepaid top-up. The card spends against the **active USD** account balance. Sending `amount` does not load a separate card wallet.
 </Warning>
 
 ## Create (disposable)
@@ -75,12 +75,12 @@ For **virtual**, set `"type": "virtual"` and omit disposable-only expiry fields 
 ### Credentials (create once)
 
 <Warning>
-**PAN and CVV are returned only on a successful create.** `GET` never returns PAN/CVV (you get `last_four`, status, and metadata). Replaying the same `reference` returns the existing card **without** credentials. Store create-response secrets securely if your product needs them—never log PAN/CVV.
+**PAN and CVV are returned only on a successful create.** `GET` never returns PAN/CVV (you get `last_four`, status, and metadata). Replaying the same `reference` returns the existing card **without** credentials. Store create-response secrets securely if your product needs them. Never log PAN/CVV.
 </Warning>
 
 ### `reference`
 
-Unique per account. The same `reference` returns the **same** card (no second issue). After a **failed** create, use a **new** `reference`—do not retry the same value expecting a new upstream card.
+Unique per account. The same `reference` returns the **same** card (no second issue). After a **failed** create, use a **new** `reference`. Do not retry the same value expecting a new upstream card.
 
 ## List and get
 
@@ -106,7 +106,7 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$
   -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-**Freeze** blocks authorizations; **unfreeze** restores an active card. **API Ready** for freeze / unfreeze / list / get; there is **no** partner webhook for create or freeze — poll GET card / list.
+**Freeze** blocks authorizations; **unfreeze** restores an active card. **API Ready** for freeze / unfreeze / list / get; there is **no** partner webhook for create or freeze. Poll GET card / list.
 
 ## Transactions
 
@@ -116,7 +116,7 @@ curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$CARD_ID/
 ```
 
 <Note>
-**Sandbox:** card spend is not simulated—`GET …/transactions` is typically empty. There is no partner “simulate spend” API. Use production (or a funded active USD account with real authorizations) to observe transactions.
+**Sandbox:** card spend is not simulated; `GET …/transactions` is typically empty. There is no partner “simulate spend” API. Use production (or a funded active USD account with real authorizations) to observe transactions.
 </Note>
 
 {/* INTERNAL TODO CARD-SPEND-SANDBOX: if sandbox card-transactions simulation ships, rewrite the note above. */}
@@ -126,9 +126,9 @@ curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$CARD_ID/
 | Situation | Typical outcome |
 |-----------|-----------------|
 | Funding account not fiat `USD` | `422` |
-| USD account not `active` (`pending`, etc.) | `422` readiness failure—wait for `active` |
+| USD account not `active` (`pending`, etc.) | `422` readiness failure; wait for `active` |
 | Same `reference` after a successful create | Existing card returned (no new credentials) |
-| Retry same `reference` after a failed create | Do not expect a new card—use a **new** `reference` |
+| Retry same `reference` after a failed create | Do not expect a new card; use a **new** `reference` |
 
 Full envelopes: [Errors](/errors). Field-level validation: Try-it / OpenAPI on each operation.
 
@@ -139,4 +139,4 @@ Full envelopes: [Errors](/errors). Field-level validation: Try-it / OpenAPI on e
 - [Overview](/deposit-accounts/overview): deposit-account map
 - [API reference](/api-reference/introduction): Try-it for all six `…/cards*` operations
 
-No partner webhooks for issue / freeze / unfreeze — poll GET card / list / transactions. `card_charge.status.changed` is **card funding** only.
+No partner webhooks for issue / freeze / unfreeze. Poll GET card / list / transactions. `card_charge.status.changed` is **card funding** only.

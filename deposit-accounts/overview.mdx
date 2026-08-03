@@ -16,21 +16,20 @@ Honest **Ready / Limited / Hold** for integrators (same shapes as [errors](/erro
 | Job | Status | Notes |
 |-----|--------|--------|
 | Individual KYC | **Ready** | Wait for `approved` |
-| Business KYB | **Ready** | Prefer single-officer path first; multi-officer has PoA / document constraints — see [Entity KYC](/deposit-accounts/kyc) |
+| Business KYB | **Ready** | Prefer single-officer path first; multi-officer has PoA / document constraints. See [Entity KYC](/deposit-accounts/kyc). |
 | Open EUR / GBP / CAD (fiat) | **Ready** | When `active` + deposit-instructions |
 | Open USDC / USDT wallets | **Ready** | When `active`; fund via returned `wallet_address` |
-| Open USD — business | **Ready** | Poll until `active` before deposit-instructions or [card issuing](/deposit-accounts/card-issuing) |
-| Open USD — individual | **Limited** | Often stays `pending` longer (rail provisioning). Not a partner bug — readiness only |
+| Open USD (business) | **Ready** | Poll until `active` before deposit-instructions or [card issuing](/deposit-accounts/card-issuing) |
+| Open USD (individual) | **Limited** | Often stays `pending` longer (rail provisioning). Not a partner bug; this is readiness only. |
 | Fiat book-transfer | **Ready** | Same currency, accounts under your API key |
-| Stablecoin or inter-entity “book-transfer” | **Hold** | Product does **not** exist — fiat book-transfer only |
+| Stablecoin or inter-entity “book-transfer” | **Hold** | Product does **not** exist. Fiat book-transfer only. |
 | External USDC / USDT send | **Ready** (live) | Sandbox send confirm **limited** |
 | Send → another party’s standing deposit wallet | **Limited** | Do not treat as always credits destination; prefer external wallet destinations |
 | Convert USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC | **Ready** | Same entity; **active** accounts; see [Currency conversion](/deposit-accounts/currency-conversion) |
 | GBP OffRamp convert | **Hold** | Quote may work; accept can fail (`422` transfer not completed) |
 | Card **issue** (virtual / disposable on active USD) | **Ready** | Live on active USD; sandbox e2e may be limited |
 | Card freeze / unfreeze / list / get / transactions | **API Ready** | Transactions empty until real spend |
-| Card **funding** (card-charges into fiat) | **Limited** | Not full GA for all markets; settlement lag applies — [Card funding](/deposit-accounts/card-funding) |
-| Hosted funding sessions / dashboard checkout | **Out of partner docs** | Not part of this product surface |
+| Card **funding** (card-charges into fiat) | **Limited** | Not full GA for all markets; settlement lag applies. See [Card funding](/deposit-accounts/card-funding). |
 
 ## The flow
 
@@ -126,9 +125,9 @@ Configure `webhook_url` (and `webhook_secret`) on your API key. See [Webhooks](/
 | `account.ready` | Usable coordinates (deposit-ready) |
 | `account.credited` | Inbound credit settled |
 | `account.send.completed` / `account.send.failed` | External wallet send terminal |
-| `card_charge.status.changed` | Card **funding** (acquiring) intent only — not card **issue** lifecycle |
+| `card_charge.status.changed` | Card **funding** (acquiring) intent only, not card **issue** lifecycle |
 
-**Issued cards** (virtual / disposable): no dedicated partner webhook for create / freeze / unfreeze today — poll `GET …/cards/{id}` or list. Conversions emit **order** webhooks (`order.processing` / `order.settled` / `order.failed`).
+**Issued cards** (virtual / disposable): no dedicated partner webhook for create / freeze / unfreeze today. Poll `GET …/cards/{id}` or list. Conversions emit **order** webhooks (`order.processing` / `order.settled` / `order.failed`).
 
 ## Errors
 

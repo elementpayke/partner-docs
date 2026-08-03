@@ -25,13 +25,13 @@ Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox 
 | `account.opened` | Deposit account created |
 | `account.ready` | Deposit coordinates available (IBAN / wallet) |
 | `account.credited` | Inflow settled on an account |
-| `card_charge.status.changed` | Card **funding** payment intent (acquiring) — not card **issue** lifecycle |
+| `card_charge.status.changed` | Card **funding** payment intent (acquiring), not card **issue** lifecycle |
 | `account.send.completed` | Stablecoin send terminal success |
 | `account.send.failed` | Stablecoin send terminal failure |
 
 These entity/account events carry an extra **`X-Idempotency-Key`** header (equal to `X-Webhook-Id`) and an `event_type` field in the body; signing is otherwise identical to order webhooks. They are **not** the same as legacy `deposit_account.ready` from other international ramp products. See [International deposit accounts](/deposit-accounts/overview).
 
-**Issued cards** (virtual / disposable): no dedicated partner events for create / freeze / unfreeze today — poll `GET …/cards/{id}` or list.
+**Issued cards** (virtual / disposable): no dedicated partner events for create / freeze / unfreeze today. Poll `GET …/cards/{id}` or list.
 
 ## HTTP delivery
 

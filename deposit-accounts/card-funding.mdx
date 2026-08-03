@@ -20,7 +20,7 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`.
 </Note>
 
 <Warning>
-**Settlement timing:** `status: "completed"` means the card charge succeeded. Available balance updates only after settlement (typically about **six days**). Do not treat an unchanged `GET …/accounts/{id}` `balance.available` right after create as a failed charge. For UX, key off charge status and `card_charge.status.changed`, then balance or `account.credited` once settlement posts—not an immediate balance poll alone.
+**Settlement timing:** `status: "completed"` means the card charge succeeded. Available balance updates only after settlement (typically about **six days**). Do not treat an unchanged `GET …/accounts/{id}` `balance.available` right after create as a failed charge. For UX, key off charge status and `card_charge.status.changed`, then balance or `account.credited` once settlement posts, not an immediate balance poll alone.
 </Warning>
 
 {/* INTERNAL TODO USD-ACTIVE-SANDBOX: when sandbox USD is reliably active, drop any EUR/GBP-only Try-it hints that imply USD cannot be used in sandbox for card funding. */}
@@ -41,7 +41,7 @@ Statuses you will see: `processing` → `requires_action` (3DS) → `completed` 
 
 ## Billing address and `state`
 
-`billing_address.state` is **required**. Send the province, county, or other subdivision for the billing country—not a US-only concept. Prefer a real subdivision name over a placeholder.
+`billing_address.state` is **required**. Send the province, county, or other subdivision for the billing country (not a US-only concept). Prefer a real subdivision name over a placeholder.
 
 Example (Kenya): `"country": "KE"`, `"state": "Nairobi"`, with city / line / postal as usual.
 
@@ -133,7 +133,7 @@ Typical completed response (sandbox):
 }
 ```
 
-When settlement posts, net is modeled as `charge_amount − fee` (here `10.00 − 0.75 ≈ 9.25`). That available-balance update is delayed (see settlement timing above)—do not expect it on the create response.
+When settlement posts, net is modeled as `charge_amount − fee` (here `10.00 − 0.75 ≈ 9.25`). That available-balance update is delayed (see settlement timing above). Do not expect it on the create response.
 
 ### Kenya-style billing (province in `state`)
 

@@ -12616,7 +12616,7 @@
               }
             ],
             "title": "Amount",
-            "description": "Optional. Not a prepaid load \u2014 the card spends against the active USD account balance. PAN/CVV are create-only.",
+            "description": "Optional. Not a prepaid load; the card spends against the active USD account balance. PAN/CVV are create-only.",
             "examples": [
               "10.00",
               null

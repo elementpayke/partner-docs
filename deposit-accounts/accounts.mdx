@@ -13,14 +13,14 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` 
 | **Fiat** | `EUR`, `GBP`, `USD`, `CAD` | Bank deposit coordinates when `active` |
 | **Stablecoin** | `USDC`, `USDT` (with `network`, e.g. `Base` / `Polygon`) | On-chain `wallet_address` when ready |
 
-Opening an unsupported currency returns `422` with the supported list. Currency **conversion** pairs are separate — see [Currency conversion](/deposit-accounts/currency-conversion).
+Opening an unsupported currency returns `422` with the supported list. Currency **conversion** pairs are separate; see [Currency conversion](/deposit-accounts/currency-conversion).
 
 ### USD and readiness
 
 | Entity type | Typical USD path |
 |-------------|------------------|
 | **Business** | Often reaches `active`; poll until active before deposit-instructions or [card issuing](/deposit-accounts/card-issuing) |
-| **Individual** | **Limited** — may stay `pending` longer after a successful open. Treat as readiness, not a failed open |
+| **Individual** | **Limited**. May stay `pending` longer after a successful open. Treat as readiness, not a failed open. |
 
 **Partner rules (any currency)**
 
@@ -54,7 +54,7 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts" \
   }' | jq '.data'
 ```
 
-Optional: `display_name` (portfolio label only — **not** the bank beneficiary name). `network` applies to stablecoin only (case normalized).
+Optional: `display_name` (portfolio label only; **not** the bank beneficiary name). `network` applies to stablecoin only (case normalized).
 
 Account open is idempotent per `(entity, asset_type, currency, network)`: first open `201`; re-open returns the existing account (`200`).
 
@@ -85,10 +85,10 @@ When ready (`status: "ready"`), expect:
 | Field | Fiat | Stablecoin |
 |-------|------|------------|
 | `account_holder_name` | Beneficiary / legal name for bank UX | Present when returned; use for display context |
-| `account_number` | Bank account / IBAN (IBAN is in this field) | — |
-| `bank_code` / `bank_name` | When returned | — |
-| `wallet_address` / `network` | — | Deposit target |
-| `chain_disclaimer` | — | Show **verbatim** |
+| `account_number` | Bank account / IBAN (IBAN is in this field) | n/a |
+| `bank_code` / `bank_name` | When returned | n/a |
+| `wallet_address` / `network` | n/a | Deposit target |
+| `chain_disclaimer` | n/a | Show **verbatim** |
 | `instructions` | Human copy | Human copy |
 
 <Warning>
@@ -105,14 +105,10 @@ If not ready: **422** with message and hint. Never invent or cache stale coordin
 |--------|------|--------|-----|
 | **Bank transfer** | Fiat | Ready when `active` | Transfer in account currency to deposit-instructions bank fields |
 | **On-chain transfer** | Stablecoin | Ready when `active` | Send matching asset/network to `wallet_address`; honor `chain_disclaimer` |
-| **Card funding** | Fiat USD / GBP / EUR | **Limited** | [Card funding](/deposit-accounts/card-funding) — not full corridor GA; ~6 day settlement lag |
-| **Card issuing** | Fiat **USD** `active` | Ready | [Card issuing](/deposit-accounts/card-issuing) — spends against USD balance; not a funding method for EUR/GBP |
+| **Card funding** | Fiat USD / GBP / EUR | **Limited** | [Card funding](/deposit-accounts/card-funding); not full corridor GA; ~6 day settlement lag |
+| **Card issuing** | Fiat **USD** `active` | Ready | [Card issuing](/deposit-accounts/card-issuing); spends against USD balance, not a funding method for EUR/GBP |
 
 When an inflow settles, you receive **`account.credited`** ([Webhooks](/webhooks)). For card funding, `source` may be `card_charge` and `credit.amount` is net of fee when posted.
-
-<Note>
-Hosted funding sessions / third-party checkout UIs are **out of partner docs**. Fund stablecoins via the returned wallet address (+ disclaimer) only.
-</Note>
 
 <Note>
 **Sandbox:** new accounts start at `0.00`. No free USDC/USDT grant. Fund on-chain (or internal ops seed) before [sends](/deposit-accounts/sends).

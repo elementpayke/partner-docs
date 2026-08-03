@@ -15,13 +15,13 @@ Currency conversion uses **`/partner/orders`** (quote → accept), **not** `/par
 | OnRamp (fiat / stable debit → asset) | EUR → USDC (quoted live); USDT ↔ CAD / EUR patterns; USD → USDC |
 | OffRamp / stable flows | USDT → USD; other catalog rails as discovery lists |
 
-Always use the **quote response** `rate`, `user_pays`, and `user_receives` for UX — never hardcode rates. Sample live OnRamp (quote only, ~2026-08-03): rate **1.129961**, **1.00 EUR → 1.13 USDC** — illustrative only, not an SLA.
+Always use the **quote response** `rate`, `user_pays`, and `user_receives` for UX; never hardcode rates. Sample live OnRamp (quote only, ~2026-08-03): rate **1.129961**, **1.00 EUR → 1.13 USDC** (illustrative only, not an SLA).
 
 ### Hold
 
 | Path | Status |
 |------|--------|
-| **GBP OffRamp** | **Hold** — quote can succeed; accept may fail with `422` e.g. `"Transfer could not be completed"`. Do not integrate as GA. |
+| **GBP OffRamp** | **Hold**. Quote can succeed; accept may fail with `422` e.g. `"Transfer could not be completed"`. Do not integrate as GA. |
 | Fiat → fiat (e.g. EUR → GBP) | Not supported |
 
 {/* INTERNAL TODO GBP-OFFRAMP: when accept stabilizes, move GBP OffRamp to Ready and remove Hold. */}
@@ -41,11 +41,11 @@ Find the conversion rail (names like **"EUR account to USDC"** / OnRamp or rever
 
 ## 2. Quote
 
-Quotes are **short-lived** (partner TTL capped by upstream FX — about 2–3 minutes in sandbox). Read `expires_at` and accept promptly.
+Quotes are **short-lived** (partner TTL capped by upstream FX, about 2 to 3 minutes in sandbox). Read `expires_at` and accept promptly.
 
 ### Minimal OnRamp body (working pattern)
 
-`account_id` is the **debit** account (fiat or source stable per rail). For many OnRamps the credit rail is ensured automatically — follow Try-it / OpenAPI if the rail requires `destination_account_id`.
+`account_id` is the **debit** account (fiat or source stable per rail). For many OnRamps the credit rail is ensured automatically. Follow Try-it / OpenAPI if the rail requires `destination_account_id`.
 
 ```bash
 curl -sS -X POST "$BASE/partner/orders/quote" \
@@ -67,7 +67,7 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
 
 ### OffRamp (crypto / stable → fiat)
 
-`account_id` is the **source** account. `destination_account_id` is the fiat credit account when required (if omitted, API may pick the first matching fiat rail — prefer explicit ids).
+`account_id` is the **source** account. `destination_account_id` is the fiat credit account when required (if omitted, API may pick the first matching fiat rail; prefer explicit ids).
 
 ```bash
 curl -sS -X POST "$BASE/partner/orders/quote" \
@@ -125,7 +125,7 @@ Avoid **GBP OffRamp** until the Hold is lifted.
 | `quote_id` | Opaque id to accept; treat as a token |
 | `expires_at` | Accept before this timestamp |
 | `rate` | FX rate for **this** quote only |
-| `user_pays` / `user_receives` | Debit and credit — drive all user-facing amounts from these |
+| `user_pays` / `user_receives` | Debit and credit; drive all user-facing amounts from these |
 | `limits.min_amount` | Minimum debit when present |
 
 There is **no** partner `fee` field on this quote; the receive amount is in `user_receives`.
@@ -164,7 +164,7 @@ curl -sS -X POST "$BASE/partner/orders/<quote_id>/accept" \
 
 Sandbox often returns `settled` quickly; still handle `processing` and confirm via webhook or GET.
 
-**GBP OffRamp accept failure:** e.g. `422` `"Transfer could not be completed"` — product Hold, not a misconfigured partner request alone.
+**GBP OffRamp accept failure:** e.g. `422` `"Transfer could not be completed"`. That is a product Hold, not a misconfigured partner request alone.
 
 ## 4. Status, idempotency & webhooks
 
@@ -178,7 +178,7 @@ Sandbox often returns `settled` quickly; still handle `processing` and confirm v
 | Accept while a settle is in progress | `409` |
 | Accept an expired quote | `410` |
 
-**Webhooks:** order events (`order.processing` / `order.settled` / `order.failed`) — see [Webhooks](/webhooks). After settlement, read balances with `GET …/accounts/{account_id}`.
+**Webhooks:** order events (`order.processing` / `order.settled` / `order.failed`). See [Webhooks](/webhooks). After settlement, read balances with `GET …/accounts/{account_id}`.
 
 ## Constraints
 
@@ -188,7 +188,7 @@ Sandbox often returns `settled` quickly; still handle `processing` and confirm v
 | Ready (examples) | USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC OnRamp |
 | Hold | GBP OffRamp accept |
 | Fiat ↔ fiat | Not supported |
-| Minimum | Often `1.00` major units of the debit leg — check quote `limits` |
+| Minimum | Often `1.00` major units of the debit leg; check quote `limits` |
 | Quote lifetime | Short; accept promptly |
 
 ## Next steps
