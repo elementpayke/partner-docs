@@ -46,6 +46,17 @@ curl -sS "$BASE/partner/entities/requirements?entity_type=business" \
 
 Always confirm the exact set against `GET /partner/entities/requirements` before collecting documents, since program requirements can vary.
 
+### Business: single- vs multi-officer
+
+Both individual and business can reach **`approved`** on live. For businesses:
+
+| Path | Guidance |
+|------|----------|
+| **Single officer** | Prefer this for first integrations — one officer with their own identity + proof-of-address documents |
+| **Multi-officer** | Each officer needs **distinct** document uploads. Sharing one PoA file or the **same `document_id`** across officers can fail review — upload separate docs (or distinct document rows) per officer |
+
+If multi-officer KYB fails with document / PoA errors, retry with a single-officer profile or unique documents per officer before opening deposit accounts.
+
 ### Retrieve an entity by id
 
 After a successful create, use the returned id to check status at any time, or list entities filtered by `customer_ref` or `status`:
@@ -232,7 +243,7 @@ curl -sS -X POST "$BASE/partner/entities/businesses" \
 
 ### Business profile (example)
 
-Required before submit: `phone`, `website`, monthly volume fields, `customer_types`, `funding_source`, and at least one **officer** (with their own address and identity / proof-of-address documents). The authoritative list is `GET /partner/entities/requirements?entity_type=business`.
+Required before submit: `phone`, `website`, monthly volume fields, `customer_types`, `funding_source`, and at least one **officer** (with their own address and identity / proof-of-address documents). Prefer **one officer** for a reliable first path; multi-officer must not reuse the same `document_id` for shared PoA across officers — see business officer guidance above. The authoritative list is `GET /partner/entities/requirements?entity_type=business`.
 
 Field notes:
 

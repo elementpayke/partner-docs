@@ -1,6 +1,12 @@
 # Card funding
 
-Charge a customer's card to **fund a fiat deposit account** (USD, GBP, or EUR). Card funding deposits into the account. This is **not** [card issuing](/deposit-accounts/card-issuing).
+Charge a customer's card to **fund a fiat deposit account** (USD, GBP, or EUR). This is **not** [card issuing](/deposit-accounts/card-issuing).
+
+<Warning>
+**Limited / Hold for full GA.** Card-charges work for integration on supported corridors, but not all markets have full E2E readiness. Treat as Limited until product expands corridor coverage. Settlement lag still applies (~6 days before available balance).
+</Warning>
+
+{/* INTERNAL TODO CARD-FUNDING-GA: when full corridor E2E is Ready, remove Limited/Hold warning and capability-matrix Limited row. */}
 
 Endpoints:
 

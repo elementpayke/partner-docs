@@ -43,7 +43,7 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` 
 ## `amount` is not a wallet load
 
 <Warning>
-**`amount` is a placeholder for future behavior.** The card is **not** pre-funded or topped up. It spends against the **USD funding account balance**. Keep sending `amount` in create requests for API compatibility until the field becomes optional.
+**`amount` is optional / may be null** — it is **not** a prepaid top-up. The card spends against the **active USD** account balance. Sending `amount` does not load a separate card wallet.
 </Warning>
 
 ## Create (disposable)
@@ -57,7 +57,6 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards" 
   -H "Content-Type: application/json" \
   -d '{
     "type": "disposable",
-    "amount": "10.00",
     "reference": "card-issue-001",
     "card_name": "Vendor one-time",
     "cardholder": {
@@ -107,7 +106,7 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$
   -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-**Freeze** blocks authorizations; **unfreeze** restores an active card. Use these as lifecycle controls when you need to pause spend without deleting the card.
+**Freeze** blocks authorizations; **unfreeze** restores an active card. **API Ready** for freeze / unfreeze / list / get; there is **no** partner webhook for create or freeze — poll GET card / list.
 
 ## Transactions
 
@@ -140,4 +139,4 @@ Full envelopes: [Errors](/errors). Field-level validation: Try-it / OpenAPI on e
 - [Overview](/deposit-accounts/overview): deposit-account map
 - [API reference](/api-reference/introduction): Try-it for all six `…/cards*` operations
 
-No card-issuing webhooks are documented on the Partner API—poll GET card / transactions as needed.
+No partner webhooks for issue / freeze / unfreeze — poll GET card / list / transactions. `card_charge.status.changed` is **card funding** only.

@@ -1,13 +1,13 @@
 # Book-transfers (fiat)
 
-Move funds **between two fiat accounts under your API key** (any entities you own qualify) with a **preview then confirm** pair. Both accounts must be `active` and share the same currency. See [Accounts & deposits](/deposit-accounts/accounts) to open and fund rails first.
+Move funds **between two fiat accounts under your API key** (any entities you own) with **preview then confirm**. Both accounts must be `active` and the **same currency**. Fee observed for same-currency book-transfer: often **0**. See [Accounts & deposits](/deposit-accounts/accounts) first.
+
+<Warning>
+**Fiat only.** There is **no** stablecoin book-transfer and **no** inter-entity crypto book-transfer product. To move USDC/USDT off-platform, use [Stablecoin sends](/deposit-accounts/sends). To change currency on-entity, use [Currency conversion](/deposit-accounts/currency-conversion).
+</Warning>
 
 <Note>
-Book-transfers move the **same currency** between accounts; there is no conversion in this flow. To convert between currencies (for example EUR to USDC), see [Currency conversion](/deposit-accounts/currency-conversion).
-</Note>
-
-<Note>
-All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`. `$ACCOUNT_ID` is the **source** fiat account.
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production). `$ACCOUNT_ID` is the **source** fiat account.
 </Note>
 
 ## Preview
@@ -63,10 +63,14 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/book-tr
 }
 ```
 
-Re-confirming with the **same `idempotency_key`** returns the **same transfer id**, with no double debit. Book-transfer statuses: `pending` \| `completed` \| `failed` (as returned by confirm).
+Re-confirming with the **same `idempotency_key`** returns the **same transfer id** (no double debit). Statuses: `pending` \| `completed` \| `failed`.
+
+## Fees
+
+There is no separate fee-estimate API. Prefer **confirm** `fee` / `fee_status: "final"` for user-facing cost when present. Same-currency fiat book-transfer fee is typically `0.00`.
 
 ## Next steps
 
-- [Currency conversion](/deposit-accounts/currency-conversion): convert fiat ↔ USDC
-- [Stablecoin sends](/deposit-accounts/sends): USDC out
-- [Overview](/deposit-accounts/overview): status vocabulary, webhooks, errors
+- [Currency conversion](/deposit-accounts/currency-conversion)
+- [Stablecoin sends](/deposit-accounts/sends)
+- [Overview](/deposit-accounts/overview)

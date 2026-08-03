@@ -1,21 +1,35 @@
 # Stablecoin sends
 
-Send USDC from a stablecoin account to an external or in-network wallet. Same **preview then confirm** shape as [book-transfers](/deposit-accounts/book-transfers), using `to_address` instead of `to_account_id`.
+Send **USDC** or **USDT** from a funded stablecoin deposit account to an **external wallet** (preview → confirm). Same shape as [book-transfers](/deposit-accounts/book-transfers), with `to_address` instead of `to_account_id`.
 
-<Warning>
-**Sandbox limitation:** confirm/settlement can hit a transient upstream error in sandbox even when preview succeeds. **Production** sends work on a funded USDC account. Treat `account.send.completed` / `account.send.failed` (or GET send) as the source of truth—do not rely on sandbox alone for send QA.
-</Warning>
+| Environment | Status |
+|-------------|--------|
+| **Live** external wallet (e.g. USDC on Base) | **Ready** |
+| **Sandbox** confirm / settlement | **Limited** — preview may succeed while confirm fails transiently |
+| Send to another party’s **standing deposit wallet** (another entity’s `wallet_address`) | **Limited** — open stuck-`submitted` cases; do **not** GA as “always credits destination deposit wallet” |
 
-{/* INTERNAL TODO: when sandbox send confirm is reliable, soften/remove the sandbox limitation Warning above. */}
+{/* INTERNAL TODO SENDS-SANDBOX: when sandbox confirm is reliable, soften sandbox Limited. */}
+{/* INTERNAL TODO SENDS-STANDING-WALLET: when inter-entity deposit-wallet credit is reliable, upgrade Limited → Ready and document patterns. */}
 
-- **Minimum:** `1.00` USDC. Smaller amounts fail fast at preview with `422 { field: "amount", minimum: "1.00" }`.
-- **Network** must match the account (`Base` \| `Polygon`).
-- **Endpoints:** `POST .../sends/preview`, `POST .../sends`, `GET .../sends/{send_id}`.
-- **Send statuses:** `processing` → `submitted` → `completed` \| `failed`.
+- **Minimum:** typically `1.00` major units (preview `422` with field minimum when below).
+- **Network** must match the account.
+- **Endpoints:** `POST …/sends/preview`, `POST …/sends`, `GET …/sends/{send_id}`.
+- **Statuses:** `processing` → `submitted` → `completed` \| `failed`.
 
 <Note>
-All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production). `$ACCOUNT_ID` is the source **stablecoin** account, funded first (see [Fund an account](/deposit-accounts/accounts#fund-an-account)).
+All calls use `X-API-Key` and `$BASE` = sandbox or production. `$ACCOUNT_ID` is the source **stablecoin** account, funded first ([Fund an account](/deposit-accounts/accounts#fund-an-account)).
 </Note>
+
+## Fees
+
+| Stage | Behavior |
+|-------|----------|
+| Preview | Often `fee: "0.00"` with `fee_status: "estimated"` |
+| Confirm / GET | May show a **final** fee (e.g. ~0.01 observed) |
+
+Prefer **final** fee / receive amount for user-facing cost. There is no reliable pre-commit fee-estimate API.
+
+Bank payouts outside this send path can dwarf tiny principals (e.g. large fee on a CAD 1 outflow) — warn partners; show **post-submit** fee when returned.
 
 ## Preview
 
@@ -44,6 +58,8 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/sends/p
 }
 ```
 
+Show `chain_disclaimer` to the user.
+
 ## Confirm
 
 ```bash
@@ -56,10 +72,19 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/sends" 
   }' | jq '.data'
 ```
 
-Confirm requires a funded USDC balance (see [Fund an account](/deposit-accounts/accounts#fund-an-account)). As with book-transfers, re-confirming the same `idempotency_key` returns the prior send. Poll `GET .../sends/{send_id}` or wait for `account.send.completed` / `account.send.failed`.
+Requires a funded balance. Same `idempotency_key` returns the prior send. Poll `GET …/sends/{send_id}` or wait for **`account.send.completed`** / **`account.send.failed`**.
+
+## Destination guidance
+
+| Destination | Guidance |
+|-------------|----------|
+| External EOA / known wallet | Supported path for GA on **live** |
+| Another partner entity’s deposit-account `wallet_address` | **Limited** — do not promise credit to standing wallets until product closes stuck-submit cases |
+
+There is **no** OpenAPI inter-entity crypto book-transfer; do not invent one from send.
 
 ## Next steps
 
-- [Accounts & deposits](/deposit-accounts/accounts): open and fund a stablecoin rail
-- [Overview](/deposit-accounts/overview): status vocabulary, webhooks, errors
-- [API reference](/api-reference/introduction): Try-it for preview / confirm / get send
+- [Accounts & deposits](/deposit-accounts/accounts)
+- [Overview](/deposit-accounts/overview)
+- [API reference](/api-reference/introduction)

@@ -7648,6 +7648,7 @@
                     "asset_type": "fiat",
                     "currency": "EUR",
                     "status": "ready",
+                    "account_holder_name": "Jane Doe",
                     "account_number": "DE89370400440532013000",
                     "bank_code": "COBADEFFXXX",
                     "bank_name": "Commerzbank",
@@ -12606,9 +12607,20 @@
             "description": "Card kind: disposable (single-use) or virtual (reusable)"
           },
           "amount": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Amount",
-            "description": "Placeholder for future behavior (major units, e.g. 10.00). The card is not pre-funded or topped up; it spends against the USD funding account balance."
+            "description": "Optional. Not a prepaid load \u2014 the card spends against the active USD account balance. PAN/CVV are create-only.",
+            "examples": [
+              "10.00",
+              null
+            ]
           },
           "reference": {
             "type": "string",
@@ -12670,7 +12682,6 @@
         "type": "object",
         "required": [
           "type",
-          "amount",
           "reference",
           "cardholder"
         ],

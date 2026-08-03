@@ -1,31 +1,40 @@
 # Accounts & deposits
 
-Open deposit rails on an **`approved`** entity, fetch the customer-facing deposit instructions, and receive funds. Onboard first via [Entity KYC](/deposit-accounts/kyc); see [Overview](/deposit-accounts/overview) for concepts.
+Open deposit rails on an **`approved`** entity, fetch customer-facing deposit instructions, and receive funds. Onboard first via [Entity KYC](/deposit-accounts/kyc); see [Overview](/deposit-accounts/overview) for the capability matrix and statuses.
 
 <Note>
-All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`. `$ENTITY_ID` is the approved entity id.
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` or `https://api.elementpay.net/api/v1`. `$ENTITY_ID` is the approved entity id.
 </Note>
 
-## Supported today
+## Supported rails
 
 | Rail | Currencies | Notes |
 |------|-----------|-------|
-| **Fiat** | `EUR`, `GBP`, `USD` | Returns bank deposit coordinates (`account_number` and related fields) |
-| **Stablecoin** | `USDC` on `Base` or `Polygon` | Returns an on-chain `wallet_address` |
+| **Fiat** | `EUR`, `GBP`, `USD`, `CAD` | Bank deposit coordinates when `active` |
+| **Stablecoin** | `USDC`, `USDT` (with `network`, e.g. `Base` / `Polygon`) | On-chain `wallet_address` when ready |
 
-Only `EUR`, `GBP`, and `USD` are generally available for opening fiat deposit accounts. Other currencies that appear in discovery or in [currency conversion](/deposit-accounts/currency-conversion) are **not** openable as deposit accounts unless explicitly enabled for your integration; opening an unsupported currency returns `422` with the supported list.
+Opening an unsupported currency returns `422` with the supported list. Currency **conversion** pairs are separate — see [Currency conversion](/deposit-accounts/currency-conversion).
 
-<Warning>
-In **sandbox**, `USD` fiat accounts may stay `pending` and not fully provision yet. Use `EUR` or `GBP` to exercise the full fiat flow. If a `USD` account stays `pending`, contact support. In **production**, USD follows the normal `pending` → `active` path once deposit details are ready.
-</Warning>
+### USD and readiness
 
-{/* INTERNAL TODO USD-ACTIVE-SANDBOX: partner will make sandbox USD active; then remove/soften the sandbox USD pending Warning and allow issuing/card-funding sandbox QA on USD. Do not tell integrators about the upcoming fix until it ships. */}
+| Entity type | Typical USD path |
+|-------------|------------------|
+| **Business** | Often reaches `active`; poll until active before deposit-instructions or [card issuing](/deposit-accounts/card-issuing) |
+| **Individual** | **Limited** — may stay `pending` longer after a successful open. Treat as readiness, not a failed open |
 
+**Partner rules (any currency)**
+
+1. Open may succeed with `status=pending` and null coordinates.
+2. Poll `GET …/accounts/{account_id}` until `status=active`, or wait for **`account.ready`**.
+3. `GET …/deposit-instructions` before ready → **422** `"Deposit instructions are not ready yet"` with `data.hint` to poll account or wait for `account.ready`.
+4. [Card issuing](/deposit-accounts/card-issuing) requires **active fiat USD** only.
+
+{/* INTERNAL TODO INDIVIDUAL-USD: when individual USD lag is closed, update Limited row and related callouts. */}
 
 ## Open accounts (approved entities only)
 
 ```bash
-# Fiat (EUR / GBP / USD)
+# Fiat (example EUR; also GBP, USD, CAD as enabled)
 curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
@@ -34,7 +43,7 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts" \
     "currency": "EUR"
   }' | jq '.data'
 
-# Stablecoin (USDC on Base or Polygon)
+# Stablecoin (USDC or USDT + network)
 curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
@@ -45,9 +54,9 @@ curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts" \
   }' | jq '.data'
 ```
 
-Optional: `display_name`. `network` applies to stablecoin only (`Base` or `Polygon`, case normalized).
+Optional: `display_name` (portfolio label only — **not** the bank beneficiary name). `network` applies to stablecoin only (case normalized).
 
-Account open is idempotent per `(entity, asset_type, currency, network)`: the first open returns `201`; re-opening the same rail returns the existing account (`200`).
+Account open is idempotent per `(entity, asset_type, currency, network)`: first open `201`; re-open returns the existing account (`200`).
 
 | Call | Purpose |
 |------|---------|
@@ -56,49 +65,57 @@ Account open is idempotent per `(entity, asset_type, currency, network)`: the fi
 
 ## Why you fetch coordinates separately
 
-Opening an account does **not** hand you usable coordinates immediately. Coordinates (an IBAN / bank fields, or an on-chain wallet address) are provisioned **asynchronously**, so a freshly opened account starts as `pending` and becomes `active` once its coordinates are ready.
+Opening does **not** hand usable coordinates immediately. New accounts start `pending` and become `active` when coordinates are ready. Prefer **`account.ready`** or poll GET account.
 
-Fiat usually becomes usable quickly. Stablecoin may stay `pending` longer while the wallet is provisioned. Either poll the account or wait for the **`account.ready`** webhook, then read the coordinates.
-
-Typical ready fields: fiat `account_number` (plus `bank_code` / `bank_name` when returned); stablecoin `wallet_address`.
+Typical ready fields: fiat `account_number` (plus `bank_code` / `bank_name` when returned); stablecoin `wallet_address` + `network`.
 
 ## Deposit instructions
 
-`GET .../accounts/{account_id}` is the **portfolio** view (status, `balance`, coordinate fields). For the **customer-facing deposit screen**, call the dedicated endpoint, which adds human-readable copy and returns `status: "ready"` only when coordinates are actually usable:
+`GET …/accounts/{account_id}` is the **portfolio** view. For the **customer-facing deposit screen**, call:
 
 ```bash
-export ACCOUNT_ID="17"   # from the open-account response
+export ACCOUNT_ID="17"
 
 curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/deposit-instructions" \
   -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-What it returns when ready:
+When ready (`status: "ready"`), expect:
 
-- **Fiat:** `account_number`, `bank_code`, `bank_name`, `instructions`. When the account has an IBAN, it is carried in `account_number` (there is no separate IBAN field).
-- **Stablecoin:** `wallet_address`, `network`, `chain_disclaimer` (show verbatim), `instructions`.
+| Field | Fiat | Stablecoin |
+|-------|------|------------|
+| `account_holder_name` | Beneficiary / legal name for bank UX | Present when returned; use for display context |
+| `account_number` | Bank account / IBAN (IBAN is in this field) | — |
+| `bank_code` / `bank_name` | When returned | — |
+| `wallet_address` / `network` | — | Deposit target |
+| `chain_disclaimer` | — | Show **verbatim** |
+| `instructions` | Human copy | Human copy |
 
-If coordinates are not ready, it returns **`422`** with `{ status, hint }`. Poll `GET` on the account or wait for **`account.ready`**. Never invent or cache stale coordinates.
+<Warning>
+**Do not** use account `display_name` (e.g. “EUR account”) as the bank beneficiary. Prefer **`account_holder_name`** from deposit-instructions when present (entity legal / profile name).
+</Warning>
+
+{/* INTERNAL TODO: after deposit-instructions OpenAPI deploy, ensure Mintlify examples include account_holder_name. */}
+
+If not ready: **422** with message and hint. Never invent or cache stale coordinates.
 
 ## Fund an account
 
-Deposit instructions are the primary way to fund an account today. More funding methods will be added over time, and this list will grow.
+| Method | Rail | Status | How |
+|--------|------|--------|-----|
+| **Bank transfer** | Fiat | Ready when `active` | Transfer in account currency to deposit-instructions bank fields |
+| **On-chain transfer** | Stablecoin | Ready when `active` | Send matching asset/network to `wallet_address`; honor `chain_disclaimer` |
+| **Card funding** | Fiat USD / GBP / EUR | **Limited** | [Card funding](/deposit-accounts/card-funding) — not full corridor GA; ~6 day settlement lag |
+| **Card issuing** | Fiat **USD** `active` | Ready | [Card issuing](/deposit-accounts/card-issuing) — spends against USD balance; not a funding method for EUR/GBP |
 
-| Method | Rail | How the customer funds |
-|--------|------|------------------------|
-| **Bank transfer to deposit coordinates** | Fiat | Send a bank transfer in the account currency to the `account_number` / bank fields returned by deposit instructions |
-| **Card funding** | Fiat USD / GBP / EUR | Charge the customer's card into the account ([Card funding](/deposit-accounts/card-funding)). `completed` means the charge succeeded; available balance updates after settlement (~six days). |
-| **Card issuing** | Fiat **USD** only (`active`) | Issue disposable / virtual cards that spend against the USD account ([Card issuing](/deposit-accounts/card-issuing)). EUR/GBP funding does not unlock issuing. |
-| **On-chain transfer** | Stablecoin | Send `USDC` on the stated `network` to the returned `wallet_address` |
-
-When an inflow settles, you receive the **`account.credited`** webhook ([Webhooks](/webhooks)). For card funding, that event includes `source: "card_charge"` and `credit.amount` is the net credit.
+When an inflow settles, you receive **`account.credited`** ([Webhooks](/webhooks)). For card funding, `source` may be `card_charge` and `credit.amount` is net of fee when posted.
 
 <Note>
-**Coming soon:** hosted funding sessions (for example, open-banking bank transfers and mobile-money funding) so customers can fund without copying coordinates by hand. Documented here once released.
+Hosted funding sessions / third-party checkout UIs are **out of partner docs**. Fund stablecoins via the returned wallet address (+ disclaimer) only.
 </Note>
 
 <Note>
-**Sandbox funding:** new accounts start at `0.00` and there is no free `USDC` grant. Fund by an on-chain deposit to the wallet address, or an internal ops / FX seed (sandbox only), before testing a [send](/deposit-accounts/sends).
+**Sandbox:** new accounts start at `0.00`. No free USDC/USDT grant. Fund on-chain (or internal ops seed) before [sends](/deposit-accounts/sends).
 </Note>
 
 ## What to show end-users
@@ -106,16 +123,15 @@ When an inflow settles, you receive the **`account.credited`** webhook ([Webhook
 | Account state | UX |
 |---------------|-----|
 | `pending` | "Setting up deposit details" |
-| `active` + bank `account_number` | Show **bank transfer instructions** from returned fields only |
-| `active` + `wallet_address` | Show **network + address**; the customer must send the asset **on-chain** |
-| `account.credited` received | Reflect the settled inflow / updated balance |
-
-Never invent IBANs or wallet addresses.
+| `active` + bank fields | Show **bank transfer** details from deposit-instructions only (`account_holder_name`, `account_number`, …) |
+| `active` + `wallet_address` | Show **network + address** + `chain_disclaimer` |
+| `account.credited` | Reflect settled inflow / updated balance |
 
 ## Next steps
 
-- [Card funding](/deposit-accounts/card-funding): charge a card into a fiat account
-- [Card issuing](/deposit-accounts/card-issuing): disposable / virtual cards on active USD
-- [Book-transfers](/deposit-accounts/book-transfers): move funds between your fiat accounts
-- [Stablecoin sends](/deposit-accounts/sends): USDC out
-- [Overview](/deposit-accounts/overview): status vocabulary, webhooks, errors
+- [Card funding](/deposit-accounts/card-funding) (Limited)
+- [Card issuing](/deposit-accounts/card-issuing) (Ready on active USD)
+- [Book-transfers](/deposit-accounts/book-transfers) (fiat only)
+- [Stablecoin sends](/deposit-accounts/sends)
+- [Currency conversion](/deposit-accounts/currency-conversion)
+- [Overview](/deposit-accounts/overview)
