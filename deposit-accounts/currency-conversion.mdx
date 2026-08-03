@@ -35,9 +35,18 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` 
 ```bash
 curl -sS "$BASE/partner/catalog" \
   -H "X-API-Key: $API_KEY" | jq '.data'
+
+# When catalog is large, narrow with payment-methods / banks for the conversion corridor
+curl -sS "$BASE/partner/payment-methods?order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+curl -sS "$BASE/partner/banks?order_type=OnRamp&currency=EUR" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-Find the conversion rail (names like **"EUR account to USDC"** / OnRamp or reverse / OffRamp) and use its id as `payment_method.network_id`. `GET /partner/banks` returns the same rail ids.
+Use the provider / network **`id`** (UUID or opaque id) as `payment_method.network_id`. Do **not** pick rails by human catalog **title** alone (e.g. “EUR account to USDC”). Titles can be ambiguous across checkout vs **entity deposit-account ledger** conversion; wrong `network_id` fails quote even when labels look right.
+
+Confirm the rail against quote success for entity-scoped conversion (entity + account ids on `payment_method`), or use discovery response fields that label deposit-account / ledger conversion rails when present.
 
 ## 2. Quote
 

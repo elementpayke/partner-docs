@@ -78,8 +78,8 @@ Requires a funded balance. Same `idempotency_key` returns the prior send. Poll `
 
 | Destination | Guidance |
 |-------------|----------|
-| External EOA / known wallet | Supported path for GA on **live** |
-| Another partner entity’s deposit-account `wallet_address` | **Limited**. Do not promise credit to standing wallets until product closes stuck-submit cases. |
+| External EOA / known wallet | Supported path for GA on **live** (recipient controls the wallet outside Element Pay) |
+| Another partner entity’s deposit-account `wallet_address` | **Limited**. Do not promise credit to standing deposit wallets (stuck-`submitted` cases and under-credit on undeclared inflows; see [Fund an account](/deposit-accounts/accounts#fund-an-account)). |
 
 There is **no** OpenAPI inter-entity crypto book-transfer; do not invent one from send.
 

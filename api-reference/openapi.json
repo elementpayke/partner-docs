@@ -11,6 +11,10 @@
       "description": "Sandbox"
     },
     {
+      "url": "https://staging.elementpay.net/api/v1",
+      "description": "Staging (when enabled for your key)"
+    },
+    {
       "url": "https://api.elementpay.net/api/v1",
       "description": "Production"
     }

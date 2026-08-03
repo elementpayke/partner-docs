@@ -18,7 +18,7 @@ Honest **Ready / Limited / Hold** for integrators (same shapes as [errors](/erro
 | Individual KYC | **Ready** | Wait for `approved` |
 | Business KYB | **Ready** | Prefer single-officer path first; multi-officer has PoA / document constraints. See [Entity KYC](/deposit-accounts/kyc). |
 | Open EUR / GBP / CAD (fiat) | **Ready** | When `active` + deposit-instructions |
-| Open USDC / USDT wallets | **Ready** | When `active`; fund via returned `wallet_address` |
+| Open USDC / USDT wallets | **Ready** | When `active`; address returned. Funding that address is **not** always a guaranteed partner credit (see [Accounts](/deposit-accounts/accounts#fund-an-account)) |
 | Open USD (business) | **Ready** | Poll until `active` before deposit-instructions or [card issuing](/deposit-accounts/card-issuing) |
 | Open USD (individual) | **Limited** | Often stays `pending` longer (rail provisioning). Not a partner bug; this is readiness only. |
 | Fiat book-transfer | **Ready** | Same currency, accounts under your API key |
@@ -66,7 +66,9 @@ Content-Type: application/json
 export BASE="https://sandbox.elementpay.net/api/v1"
 # Production
 # export BASE="https://api.elementpay.net/api/v1"
-export API_KEY="is_test_YOUR_KEY_HERE"   # or production key
+# Staging (if your program uses it; not a public partner environment for all keys)
+# export BASE="https://staging.elementpay.net/api/v1"
+export API_KEY="is_test_YOUR_KEY_HERE"   # or production / staging key
 ```
 
 ## Concepts
@@ -151,7 +153,7 @@ Do not surface raw upstream payloads to end-users.
 
 - Individuals often reach `approved` without liveness; businesses may stay `submitted` longer.
 - Individual **USD** may stay `pending` (live and sandbox); business USD more often reaches `active`. Use EUR / GBP / CAD for full fiat drills when USD is pending.
-- No free USDC / USDT grant; fund via on-chain deposit to `wallet_address` (or internal ops seed in sandbox).
+- No free USDC / USDT grant in partner APIs. Sandbox balances may need ops seed; see [Fund an account](/deposit-accounts/accounts#fund-an-account) before treating on-chain send-to-address as reliable.
 - Stablecoin **send confirm** is **limited** in sandbox; **live** external sends are Ready.
 
 {/* INTERNAL TODO SENDS-SANDBOX: when sandbox send confirm is reliable, soften the sends row and sandbox bullets. */}
