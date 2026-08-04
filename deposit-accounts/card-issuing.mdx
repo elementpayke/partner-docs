@@ -1,0 +1,142 @@
+# Card issuing
+
+Issue **disposable** or **virtual** cards on an **active fiat USD** deposit account. The card spends against that account’s balance. This is **not** [card funding](/deposit-accounts/card-funding) (acquiring into an account).
+
+Interactive request/response shapes live in the [API reference](/api-reference/introduction) Try-it for each operation below. Use those rather than hardcoding schemas from this guide.
+
+| Method | Path |
+|--------|------|
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/transactions` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/freeze` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/unfreeze` |
+
+<Note>
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production). Try-it path examples use `entity_id=11`, `account_id=17` (USD), `card_id=4`.
+</Note>
+
+## Prerequisites
+
+1. Entity is `approved` ([Entity KYC](/deposit-accounts/kyc)).
+2. Open a **fiat USD** account and wait until `status` is `active` ([Accounts & deposits](/deposit-accounts/accounts); `account.ready` or poll GET).
+3. Then call `POST …/cards` on that account.
+
+<Warning>
+**USD only.** Issuing requires an **active fiat USD** funding account. EUR / GBP (and card funding or IBAN funding of those rails) do **not** unlock issuing; those requests return `422`. If the USD account is still `pending`, create / list / lifecycle calls fail readiness checks; wait until `active`.
+</Warning>
+
+<Note>
+**Production** issuing is available on active USD. In **sandbox**, USD rails may stay `pending`, and sandbox cannot generate card spend, so e2e issuing QA may be limited. Prefer production USD readiness for full issuing flows.
+</Note>
+
+{/* INTERNAL TODO USD-ACTIVE-SANDBOX + ISSUING-SANDBOX: when sandbox USD is active, soften the sandbox note above and expand sandbox QA guidance. */}
+
+## Card types
+
+| `type` | Behavior |
+|--------|----------|
+| `disposable` | Single-use. Requires `expiration_month` and `expiration_year`. |
+| `virtual` | Reusable. Optional `spending_controls` (daily limits, cycle, etc.; see Try-it schema). |
+
+## `amount` is not a wallet load
+
+<Warning>
+**`amount` is optional / may be null.** It is **not** a prepaid top-up. The card spends against the **active USD** account balance. Sending `amount` does not load a separate card wallet.
+</Warning>
+
+## Create (disposable)
+
+```bash
+export ENTITY_ID="11"
+export ACCOUNT_ID="17"   # active USD fiat
+
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "disposable",
+    "reference": "card-issue-001",
+    "card_name": "Vendor one-time",
+    "cardholder": {
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane@example.com",
+      "phone_number": "+12125550198"
+    },
+    "expiration_month": "12",
+    "expiration_year": "27"
+  }' | jq '.data'
+```
+
+For **virtual**, set `"type": "virtual"` and omit disposable-only expiry fields when not required; add optional `spending_controls` per the Try-it schema on `POST …/cards`.
+
+### Credentials (create once)
+
+<Warning>
+**PAN and CVV are returned only on a successful create.** `GET` never returns PAN/CVV (you get `last_four`, status, and metadata). Replaying the same `reference` returns the existing card **without** credentials. Store create-response secrets securely if your product needs them. Never log PAN/CVV.
+</Warning>
+
+### `reference`
+
+Unique per account. The same `reference` returns the **same** card (no second issue). After a **failed** create, use a **new** `reference`. Do not retry the same value expecting a new upstream card.
+
+## List and get
+
+```bash
+curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+export CARD_ID="4"
+
+curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$CARD_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+GET refreshes status from upstream and never includes PAN/CVV. Prefer Try-it for field lists.
+
+## Freeze and unfreeze
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$CARD_ID/freeze" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$CARD_ID/unfreeze" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+**Freeze** blocks authorizations; **unfreeze** restores an active card. Lifecycle (create, freeze, unfreeze, list, get) is **API Ready**. There is **no** partner webhook for create or freeze; poll GET card / list.
+
+## Transactions
+
+```bash
+curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/cards/$CARD_ID/transactions" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+<Note>
+**Sandbox:** card spend is not simulated; `GET …/transactions` is typically empty. There is no partner “simulate spend” API. Use production (or a funded active USD account with real authorizations) to observe transactions.
+</Note>
+
+{/* INTERNAL TODO CARD-SPEND-SANDBOX: if sandbox card-transactions simulation ships, rewrite the note above. */}
+
+## Errors and readiness
+
+| Situation | Typical outcome |
+|-----------|-----------------|
+| Funding account not fiat `USD` | `422` |
+| USD account not `active` (`pending`, etc.) | `422` readiness failure; wait for `active` |
+| Same `reference` after a successful create | Existing card returned (no new credentials) |
+| Retry same `reference` after a failed create | Do not expect a new card; use a **new** `reference` |
+
+Full envelopes: [Errors](/errors). Field-level validation: Try-it / OpenAPI on each operation.
+
+## Related
+
+- [Card funding](/deposit-accounts/card-funding): charge a card **into** a fiat account (acquiring). Separate product; settlement to available balance is typically about six days.
+- [Accounts & deposits](/deposit-accounts/accounts): open USD and wait until `active`
+- [Overview](/deposit-accounts/overview): deposit-account map
+- [API reference](/api-reference/introduction): Try-it for all six `…/cards*` operations
+
+No partner webhooks for issue / freeze / unfreeze. Poll GET card / list / transactions. `card_charge.status.changed` is **card funding** only.

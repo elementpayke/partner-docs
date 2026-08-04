@@ -1,6 +1,6 @@
 # Webhooks
 
-Element Pay notifies your backend when order status changes. **Treat webhooks as the source of truth** for settlement — the HTTP accept response only confirms intent to proceed. If a webhook is delayed, poll **`GET /partner/orders/{order_id}`** as a backup.
+Element Pay notifies your backend when order or entity/account status changes. **Treat webhooks as a best-effort signal, and confirm state with a GET.** The HTTP accept / open response only confirms intent to proceed. If a webhook is delayed or missed, poll **`GET /partner/orders/{order_id}`** or **`GET /partner/entities/{id}/accounts/{account_id}`** as a backup.
 
 ## Configuration
 
@@ -8,12 +8,30 @@ Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox 
 
 ## Events
 
+### Orders (African local-fiat quote → accept)
+
 | Header `X-Webhook-Event` | When |
 |--------------------------|------|
 | `order.processing` | Quote accepted; rail execution started |
 | `order.settled` | Order completed successfully |
 | `order.failed` | Terminal failure |
 | `order.refunded` | Refund issued (when applicable) |
+
+### Entities & deposit accounts
+
+| Header `X-Webhook-Event` | When |
+|--------------------------|------|
+| `entity.status.changed` | Entity KYC status changed |
+| `account.opened` | Deposit account created |
+| `account.ready` | Deposit coordinates available (IBAN / wallet) |
+| `account.credited` | Inflow settled on an account |
+| `card_charge.status.changed` | Card **funding** payment intent (acquiring), not card **issue** lifecycle |
+| `account.send.completed` | Stablecoin send terminal success |
+| `account.send.failed` | Stablecoin send terminal failure |
+
+These entity/account events carry an extra **`X-Idempotency-Key`** header (equal to `X-Webhook-Id`) and an `event_type` field in the body; signing is otherwise identical to order webhooks. They are **not** the same as legacy `deposit_account.ready` from other international ramp products. See [International deposit accounts](/deposit-accounts/overview).
+
+**Issued cards** (virtual / disposable): no dedicated partner events for create / freeze / unfreeze today. Poll `GET …/cards/{id}` or list.
 
 ## HTTP delivery
 
@@ -49,6 +67,122 @@ Webhook bodies are **provider-neutral**: no internal routing metadata or upstrea
 
 Fields vary by corridor and rail. `client_metadata` and other internal fields are not included on the public partner API.
 
+## Entity & account payloads
+
+Entity, account, and send events wrap a typed object and add an `event_type` field in the body (matching the `X-Webhook-Event` header). Typical shapes:
+
+```json
+{
+  "event_type": "entity.status.changed",
+  "customer_uid": "partner-cust-001",
+  "entity_id": 11,
+  "status": "approved",
+  "entity": {
+    "id": 11,
+    "customer_ref": "partner-cust-001",
+    "entity_type": "individual",
+    "status": "approved",
+    "liveness_check_id": null,
+    "created_at": "2026-07-29T10:00:00Z",
+    "updated_at": "2026-07-29T10:05:00Z"
+  }
+}
+```
+
+```json
+{
+  "event_type": "account.opened",
+  "customer_uid": "partner-cust-001",
+  "entity_id": 11,
+  "account": {
+    "id": 17,
+    "entity_id": 11,
+    "asset_type": "fiat",
+    "currency": "EUR",
+    "network": null,
+    "status": "pending",
+    "display_name": null,
+    "account_number": null,
+    "bank_code": null,
+    "bank_name": null,
+    "wallet_address": null,
+    "balance": null,
+    "created_at": "2026-07-29T10:06:00Z"
+  }
+}
+```
+
+`account.ready` has the same shape with `status: "active"` and the coordinate fields populated. `balance` is usually `null` on these events; read it with a GET when you need it.
+
+```json
+{
+  "event_type": "account.credited",
+  "customer_uid": "partner-cust-001",
+  "entity_id": 11,
+  "account_id": 17,
+  "credit": {
+    "amount": "100.00",
+    "amount_minor": 10000,
+    "currency": "EUR",
+    "fee_minor": 0,
+    "reference": null,
+    "narration": null
+  },
+  "account": { "…": "same account shape as above" }
+}
+```
+
+`account.credited` fires for fiat bank inflows, on-chain USDC deposits, and **card funding** when settlement posts. For card funding, the payload includes `source: "card_charge"` and `credit.amount` is the **net** credit (`charge_amount − fee`). A charge can be `completed` days before this credit appears. Always re-GET the charge after status webhooks; do not treat `return_url` alone as paid. See [Card funding](/deposit-accounts/card-funding).
+
+```json
+{
+  "event_type": "card_charge.status.changed",
+  "customer_uid": "partner-cust-001",
+  "entity_id": 11,
+  "account_id": 17,
+  "charge": {
+    "charge_id": 8,
+    "status": "completed",
+    "reference": "order-card-001",
+    "currency": "EUR",
+    "amount": "10.00",
+    "charge_amount": "10.00",
+    "fee": "0.75",
+    "last_four": "2701",
+    "card_brand": "visa",
+    "next_action": null
+  }
+}
+```
+
+`card_charge.status.changed` covers transitions including `requires_action`, `completed`, and `failed`. After a 3DS `return_url` redirect or this webhook, always `GET .../card-charges/{charge_id}`. See [Card funding](/deposit-accounts/card-funding).
+
+```json
+{
+  "event_type": "account.send.completed",
+  "customer_uid": "partner-cust-001",
+  "entity_id": 11,
+  "account_id": 22,
+  "send": {
+    "id": 5,
+    "entity_id": 11,
+    "account_id": 22,
+    "status": "completed",
+    "currency": "USDC",
+    "network": "Base",
+    "to_address": "0xRecipientWalletAddress",
+    "amount": "1.00",
+    "fee": "0.00",
+    "receive_amount": "1.00",
+    "fee_status": "final",
+    "chain_disclaimer": "Send only USDC on Base. Funds sent on the wrong network may be lost.",
+    "created_at": "2026-07-29T10:10:00Z"
+  }
+}
+```
+
+`account.send.failed` has the same shape with `status: "failed"`.
+
 ## Signature verification
 
 Parse `X-Webhook-Signature`:
@@ -61,9 +195,16 @@ t=1710000000,v1=<base64_hmac>
 2. Compute HMAC-SHA256 over `{t}.{raw_body}` using your `webhook_secret`.
 3. Compare constant-time to `v1`.
 
-## Idempotency
+## Delivery, retries & idempotency
 
-Use **`X-Webhook-Id`** to deduplicate deliveries. Your endpoint should return **2xx** quickly; heavy work can be async.
+Delivery is **best-effort** and differs by event family:
+
+| Event family | Retries | Dedupe on |
+|--------------|---------|-----------|
+| **Orders** (`order.*`) | Retried on transient DNS/timeout only (up to 3 attempts, backoff capped at 5s). Non-2xx HTTP responses are **not** retried. | `X-Webhook-Id` (fresh UUID per attempt) |
+| **Entity / account / send** (typed) | **Single attempt**, no retry loop. Failures are logged only. | `X-Idempotency-Key` (equals `X-Webhook-Id`, both = the event id) |
+
+Because typed events are sent once, **always reconcile with a GET** after a credit or send rather than relying solely on the webhook. Return **2xx** quickly and do heavy work asynchronously. Do not assume a multi-day retry queue.
 
 ## Local testing
 

@@ -1,0 +1,227 @@
+# Card funding
+
+Charge a customer's card to **fund a fiat deposit account** (USD, GBP, or EUR). This is **not** [card issuing](/deposit-accounts/card-issuing).
+
+<Warning>
+**Limited / Hold for full GA.** Card-charges work for integration on supported corridors, but not all markets have full E2E readiness. Treat as Limited until product expands corridor coverage. Settlement lag still applies (~6 days before available balance).
+</Warning>
+
+{/* INTERNAL TODO CARD-FUNDING-GA: when full corridor E2E is Ready, remove Limited/Hold warning and capability-matrix Limited row. */}
+
+Endpoints:
+
+- `POST /partner/entities/{entity_id}/accounts/{account_id}/card-charges`
+- `GET /partner/entities/{entity_id}/accounts/{account_id}/card-charges/{charge_id}`
+
+One-shot charge: there is no preview or quote step. Open an **active fiat** rail first ([Accounts & deposits](/deposit-accounts/accounts)), then `POST` a charge and confirm status with `GET` and webhooks.
+
+<Note>
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`. `$ACCOUNT_ID` must be an **active fiat** `USD` / `GBP` / `EUR` account (not stablecoin). Sandbox Try-it examples use `entity_id=11` and `account_id=16` (EUR) or `25` (GBP).
+</Note>
+
+<Warning>
+**Settlement timing:** `status: "completed"` means the card charge succeeded. Available balance updates only after settlement (typically about **six days**). Do not treat an unchanged `GET …/accounts/{id}` `balance.available` right after create as a failed charge. For UX, key off charge status and `card_charge.status.changed`, then balance or `account.credited` once settlement posts, not an immediate balance poll alone.
+</Warning>
+
+{/* INTERNAL TODO USD-ACTIVE-SANDBOX: when sandbox USD is reliably active, drop any EUR/GBP-only Try-it hints that imply USD cannot be used in sandbox for card funding. */}
+
+
+## Product rules
+
+| Rule | Detail |
+|------|--------|
+| **Rails** | Fiat `USD`, `GBP`, `EUR` only. Stablecoin accounts return `422`. |
+| **Country / corridor** | **USD** card charges: billing/card country is open (**any country**, including KE). **GBP / EUR** card charges: **UK + EU only**. KE blocks observed on **EUR/GBP** paths, not as a blanket “KE blocks all card funding” rule. |
+| **Shape** | Single `POST …/card-charges` (no preview). |
+| **Idempotency** | `reference` is unique per account. Reusing the same `reference` returns the **original** charge (same `charge_id` / `created_at`) and does **not** create a new charge or credit. Always send a **new** `reference` for each real attempt. Upstream may also return `409` on a duplicate reference. |
+| **Response fields** | `charge_id`, `status`, `amount`, `charge_amount`, `fee`, `last_four`, `card_brand`, `next_action` |
+| **Fees** | Response may include `charge_amount` (customer debit) and `fee`. Net credit is modeled as `charge_amount − fee` when settlement posts to available balance (see settlement timing above). |
+| **Confirm paid** | After a webhook or a 3DS `return_url` redirect, always **re-GET** the charge. Do not trust `return_url` query params alone. |
+
+Statuses you will see: `processing` → `requires_action` (3DS) → `completed` \| `failed` \| `cancelled`.
+
+## Billing address and `state`
+
+`billing_address.state` is **required**. Send the province, county, or other subdivision for the billing country (not a US-only concept). Prefer a real subdivision name over a placeholder.
+
+Example shape (Kenya subdivision in `state`): `"country": "KE"`, `"state": "Nairobi"`, with city / line / postal as usual. Valid for **USD** funding field shape.
+
+For **GBP / EUR** funding, use UK or EU billing (and card) markets only; non-UK/EU billing (including KE on EUR/GBP) can fail at authorize. Surface declined / failed statuses from GET charge.
+
+## Auth model
+
+| Value | When |
+|-------|------|
+| `3ds_disabled` | Non-3DS test cards (sandbox quick path) |
+| `3ds_required` | Requires HTTPS `return_url` **and** a full `browser_info` object. The hosted challenge is on the provider; `return_url` is only the browser landing page after the challenge. Then **GET** the charge. |
+
+Production should prefer `3ds_required`. Send both:
+
+- `return_url` (HTTPS)
+- `browser_info` (full object: for example `user_agent`, `accept_header`, `language`, `java_enabled`, `color_depth`, `screen_height`, `screen_width`, `timezone_offset`)
+
+If the create response has `status: "requires_action"` and `next_action.url`, redirect the customer to that URL, then re-GET. If `next_action` is absent, still re-GET (and/or wait for webhooks); do not assume the first response is final.
+
+<Note>
+**Sandbox 3DS:** the success 3DS test PAN (`4000000000002503`) may return `completed` with **no** `next_action`. Partners must still branch on `requires_action` when it is present, and **always re-GET** the charge either way.
+</Note>
+
+## Sandbox test cards
+
+Use expiry `12` / `2030` and CVV `123` unless a scenario notes otherwise. Spaces in the PAN are optional (`4000 0000 0000 2701` is the same as `4000000000002701`).
+
+| Outcome | Brand | PAN | auth_model |
+|---------|-------|-----|------------|
+| Success | Visa | `4000000000002701` | `3ds_disabled` |
+| Success | Mastercard | `5200000000002235` | `3ds_disabled` |
+| Declined | Visa | `4008370896662369` | `3ds_disabled` |
+| Success | Visa | `4000000000002503` | `3ds_required` + `return_url` |
+| Declined | Mastercard | `5333463046218753` | `3ds_required` + `return_url` |
+
+## Charge a card (Non-3DS success)
+
+```bash
+export ENTITY_ID="11"
+export ACCOUNT_ID="16"   # active EUR; or 25 for GBP
+
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/card-charges" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "10.00",
+    "reference": "order-card-001",
+    "description": "Wallet top-up",
+    "auth_model": "3ds_disabled",
+    "card": {
+      "number": "4000000000002701",
+      "expiry_month": "12",
+      "expiry_year": "2030",
+      "cvv": "123",
+      "holder_name": "Jane Doe"
+    },
+    "billing_address": {
+      "line_1": "350 Fifth Avenue",
+      "city": "New York",
+      "state": "NY",
+      "country": "US",
+      "postal_code": "10118"
+    },
+    "customer": {
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane@example.com"
+    }
+  }' | jq '.data'
+```
+
+Use a **new** `reference` on every real attempt. Reusing `order-card-001` returns the same charge and does not credit again.
+
+Typical completed response (sandbox):
+
+```json
+{
+  "charge_id": 8,
+  "entity_id": 11,
+  "account_id": 16,
+  "status": "completed",
+  "reference": "order-card-001",
+  "currency": "EUR",
+  "amount": "10.00",
+  "charge_amount": "10.00",
+  "fee": "0.75",
+  "last_four": "2701",
+  "card_brand": "visa",
+  "next_action": null,
+  "auth_model": "3ds_disabled"
+}
+```
+
+When settlement posts, net is modeled as `charge_amount − fee` (here `10.00 − 0.75 ≈ 9.25`). That available-balance update is delayed (see settlement timing above). Do not expect it on the create response.
+
+### Kenya-style billing (province in `state`)
+
+Same rule as any country with a subdivision: put the province/county in `state`.
+
+```json
+"billing_address": {
+  "line_1": "Kimathi Street",
+  "city": "Nairobi",
+  "state": "Nairobi",
+  "country": "KE",
+  "postal_code": "00100"
+}
+```
+
+## Get a charge
+
+```bash
+export CHARGE_ID="8"
+
+curl -sS "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/card-charges/$CHARGE_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Always call this after webhooks and after any 3DS return to refresh final status. Do not treat `return_url` query params as proof of payment.
+
+## 3DS success (short)
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/card-charges" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "10.00",
+    "reference": "order-card-3ds-001",
+    "auth_model": "3ds_required",
+    "return_url": "https://your-app.example/card-return",
+    "browser_info": {
+      "user_agent": "Mozilla/5.0",
+      "accept_header": "text/html",
+      "language": "en-US",
+      "java_enabled": false,
+      "color_depth": 24,
+      "screen_height": 1080,
+      "screen_width": 1920,
+      "timezone_offset": 0
+    },
+    "card": {
+      "number": "4000000000002503",
+      "expiry_month": "12",
+      "expiry_year": "2030",
+      "cvv": "123",
+      "holder_name": "Jane Doe"
+    },
+    "billing_address": {
+      "line_1": "350 Fifth Avenue",
+      "city": "New York",
+      "state": "NY",
+      "country": "US",
+      "postal_code": "10118"
+    },
+    "customer": {
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane@example.com"
+    }
+  }' | jq '.data'
+```
+
+`auth_model: "3ds_required"` requires both `return_url` (HTTPS) and a full `browser_info` object (as in the curl below).
+
+If the response is `requires_action` with `next_action.url`, redirect the customer to that URL (hosted challenge), then **re-GET**. In sandbox, the success 3DS PAN may instead complete immediately with `next_action: null`; still **re-GET** (and/or wait for webhooks). Never treat `return_url` query params alone as paid.
+
+## Webhooks
+
+| Event | When |
+|-------|------|
+| `card_charge.status.changed` | Charge status changed (including `requires_action`, `completed`, `failed`) |
+| `account.credited` | Inflow settled when/if dispatched; for card funding, `source` is `card_charge` and `credit.amount` is the **net** credit |
+
+Treat webhooks as best-effort. Always confirm with `GET …/card-charges/{charge_id}`. See [Webhooks](/webhooks).
+
+## Next steps
+
+- [Accounts & deposits](/deposit-accounts/accounts): open a fiat USD / GBP / EUR rail
+- [Card issuing](/deposit-accounts/card-issuing): disposable / virtual cards on active USD (separate product)
+- [Overview](/deposit-accounts/overview): concepts and status vocabulary
+- [API reference](/api-reference/introduction): Try-it for `POST` / `GET` card-charges

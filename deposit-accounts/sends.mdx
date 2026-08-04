@@ -1,0 +1,91 @@
+# Stablecoin sends
+
+Send **USDC** or **USDT** from a funded stablecoin deposit account to an **external wallet** (preview → confirm). Same shape as [book-transfers](/deposit-accounts/book-transfers), with `to_address` instead of `to_account_id`.
+
+| Environment | Status |
+|-------------|--------|
+| **Live** external wallet (e.g. USDC on Base) | **Ready**. Prefer this path for GA. |
+| **Sandbox** confirm / settlement | **Limited**. Preview may succeed while confirm fails transiently. |
+| Send to another party’s **standing deposit wallet** | **Limited**. Not GA; stuck-`submitted` reconciliation still open. Prefer external wallets. |
+
+{/* INTERNAL TODO SENDS-SANDBOX: when sandbox confirm is reliable, soften sandbox Limited. */}
+{/* INTERNAL TODO SENDS-STANDING-WALLET: when inter-entity deposit-wallet dest is reliable, upgrade Limited → Ready. */}
+{/* INTERNAL TODO SENDS-STUCK-SUBMITTED: reconciliation for send status stuck in submitted. */}
+
+- **Minimum:** typically `1.00` major units (preview `422` with field minimum when below).
+- **Network** must match the account.
+- **Endpoints:** `POST …/sends/preview`, `POST …/sends`, `GET …/sends/{send_id}`.
+- **Statuses:** `processing` → `submitted` → `completed` \| `failed`.
+
+<Note>
+All calls use `X-API-Key` and `$BASE` = sandbox or production. `$ACCOUNT_ID` is the source **stablecoin** account, funded first ([Fund an account](/deposit-accounts/accounts#fund-an-account)).
+</Note>
+
+## Fees
+
+| Stage | Behavior |
+|-------|----------|
+| Preview | Often `fee: "0.00"` with `fee_status: "estimated"` |
+| Confirm / GET | May show a **final** fee (e.g. ~0.01 observed) |
+
+Prefer **final** fee / receive amount for user-facing cost. There is no reliable pre-commit fee-estimate API.
+
+Bank payouts outside this send path can dwarf tiny principals (e.g. large fee on a CAD 1 outflow). Warn partners and show the **post-submit** fee when returned.
+
+## Preview
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/sends/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_address": "0xRecipientWalletAddress",
+    "amount": "5.00",
+    "network": "Base"
+  }' | jq '.data'
+```
+
+```json
+{
+  "preview_token": "<token>",
+  "currency": "USDC",
+  "network": "Base",
+  "amount": "5.00",
+  "fee": "0.00",
+  "receive_amount": "5.00",
+  "fee_status": "estimated",
+  "chain_disclaimer": "Send only USDC on Base. Funds sent on the wrong network may be lost.",
+  "expires_at": "2026-07-29T16:40:00+00:00"
+}
+```
+
+Show `chain_disclaimer` to the user.
+
+## Confirm
+
+```bash
+curl -sS -X POST "$BASE/partner/entities/$ENTITY_ID/accounts/$ACCOUNT_ID/sends" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preview_token": "<token>",
+    "idempotency_key": "partner-send-001"
+  }' | jq '.data'
+```
+
+Requires a funded balance. Same `idempotency_key` returns the prior send. Poll `GET …/sends/{send_id}` or wait for **`account.send.completed`** / **`account.send.failed`**.
+
+## Destination guidance
+
+| Destination | Guidance |
+|-------------|----------|
+| External EOA / known wallet | **GA path** on live (recipient wallet outside Element Pay) |
+| Another partner entity’s deposit-account `wallet_address` | **Limited**. Prefer external wallets. Standing-wallet destinations are not GA (stuck-`submitted` open). Inbound standing-wallet floor rules are on [Fund an account](/deposit-accounts/accounts#fund-an-account). |
+
+There is **no** OpenAPI inter-entity crypto book-transfer; do not invent one from send.
+
+## Next steps
+
+- [Accounts & deposits](/deposit-accounts/accounts)
+- [Overview](/deposit-accounts/overview)
+- [API reference](/api-reference/introduction)

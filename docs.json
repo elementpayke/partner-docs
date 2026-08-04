@@ -41,6 +41,19 @@
             ]
           },
           {
+            "group": "Deposit accounts",
+            "pages": [
+              "deposit-accounts/overview",
+              "deposit-accounts/kyc",
+              "deposit-accounts/accounts",
+              "deposit-accounts/card-funding",
+              "deposit-accounts/card-issuing",
+              "deposit-accounts/currency-conversion",
+              "deposit-accounts/book-transfers",
+              "deposit-accounts/sends"
+            ]
+          },
+          {
             "group": "Corridors",
             "pages": [
               "corridors/overview",
@@ -83,6 +96,16 @@
       "display": "interactive"
     }
   },
+  "redirects": [
+    {
+      "source": "/deposit-accounts/international",
+      "destination": "/deposit-accounts/overview"
+    },
+    {
+      "source": "/deposit-accounts/card-acquiring",
+      "destination": "/deposit-accounts/card-funding"
+    }
+  ],
   "footer": {
     "socials": {
       "github": "https://github.com/elementpayke"

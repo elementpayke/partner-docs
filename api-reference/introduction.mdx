@@ -1,8 +1,8 @@
 # API reference
 
-Interactive reference for the Element Pay Partner API — discovery, quotes, and order acceptance.
+Interactive reference for the Element Pay Partner API — discovery, quotes, order acceptance, and international deposit accounts.
 
-## Included endpoints
+## Ramps & discovery
 
 | Method | Path |
 |--------|------|
@@ -15,6 +15,40 @@ Interactive reference for the Element Pay Partner API — discovery, quotes, and
 | `POST` | `/partner/orders/quote` |
 | `POST` | `/partner/orders/{quote_id}/accept` |
 | `GET` | `/partner/orders/{order_id}` |
+
+## Deposit accounts (entities)
+
+| Method | Path |
+|--------|------|
+| `POST` | `/partner/entities/individuals` |
+| `POST` | `/partner/entities/businesses` |
+| `GET` | `/partner/entities` |
+| `GET` | `/partner/entities/requirements` |
+| `GET` | `/partner/entities/{entity_id}` |
+| `POST` | `/partner/entities/{entity_id}/documents` |
+| `POST` | `/partner/entities/{entity_id}/identification` |
+| `POST` | `/partner/entities/{entity_id}/business-profile` |
+| `POST` | `/partner/entities/{entity_id}/submit` |
+| `POST` `GET` | `/partner/entities/{entity_id}/accounts` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/deposit-instructions` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/book-transfers/preview` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/book-transfers` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/sends/preview` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/sends` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/sends/{send_id}` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/card-charges` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/card-charges/{charge_id}` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}` |
+| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/transactions` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/freeze` |
+| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/unfreeze` |
+
+<Note>
+The **`/partner/entities/*`** surface (international deposit accounts / entity KYC, deposit instructions, book-transfers, stablecoin sends, card funding, and card issuing) is exported into this site’s `openapi.json` under the `partner-entities` tag, so every endpoint above has its own Try-it page. For end-to-end walkthroughs, see [International deposit accounts](/deposit-accounts/overview), [Card funding](/deposit-accounts/card-funding), and [Card issuing](/deposit-accounts/card-issuing).
+</Note>
 
 ## Try it
 

@@ -1,0 +1,209 @@
+# Currency conversion
+
+Convert between deposit accounts for **one entity** using the shared **quote then accept** orders API. Balances stay on that entity’s rails; no external wallet is involved.
+
+<Note>
+Currency conversion uses **`/partner/orders`** (quote → accept), **not** `/partner/entities/...`. The rail is selected by `payment_method.network_id` from discovery plus the entity’s account ids.
+</Note>
+
+**Same-entity only.** Accounts must be **`active`** and funded on the debit side before accept.
+
+### Ready pairs (when accounts are active)
+
+| Direction | Example pairs |
+|-----------|----------------|
+| OnRamp (fiat / stable debit → asset) | EUR → USDC (quoted live); USDT ↔ CAD / EUR patterns; USD → USDC |
+| OffRamp / stable flows | USDT → USD; other catalog rails as discovery lists |
+
+Always use the **quote response** `rate`, `user_pays`, and `user_receives` for UX; never hardcode rates. Sample live OnRamp (quote only, ~2026-08-03): rate **1.129961**, **1.00 EUR → 1.13 USDC** (illustrative only, not an SLA).
+
+### Hold / Limited
+
+| Path | Status |
+|------|--------|
+| **GBP OffRamp** | **Hold** until live accept settles. Quote can succeed; accept may fail (`422`, e.g. `"Transfer could not be completed"`). Do not integrate as GA. |
+| Fiat → fiat (e.g. EUR → GBP) | Not supported |
+
+Quote **`crypto_amount`** for OffRamp is often subject to **`limits.min_amount` ≥ 1** (e.g. `0.5` USDT fails min). Always use the quote response `limits` / error field; small available balances (e.g. 0.59 USDT) block retests until top-up.
+
+{/* INTERNAL TODO GBP-OFFRAMP: when live accept settles, move GBP OffRamp to Ready and remove Hold. */}
+
+<Note>
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production).
+</Note>
+
+## 1. Discover the rail (`network_id`)
+
+```bash
+curl -sS "$BASE/partner/catalog" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+# When catalog is large, narrow with payment-methods / banks for the conversion corridor
+curl -sS "$BASE/partner/payment-methods?order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+curl -sS "$BASE/partner/banks?order_type=OnRamp&currency=EUR" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Use the provider / network **`id`** (UUID or opaque id) as `payment_method.network_id`. Do **not** pick rails by human catalog **title** alone (e.g. “EUR account to USDC”). Titles can be ambiguous across checkout vs **entity deposit-account ledger** conversion; wrong `network_id` fails quote even when labels look right.
+
+Confirm the rail against quote success for entity-scoped conversion (entity + account ids on `payment_method`), or use discovery response fields that label deposit-account / ledger conversion rails when present.
+
+## 2. Quote
+
+Quotes are **short-lived** (partner TTL capped by upstream FX, about 2 to 3 minutes in sandbox). Read `expires_at` and accept promptly.
+
+### Minimal OnRamp body (working pattern)
+
+`account_id` is the **debit** account (fiat or source stable per rail). For many OnRamps the credit rail is ensured automatically. Follow Try-it / OpenAPI if the rail requires `destination_account_id`.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "currency": "EUR",
+    "local_amount": 1.0,
+    "asset": { "currency": "USDC" },
+    "payment_method": {
+      "type": "bank",
+      "network_id": "<from payment-methods / banks catalog>",
+      "entity_id": 3,
+      "account_id": 9
+    }
+  }' | jq '.data'
+```
+
+### OffRamp (crypto / stable → fiat)
+
+`account_id` is the **source** account. `destination_account_id` is the fiat credit account when required (if omitted, API may pick the first matching fiat rail; prefer explicit ids).
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OffRamp",
+    "currency": "EUR",
+    "crypto_amount": 10,
+    "asset": { "currency": "USDC" },
+    "payment_method": {
+      "type": "bank",
+      "network_id": "<USDC-to-EUR rail id>",
+      "entity_id": 18,
+      "account_id": 55,
+      "destination_account_id": 42
+    }
+  }' | jq '.data'
+```
+
+Avoid **GBP OffRamp** until the Hold is lifted.
+
+### Quote request fields
+
+| Field | Role |
+|-------|------|
+| `order_type` | `OnRamp` or `OffRamp` per rail |
+| `currency` | Fiat leg (debit on OnRamp, credit on OffRamp) as required by the rail |
+| `local_amount` | Fiat amount when sizing the fiat leg |
+| `crypto_amount` | Stable/crypto debit amount when sizing the crypto leg |
+| `asset.currency` | Target or source asset (e.g. `USDC`, `USDT`) |
+| `payment_method.type` | `bank` for deposit-account conversion rails |
+| `payment_method.network_id` | Conversion rail id from discovery |
+| `payment_method.entity_id` | Entity that owns the accounts |
+| `payment_method.account_id` | Debit account |
+| `payment_method.destination_account_id` | OffRamp (and some rails): credit account |
+
+### Quote response
+
+```json
+{
+  "quote_id": "<quote_id>",
+  "order_type": "OnRamp",
+  "expires_at": "2026-07-30T12:03:00Z",
+  "rate": 1.129961,
+  "user_pays": { "amount": "1.00", "currency": "EUR" },
+  "user_receives": { "amount": "1.13", "currency": "USDC" },
+  "limits": { "min_amount": 1.0 },
+  "payment_method": { "network_id": "<rail id>" }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `quote_id` | Opaque id to accept; treat as a token |
+| `expires_at` | Accept before this timestamp |
+| `rate` | FX rate for **this** quote only |
+| `user_pays` / `user_receives` | Debit and credit; drive all user-facing amounts from these |
+| `limits.min_amount` | Minimum debit when present |
+
+There is **no** partner `fee` field on this quote; the receive amount is in `user_receives`.
+
+## 3. Accept
+
+Accept before `expires_at`. An empty body is fine.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/<quote_id>/accept" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq '.data'
+```
+
+```json
+{
+  "quote_id": "<quote_id>",
+  "accepted": {
+    "status": "settled",
+    "reference": "<opaque transfer ref>"
+  },
+  "order": {
+    "order_id": "<order_id>",
+    "status": "settled",
+    "order_type": "OnRamp"
+  }
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| `processing` | Settlement submitted; not yet terminal |
+| `settled` | Conversion completed |
+| `failed` | Conversion failed (later update / webhook) |
+
+Sandbox often returns `settled` quickly; still handle `processing` and confirm via webhook or GET.
+
+**GBP OffRamp accept failure:** e.g. `422` `"Transfer could not be completed"`. That is a product Hold, not a misconfigured partner request alone.
+
+## 4. Status, idempotency & webhooks
+
+**Status:** poll `GET /partner/orders/{order_id}` as a backup; prefer webhooks.
+
+**Idempotency:** accept is keyed by **`quote_id`**.
+
+| Situation | Result |
+|-----------|--------|
+| Re-accept after success | Same order replayed (`200`) |
+| Accept while a settle is in progress | `409` |
+| Accept an expired quote | `410` |
+
+**Webhooks:** order events (`order.processing` / `order.settled` / `order.failed`). See [Webhooks](/webhooks). After settlement, read balances with `GET …/accounts/{account_id}`.
+
+## Constraints
+
+| Topic | Value |
+|-------|-------|
+| Scope | Same entity; `active` accounts |
+| Ready (examples) | USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC OnRamp |
+| Hold | GBP OffRamp accept |
+| Fiat ↔ fiat | Not supported |
+| Minimum | Check quote `limits` (OffRamp `crypto_amount` often ≥ `1.00`; sub-1 fails `min_amount`) |
+| Quote lifetime | Short; accept promptly |
+
+## Next steps
+
+- [Accounts & deposits](/deposit-accounts/accounts)
+- [Book-transfers](/deposit-accounts/book-transfers) (fiat same-currency only)
+- [Overview](/deposit-accounts/overview)
