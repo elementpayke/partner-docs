@@ -17,10 +17,11 @@ Opening an unsupported currency returns `422` with the supported list. Currency 
 
 ### USD and readiness
 
-| Entity type | Typical USD path |
-|-------------|------------------|
-| **Business** | Often reaches `active`; poll until active before deposit-instructions or [card issuing](/deposit-accounts/card-issuing) |
-| **Individual** | **Limited**. May stay `pending` longer after a successful open. Treat as readiness, not a failed open. |
+| Entity type | USD bank path |
+|-------------|----------------|
+| **Individual (KE)** | **Not available.** Other fiats (EUR/GBP/CAD) and stablecoin rails remain as enabled. Do not present as temporary lag. |
+| **Individual (other)** | **Limited.** Open may succeed while `pending` after entity `approved` (bank-details KYC / rail readiness). Poll until `active` or treat as unavailable for your program. |
+| **Business** | Often reaches `active`; poll before deposit-instructions or [card issuing](/deposit-accounts/card-issuing). **KE business USD** still unconfirmed; if it stays `pending`, contact Element Pay admin. |
 
 **Partner rules (any currency)**
 
@@ -29,7 +30,8 @@ Opening an unsupported currency returns `422` with the supported list. Currency 
 3. `GET …/deposit-instructions` before ready → **422** `"Deposit instructions are not ready yet"` with `data.hint` to poll account or wait for `account.ready`.
 4. [Card issuing](/deposit-accounts/card-issuing) requires **active fiat USD** only.
 
-{/* INTERNAL TODO INDIVIDUAL-USD: when individual USD lag is closed, update Limited row and related callouts. */}
+{/* INTERNAL TODO INDIVIDUAL-USD: full unsupported-region list; better region denial on webhook/GET. */}
+{/* INTERNAL TODO KE-BUSINESS-USD: confirm KE business USD availability. */}
 
 ## Open accounts (approved entities only)
 
@@ -104,22 +106,22 @@ If not ready: **422** with message and hint. Never invent or cache stale coordin
 | Method | Rail | Status | How |
 |--------|------|--------|-----|
 | **Bank transfer** | Fiat | Ready when `active` | Transfer in account currency to deposit-instructions bank fields |
-| **On-chain transfer** | Stablecoin | **Limited** | Address is returned for display; **do not** assume every external transfer to that standing wallet credits the partner ledger. Undeclared / ad-hoc deposits have failed to credit in live QA. Prefer product-confirmed funding paths; wait for **`account.credited`** before treating balance as funded. |
-| **Card funding** | Fiat USD / GBP / EUR | **Limited** | [Card funding](/deposit-accounts/card-funding); not full corridor GA; ~6 day settlement lag |
+| **On-chain transfer** | Stablecoin | **Ready** (with floor) | Matching asset/network to `wallet_address`. Undeclared inflows can credit when amount is roughly **≥ ~2** USD/stable units; dust-scale (about **1.2 or less**) has failed. Always confirm with balance GET and/or **`account.credited`**. |
+| **Card funding** | Fiat USD / GBP / EUR | **Limited** | [Card funding](/deposit-accounts/card-funding): USD any country; GBP/EUR UK+EU only; ~6 day settlement lag |
 | **Card issuing** | Fiat **USD** `active` | Ready | [Card issuing](/deposit-accounts/card-issuing); spends against USD balance, not a funding method for EUR/GBP |
 
 When an inflow **does** settle, you receive **`account.credited`** ([Webhooks](/webhooks)). For card funding, `source` may be `card_charge` and `credit.amount` is net of fee when posted.
 
 Stablecoin rail caveats:
 
-- Always honor `chain_disclaimer` (asset + network must match).
-- Showing `wallet_address` alone is not a promise that unsolicited on-chain deposits will credit. Confirm via balance GET and/or `account.credited`.
+- Always honor `chain_disclaimer` (asset + network must match; wrong network is not recoverable via partner APIs).
+- Small / dust amounts may not credit. Confirm via `GET …/accounts/{id}` balance and/or `account.credited`; do not treat address display alone as settled.
 - There is no partner “funding session” / hosted crypto checkout on this surface.
 
-{/* INTERNAL TODO CRYPTO-FUND: when standing-wallet credit or a partner funding path is reliable, upgrade on-chain status and soften the caveats above. */}
+{/* INTERNAL TODO CRYPTO-FUND: formal floor API or published limits when product owns one. */}
 
 <Note>
-**Sandbox:** new accounts start at `0.00`. No free USDC/USDT grant via partner APIs. Use internal ops seed when needed before [sends](/deposit-accounts/sends); do not treat sandbox on-chain alone as a guaranteed self-serve fund path.
+**Sandbox:** new accounts start at `0.00`. No free USDC/USDT grant via partner APIs. Use internal ops seed when needed before [sends](/deposit-accounts/sends).
 </Note>
 
 ## What to show end-users

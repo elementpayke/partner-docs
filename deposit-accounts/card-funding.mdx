@@ -31,7 +31,7 @@ All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1`.
 | Rule | Detail |
 |------|--------|
 | **Rails** | Fiat `USD`, `GBP`, `EUR` only. Stablecoin accounts return `422`. |
-| **Country / corridor** | Billing country and card BIN country can **block** a charge even when the rail is open. Example: Kenya (`KE`) billing (or KE-issued cards) may be declined while the same flow works with a supported market (e.g. `US` billing in sandbox). Treat as product/corridor Limited, not a partner payload bug alone. |
+| **Country / corridor** | **USD** card charges: billing/card country is open (**any country**, including KE). **GBP / EUR** card charges: **UK + EU only**. KE blocks observed on **EUR/GBP** paths, not as a blanket “KE blocks all card funding” rule. |
 | **Shape** | Single `POST …/card-charges` (no preview). |
 | **Idempotency** | `reference` is unique per account. Reusing the same `reference` returns the **original** charge (same `charge_id` / `created_at`) and does **not** create a new charge or credit. Always send a **new** `reference` for each real attempt. Upstream may also return `409` on a duplicate reference. |
 | **Response fields** | `charge_id`, `status`, `amount`, `charge_amount`, `fee`, `last_four`, `card_brand`, `next_action` |
@@ -44,9 +44,9 @@ Statuses you will see: `processing` → `requires_action` (3DS) → `completed` 
 
 `billing_address.state` is **required**. Send the province, county, or other subdivision for the billing country (not a US-only concept). Prefer a real subdivision name over a placeholder.
 
-Example shape (Kenya subdivision in `state`): `"country": "KE"`, `"state": "Nairobi"`, with city / line / postal as usual.
+Example shape (Kenya subdivision in `state`): `"country": "KE"`, `"state": "Nairobi"`, with city / line / postal as usual. Valid for **USD** funding field shape.
 
-That example is **field-shape only**. Card funding may still **reject** `KE` (and other blocked markets) at authorize time when the corridor or card program does not allow that billing/card country. Prefer billing and card markets your program has confirmed; surface declined / failed statuses from GET charge rather than inventing workarounds.
+For **GBP / EUR** funding, use UK or EU billing (and card) markets only; non-UK/EU billing (including KE on EUR/GBP) can fail at authorize. Surface declined / failed statuses from GET charge.
 
 ## Auth model
 

@@ -4,12 +4,13 @@ Send **USDC** or **USDT** from a funded stablecoin deposit account to an **exter
 
 | Environment | Status |
 |-------------|--------|
-| **Live** external wallet (e.g. USDC on Base) | **Ready** |
+| **Live** external wallet (e.g. USDC on Base) | **Ready**. Prefer this path for GA. |
 | **Sandbox** confirm / settlement | **Limited**. Preview may succeed while confirm fails transiently. |
-| Send to another party’s **standing deposit wallet** (another entity’s `wallet_address`) | **Limited**. Open stuck-`submitted` cases; do **not** GA as “always credits destination deposit wallet”. |
+| Send to another party’s **standing deposit wallet** | **Limited**. Not GA; stuck-`submitted` reconciliation still open. Prefer external wallets. |
 
 {/* INTERNAL TODO SENDS-SANDBOX: when sandbox confirm is reliable, soften sandbox Limited. */}
-{/* INTERNAL TODO SENDS-STANDING-WALLET: when inter-entity deposit-wallet credit is reliable, upgrade Limited → Ready and document patterns. */}
+{/* INTERNAL TODO SENDS-STANDING-WALLET: when inter-entity deposit-wallet dest is reliable, upgrade Limited → Ready. */}
+{/* INTERNAL TODO SENDS-STUCK-SUBMITTED: reconciliation for send status stuck in submitted. */}
 
 - **Minimum:** typically `1.00` major units (preview `422` with field minimum when below).
 - **Network** must match the account.
@@ -78,8 +79,8 @@ Requires a funded balance. Same `idempotency_key` returns the prior send. Poll `
 
 | Destination | Guidance |
 |-------------|----------|
-| External EOA / known wallet | Supported path for GA on **live** (recipient controls the wallet outside Element Pay) |
-| Another partner entity’s deposit-account `wallet_address` | **Limited**. Do not promise credit to standing deposit wallets (stuck-`submitted` cases and under-credit on undeclared inflows; see [Fund an account](/deposit-accounts/accounts#fund-an-account)). |
+| External EOA / known wallet | **GA path** on live (recipient wallet outside Element Pay) |
+| Another partner entity’s deposit-account `wallet_address` | **Limited**. Prefer external wallets. Standing-wallet destinations are not GA (stuck-`submitted` open). Inbound standing-wallet floor rules are on [Fund an account](/deposit-accounts/accounts#fund-an-account). |
 
 There is **no** OpenAPI inter-entity crypto book-transfer; do not invent one from send.
 

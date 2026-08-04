@@ -17,14 +17,16 @@ Currency conversion uses **`/partner/orders`** (quote → accept), **not** `/par
 
 Always use the **quote response** `rate`, `user_pays`, and `user_receives` for UX; never hardcode rates. Sample live OnRamp (quote only, ~2026-08-03): rate **1.129961**, **1.00 EUR → 1.13 USDC** (illustrative only, not an SLA).
 
-### Hold
+### Hold / Limited
 
 | Path | Status |
 |------|--------|
-| **GBP OffRamp** | **Hold**. Quote can succeed; accept may fail with `422` e.g. `"Transfer could not be completed"`. Do not integrate as GA. |
+| **GBP OffRamp** | **Hold** until live accept settles. Quote can succeed; accept may fail (`422`, e.g. `"Transfer could not be completed"`). Do not integrate as GA. |
 | Fiat → fiat (e.g. EUR → GBP) | Not supported |
 
-{/* INTERNAL TODO GBP-OFFRAMP: when accept stabilizes, move GBP OffRamp to Ready and remove Hold. */}
+Quote **`crypto_amount`** for OffRamp is often subject to **`limits.min_amount` ≥ 1** (e.g. `0.5` USDT fails min). Always use the quote response `limits` / error field; small available balances (e.g. 0.59 USDT) block retests until top-up.
+
+{/* INTERNAL TODO GBP-OFFRAMP: when live accept settles, move GBP OffRamp to Ready and remove Hold. */}
 
 <Note>
 All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production).
@@ -197,7 +199,7 @@ Sandbox often returns `settled` quickly; still handle `processing` and confirm v
 | Ready (examples) | USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC OnRamp |
 | Hold | GBP OffRamp accept |
 | Fiat ↔ fiat | Not supported |
-| Minimum | Often `1.00` major units of the debit leg; check quote `limits` |
+| Minimum | Check quote `limits` (OffRamp `crypto_amount` often ≥ `1.00`; sub-1 fails `min_amount`) |
 | Quote lifetime | Short; accept promptly |
 
 ## Next steps

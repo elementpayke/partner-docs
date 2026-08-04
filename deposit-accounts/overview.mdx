@@ -18,18 +18,18 @@ Honest **Ready / Limited / Hold** for integrators (same shapes as [errors](/erro
 | Individual KYC | **Ready** | Wait for `approved` |
 | Business KYB | **Ready** | Prefer single-officer path first; multi-officer has PoA / document constraints. See [Entity KYC](/deposit-accounts/kyc). |
 | Open EUR / GBP / CAD (fiat) | **Ready** | When `active` + deposit-instructions |
-| Open USDC / USDT wallets | **Ready** | When `active`; address returned. Funding that address is **not** always a guaranteed partner credit (see [Accounts](/deposit-accounts/accounts#fund-an-account)) |
-| Open USD (business) | **Ready** | Poll until `active` before deposit-instructions or [card issuing](/deposit-accounts/card-issuing) |
-| Open USD (individual) | **Limited** | Often stays `pending` longer (rail provisioning). Not a partner bug; this is readiness only. |
+| Open USDC / USDT wallets | **Ready** | When `active`; address returned. On-chain inflows usually credit above a small floor (see [Fund an account](/deposit-accounts/accounts#fund-an-account)); still wait for balance / `account.credited` |
+| Open USD (business) | **Ready** (most) / **Limited** (e.g. KE business unconfirmed) | Often reaches `active`. Poll until active for deposit-instructions or [card issuing](/deposit-accounts/card-issuing). If KE (or other) business USD stays `pending`, contact Element Pay admin |
+| Open USD (individual) | **Limited** | KE individuals: **USD bank not available** (other fiats OK). Other individuals may lag bank-details KYC after entity `approved` (not always “slow provisioning” only) |
 | Fiat book-transfer | **Ready** | Same currency, accounts under your API key |
 | Stablecoin or inter-entity “book-transfer” | **Hold** | Product does **not** exist. Fiat book-transfer only. |
-| External USDC / USDT send | **Ready** (live) | Sandbox send confirm **limited** |
-| Send → another party’s standing deposit wallet | **Limited** | Do not treat as always credits destination; prefer external wallet destinations |
-| Convert USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC | **Ready** | Same entity; **active** accounts; see [Currency conversion](/deposit-accounts/currency-conversion) |
-| GBP OffRamp convert | **Hold** | Quote may work; accept can fail (`422` transfer not completed) |
+| External USDC / USDT send | **Ready** (live) | Prefer external wallets for GA; sandbox confirm **limited** |
+| Send → another party’s standing deposit wallet | **Limited** | Prefer external wallets; standing-wallet dest not GA |
+| Convert USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC | **Ready** | Same entity; **active** accounts; check quote `limits` (often ≥1 crypto unit) |
+| GBP OffRamp convert | **Hold** | Until live accept settles; quote `crypto_amount` often ≥ `1` (see [Currency conversion](/deposit-accounts/currency-conversion)) |
 | Card **issue** (virtual / disposable on active USD) | **Ready** | Live on active USD; sandbox e2e may be limited |
 | Card freeze / unfreeze / list / get / transactions | **API Ready** | Transactions empty until real spend |
-| Card **funding** (card-charges into fiat) | **Limited** | Not full GA for all markets; settlement lag applies. See [Card funding](/deposit-accounts/card-funding). |
+| Card **funding** (card-charges into fiat) | **Limited** | USD: any billing/card country. GBP/EUR: **UK + EU only**. Settlement lag. See [Card funding](/deposit-accounts/card-funding). |
 
 ## The flow
 
@@ -101,7 +101,7 @@ Partners **cannot** register their own wallet as the deposit address. Custody st
 | **Currency conversion** (order) | `processing` → `settled` \| `failed` |
 | **Send** | `processing` → `submitted` → `completed` \| `failed` |
 
-### USD readiness (individuals)
+### USD readiness
 
 | Status | Meaning |
 |--------|---------|
@@ -114,7 +114,9 @@ Partners **cannot** register their own wallet as the deposit address. Custody st
 2. Poll `GET …/accounts/{id}` until `status=active`, or wait for **`account.ready`**.
 3. `GET …/deposit-instructions` while not ready → **422** `"Deposit instructions are not ready yet"` with `hint` to poll account or wait for `account.ready`.
 4. Card issue on pending or non-USD → **422** readiness (active **USD** fiat only).
-5. Individual USD is **often delayed** vs business USD; that is rail provisioning, not a special error code beyond readiness 422s.
+5. **KE individuals:** USD bank is **not available** (EUR/GBP/CAD and stablecoin rails still apply as enabled). Do not treat as temporary lag.
+6. **Other individuals:** USD may stay `pending` after entity `approved` while bank-details KYC completes; not always “slow rail provisioning” alone.
+7. **Business USD:** often reaches `active`. KE business USD is still unconfirmed; if it stays `pending`, contact Element Pay admin.
 
 ## Webhooks
 
@@ -152,13 +154,17 @@ Do not surface raw upstream payloads to end-users.
 ## Sandbox notes
 
 - Individuals often reach `approved` without liveness; businesses may stay `submitted` longer.
-- Individual **USD** may stay `pending` (live and sandbox); business USD more often reaches `active`. Use EUR / GBP / CAD for full fiat drills when USD is pending.
-- No free USDC / USDT grant in partner APIs. Sandbox balances may need ops seed; see [Fund an account](/deposit-accounts/accounts#fund-an-account) before treating on-chain send-to-address as reliable.
+- KE individual **USD** is unavailable; other individual USD may stay `pending` after entity `approved`. Business USD often reaches `active` (confirm KE business separately).
+- No free USDC / USDT grant in partner APIs. Sandbox balances may need ops seed; see [Fund an account](/deposit-accounts/accounts#fund-an-account).
 - Stablecoin **send confirm** is **limited** in sandbox; **live** external sends are Ready.
 
 {/* INTERNAL TODO SENDS-SANDBOX: when sandbox send confirm is reliable, soften the sends row and sandbox bullets. */}
-{/* INTERNAL TODO INDIVIDUAL-USD: when individual USD coord lag is resolved, update Limited → Ready for open USD individual. */}
-{/* INTERNAL TODO GBP-OFFRAMP: when accept stabilizes, move GBP OffRamp to Ready. */}
+{/* INTERNAL TODO SENDS-STUCK-SUBMITTED: reconciling send status stuck in submitted. */}
+{/* INTERNAL TODO INDIVIDUAL-USD: full USD unsupported region list + better region denial on webhook/GET (upstream WIP). */}
+{/* INTERNAL TODO KE-BUSINESS-USD: confirm KE business USD availability rule. */}
+{/* INTERNAL TODO GBP-OFFRAMP: when live accept settles, move GBP OffRamp to Ready. */}
+{/* INTERNAL TODO PENDING-PAYOUT-HOLD: document pending payout vs available balance hold when product settles language. */}
+{/* INTERNAL TODO FEE-SCHEDULE: commercial fee schedule when API or partner commercial pack exists. */}
 
 ## Next steps
 
