@@ -67,14 +67,21 @@ OffRamp deposit address is **per order** from accept. Do not reuse across orders
 
 ## Bank rail
 
-Use `payment_method.type: bank` and `network_id` from:
+Use `payment_method.type: bank` and `network_id` from payment-methods (preferred) or catalog. Provider lists differ by direction — look up with the same `country` and `order_type` as the quote (do not reuse an OnRamp id on OffRamp).
 
 ```bash
-curl -sS "$BASE/partner/banks?country=KE&currency=KES&order_type=OnRamp&payment_method_type=bank" \
-  -H "X-API-Key: $API_KEY" | jq '.data.banks[] | {id, name}'
+curl -sS "$BASE/partner/payment-methods?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq .
+
+curl -sS "$BASE/partner/payment-methods?country=KE&order_type=OffRamp" \
+  -H "X-API-Key: $API_KEY" | jq .
+
+# Also in catalog under payment_methods.bank.providers[] (filter catalog by the quote’s order_type)
+curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data.onramp.countries.KE.payment_methods.bank.providers'
 ```
 
-Bank `network_id` values are also in catalog under `payment_methods.bank.providers[]`. For momo, use catalog only — **`GET /partner/banks` returns 422 for `mobile_money`**.
+For momo, use catalog or payment-methods only — **`GET /partner/banks` returns 422 for `mobile_money`** and is not the primary path for African local fiat bank institutions.
 
 ## Institution (B2B)
 

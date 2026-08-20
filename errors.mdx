@@ -40,7 +40,7 @@ Quote validation often returns:
 
 | `data.field` | Typical fix |
 |--------------|-------------|
-| `payment_method.network_id` | Call `GET /partner/catalog` or `GET /partner/banks` |
+| `payment_method.network_id` | Call `GET /partner/catalog?country=…&order_type=…` or `GET /partner/payment-methods?country=…&order_type=…` matching the quote (African retail bank; skip ledger deposit-account rail ids). See [Nigeria](/corridors/nigeria) / [Kenya](/corridors/kenya) Discovery. |
 | `payment_method.phone_number` | E.164 MSISDN on momo rails |
 | `customer.name` | First and last name (two words) |
 | `customer.dob` | `mm/dd/yyyy` on African retail corridors |

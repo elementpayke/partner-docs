@@ -27,7 +27,7 @@ Sandbox “success/failure” tables below apply to the **customer identity** fi
 |------|--------|
 | `customer.name` | **Two or more words** (e.g. `Jane Doe`). Single given name → `422`. |
 | Unique `customer.uid` | Use a **new uid per test run** (do not reuse across smoke tests). |
-| `payment_method.network_id` | Opaque UUID from **your** sandbox `GET /partner/catalog` or `GET /partner/banks` — do not hardcode from another environment. |
+| `payment_method.network_id` | Opaque UUID from **your** sandbox `GET /partner/catalog` or `GET /partner/payment-methods` for the quote’s **country** and **`order_type`** — do not hardcode from another environment or reuse across directions. For African retail bank (esp. NG), prefer payment-methods / catalog; do not use ledger deposit-account rail ids. |
 | Momo identity | Route phone is `payment_method.phone_number` (E.164) — not a substitute for bank `account_number`. |
 | Bank identity | `payment_method.account_number` + `account_name` when `type` is `bank`. |
 | Nigeria retail | `additional_id_type: "bvn"` and `additional_id_number` (e.g. `12345678901`). |
