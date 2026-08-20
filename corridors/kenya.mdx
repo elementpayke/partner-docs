@@ -67,13 +67,16 @@ OffRamp deposit address is **per order** from accept. Do not reuse across orders
 
 ## Bank rail
 
-Use `payment_method.type: bank` and `network_id` from payment-methods (preferred) or catalog:
+Use `payment_method.type: bank` and `network_id` from payment-methods (preferred) or catalog. Provider lists differ by direction — look up with the same `country` and `order_type` as the quote (do not reuse an OnRamp id on OffRamp).
 
 ```bash
 curl -sS "$BASE/partner/payment-methods?country=KE&order_type=OnRamp" \
   -H "X-API-Key: $API_KEY" | jq .
 
-# Also in catalog under payment_methods.bank.providers[]
+curl -sS "$BASE/partner/payment-methods?country=KE&order_type=OffRamp" \
+  -H "X-API-Key: $API_KEY" | jq .
+
+# Also in catalog under payment_methods.bank.providers[] (filter catalog by the quote’s order_type)
 curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
   -H "X-API-Key: $API_KEY" | jq '.data.onramp.countries.KE.payment_methods.bank.providers'
 ```
