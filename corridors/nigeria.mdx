@@ -12,10 +12,21 @@ Nigeria supports **bank transfer** for OnRamp and OffRamp. Retail customers requ
 
 ## Discovery
 
+Retail bank institutions come from **payment-methods** (or catalog `payment_methods.bank.providers[]`). Do **not** use `GET /partner/banks` for Nigeria retail — that path returns deposit-account ledger rails, not retail bank transfer institutions.
+
 ```bash
-curl -sS "$BASE/partner/banks?country=NG&currency=NGN&order_type=OnRamp&payment_method_type=bank" \
-  -H "X-API-Key: $API_KEY" | jq '.data.banks[] | {id, name}'
+curl -sS "$BASE/partner/payment-methods?country=NG&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq .
+
+curl -sS "$BASE/partner/payment-methods?country=NG&order_type=OffRamp" \
+  -H "X-API-Key: $API_KEY" | jq .
 ```
+
+Take `network_id` from `methods[].networks[]` (or catalog `payment_methods.bank.providers[].id`) — bank institution names. Quote with `type: bank`, `account_number`, `account_name`, and BVN for retail.
+
+<Warning>
+Do **not** pick ids whose codes look like `NGN_ACCOUNT_USDC` / `USDC_NGN_ACCOUNT` (or labels such as “NGN account to USDC” / “USDC to NGN account”). Those are deposit-account ledger rails and require `payment_method.entity_id` + `payment_method.account_id`, not retail bank transfer.
+</Warning>
 
 ## Sandbox bank account
 
@@ -69,6 +80,8 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
     "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
   }'
 ```
+
+Example `network_id` above is **illustrative** — always re-fetch from payment-methods (or catalog) on **your** environment.
 
 Quote response includes **`payment_instructions`** with the bank account the customer must transfer to — display before accept.
 

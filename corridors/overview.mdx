@@ -8,9 +8,9 @@ African local fiat corridors share the same integration pattern. Differences are
 |----------|-----|----------------------------|
 | `GET /partner/catalog` | **Preferred** — full tree for checkout UI | `onramp.countries` / `offramp.countries` → `payment_methods` → `providers[]` |
 | `GET /partner/corridors` | Lightweight country/currency list | `african_markets[]`, `international_bank.currencies[]` |
-| `GET /partner/payment-methods` | Methods for one corridor |
+| `GET /partner/payment-methods` | Methods + institution `network_id`s for one corridor (preferred for African local fiat bank) |
 | `GET /partner/order-requirements` | Required customer/payment fields (optional `customer_type=institution`) |
-| `GET /partner/banks` | Bank institution UUIDs (`payment_method_type=bank`) |
+| `GET /partner/banks` | Ledger / deposit-account rails in some markets — **not** the retail NG institution picker today; prefer payment-methods or catalog for African retail bank |
 | `GET /partner/rates/indicative` | Non-binding FX ticker |
 
 Always run discovery on **your** environment — `network_id` UUIDs are not portable across sandbox resets.
@@ -30,13 +30,14 @@ Provider lists in catalog **differ by direction** — filter with `?order_type=O
 
 - `payment_method.type`: `mobile_money`
 - `payment_method.phone_number`: E.164 MSISDN (routing identity)
-- `payment_method.network_id`: from catalog `payment_methods.*.providers[].id` or `GET /partner/banks` `banks[].id`
+- `payment_method.network_id`: from catalog `payment_methods.*.providers[].id` or `GET /partner/payment-methods` `methods[].networks[]`
 
 ### Bank
 
 - `payment_method.type`: `bank`
-- `payment_method.network_id`: from `GET /partner/banks` `banks[].id` or catalog `payment_methods.bank.providers[].id`
+- `payment_method.network_id`: from `GET /partner/payment-methods` `methods[].networks[]` or catalog `payment_methods.bank.providers[].id` (preferred for African local fiat, especially NG)
 - `account_number`, `account_name` required
+- Skip ids that look like deposit-account ledger rails (e.g. codes/labels such as `NGN_ACCOUNT_USDC` / “NGN account to USDC”) — those need `entity_id` + `account_id`, not retail bank transfer
 
 ## Customer type (retail vs institution)
 
