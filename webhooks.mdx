@@ -10,8 +10,6 @@ Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox 
 
 ## Events
 
-### Orders (African local-fiat quote → accept)
-
 | Header `X-Webhook-Event` | When |
 |--------------------------|------|
 | `order.processing` | Quote accepted; rail execution started |
@@ -65,11 +63,9 @@ t=1710000000,v1=<base64_hmac>
 2. Compute HMAC-SHA256 over `{t}.{raw_body}` using your `webhook_secret`.
 3. Compare constant-time to `v1`.
 
-## Delivery, retries & idempotency
+## Idempotency
 
-Order webhooks (`order.*`) are retried on transient DNS/timeout only (up to 3 attempts, backoff capped at 5s). Non-2xx HTTP responses are **not** retried. Dedupe on `X-Webhook-Id`.
-
-Return **2xx** quickly and do heavy work asynchronously. Always reconcile with a GET rather than relying solely on the webhook.
+Use **`X-Webhook-Id`** to deduplicate deliveries. Order webhooks are retried on transient DNS/timeout only (up to 3 attempts, backoff capped at 5s); non-2xx HTTP responses are **not** retried. Return **2xx** quickly and do heavy work asynchronously. Confirm settlement with `GET /partner/orders/{order_id}` rather than relying solely on the webhook.
 
 ## Local testing
 

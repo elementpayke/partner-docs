@@ -90,16 +90,6 @@
       "display": "interactive"
     }
   },
-  "redirects": [
-    {
-      "source": "/deposit-accounts/international",
-      "destination": "/deposit-accounts/overview"
-    },
-    {
-      "source": "/deposit-accounts/card-acquiring",
-      "destination": "/deposit-accounts/card-funding"
-    }
-  ],
   "footer": {
     "socials": {
       "github": "https://github.com/elementpayke"

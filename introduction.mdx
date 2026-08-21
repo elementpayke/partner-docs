@@ -2,13 +2,13 @@
 
 Provider-neutral **fiat ↔ crypto** ramps for B2B partners.
 
-Integrate once against Element Pay. We route local African fiat (mobile money and bank) by corridor, return binding quotes, and notify your backend via webhooks when orders settle.
+Integrate once against Element Pay — we route local African fiat (mobile money and bank) by corridor, return binding quotes, and notify your backend via webhooks when orders settle.
 
 ## What you can do today
 
 | Product | Markets | Flow |
 |---------|---------|------|
-| **OnRamp** | African local fiat (**see catalog**) (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin on your chosen network |
+| **OnRamp** | African local fiat — **see catalog** (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin on your chosen network |
 | **OffRamp** | Same corridors when enabled for your key | Customer sends stablecoin → receives fiat to momo or bank |
 | **Customers** | Vault KYC (`pcus_*`) | Create customer → upload docs → submit → `approved` → optional `customer_id` on quote. See [Customers quickstart](/customers/quickstart) |
 
@@ -18,9 +18,9 @@ Supported **countries and payment methods** (momo vs bank, provider lists, min/m
 
 Every order follows the same three steps:
 
-1. **Discover:** `GET /partner/catalog` (countries, methods, providers)
-2. **Quote:** `POST /partner/orders/quote`
-3. **Accept:** `POST /partner/orders/{quote_id}/accept`
+1. **Discover** — `GET /partner/catalog` (countries, methods, providers)
+2. **Quote** — `POST /partner/orders/quote`
+3. **Accept** — `POST /partner/orders/{quote_id}/accept`
 
 Settlement status is delivered on your API key **`webhook_url`** (`order.processing`, `order.settled`, `order.failed`).
 
