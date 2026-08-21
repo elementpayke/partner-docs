@@ -4,10 +4,6 @@ Local fiat sandbox outcomes are **deterministic**. Use the values below so you c
 
 Sandbox forces outcomes with the test values in the tables below (`1111111111` / `0000000000`, and `+{countryCode}1111111111` / `+{countryCode}0000000000`). Treat them as Element Pay sandbox identifiers only.
 
-<Note>
-**Sandbox mobile money:** sandbox does **not** send a real STK / USSD push to the handset. Success and failure are simulated with the **magic test numbers** below. Production uses the customer’s real MSISDN and a live prompt.
-</Note>
-
 <Warning>
 **Sandbox-only — never send these on live.** Do **not** put `1111111111`, `0000000000`, or fake `+…1111111111` / `+…0000000000` phones on **production** quotes. Live must use the **real** customer mobile money MSISDN or bank account. Sending sandbox test account numbers in production will fail or mis-route settlement.
 </Warning>
