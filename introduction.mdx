@@ -10,9 +10,9 @@ Integrate once against Element Pay. We route local African fiat (mobile money an
 |---------|---------|------|
 | **OnRamp** | African local fiat (**see catalog**) (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin on your chosen network |
 | **OffRamp** | Same corridors when enabled for your key | Customer sends stablecoin → receives fiat to momo or bank |
-| **International deposit accounts** | EUR / GBP / USD / CAD (+ USDC / USDT wallets) | Entity KYC → open deposit accounts (`/partner/entities/*`) → deposit instructions / **card funding** (Limited) → **card issuing** (active USD) → fiat book-transfers / conversion / **stablecoin sends** |
+| **Customers** | Vault KYC (`pcus_*`) | Create customer → submit → `approved` → optional `customer_id` on quote; open accounts when `deposit_account=ready`. See [Customers quickstart](/customers/quickstart) |
 
-Supported **countries and payment methods** (momo vs bank, provider lists, min/max) for African ramps are returned by discovery. Start with `GET /partner/catalog`. Details: [Corridors overview](/corridors/overview). Deposit accounts: [International deposit accounts](/deposit-accounts/overview). Extra markets: contact compliance.
+Supported **countries and payment methods** (momo vs bank, provider lists, min/max) for African ramps are returned by discovery. Start with `GET /partner/catalog`. Details: [Corridors overview](/corridors/overview). Extra markets: contact compliance.
 
 ## Core pattern
 
@@ -25,8 +25,11 @@ Every order follows the same three steps:
 Settlement status is delivered on your API key **`webhook_url`** (`order.processing`, `order.settled`, `order.failed`).
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
+  <Card title="Orders quickstart" icon="rocket" href="/quickstart">
     Sandbox setup and first KE OnRamp in under 10 minutes.
+  </Card>
+  <Card title="Customers quickstart" icon="user" href="/customers/quickstart">
+    Vault KYC (`pcus_*`) and optional `customer_id` on quote.
   </Card>
   <Card title="API reference" icon="code" href="/api-reference/introduction">
     OpenAPI-generated endpoint reference.

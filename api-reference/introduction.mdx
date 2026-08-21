@@ -1,6 +1,8 @@
 # API reference
 
-Interactive reference for the Element Pay Partner API — discovery, quotes, order acceptance, and international deposit accounts.
+Interactive reference for the Element Pay Partner API — discovery, quotes, order acceptance, customer vault, and deposit accounts.
+
+Public identity for new integrations is **`customer_id`** (`pcus_*`). See [Customers quickstart](/customers/quickstart).
 
 ## Ramps & discovery
 
@@ -16,7 +18,30 @@ Interactive reference for the Element Pay Partner API — discovery, quotes, ord
 | `POST` | `/partner/orders/{quote_id}/accept` |
 | `GET` | `/partner/orders/{order_id}` |
 
-## Deposit accounts (entities)
+## Customers (vault + accounts) — preferred
+
+| Method | Path |
+|--------|------|
+| `GET` | `/partner/customers/requirements` |
+| `POST` | `/partner/customers` |
+| `GET` | `/partner/customers` |
+| `GET` | `/partner/customers/{customer_id}` |
+| `PATCH` | `/partner/customers/{customer_id}` |
+| `POST` | `/partner/customers/{customer_id}/documents` |
+| `POST` | `/partner/customers/{customer_id}/submit` |
+| `POST` | `/partner/customers/{customer_id}/deposit-account/retry` |
+| `POST` `GET` | `/partner/customers/{customer_id}/accounts` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` |
+
+Guides: [Customers quickstart](/customers/quickstart) · [Route cheat sheet](/customers/route-cheat-sheet).
+
+<Note>
+OpenAPI Try-it for customer routes appears once those operations are exported into this site’s `openapi.json`. Until then, use the curls in the Customers quickstart.
+</Note>
+
+## Legacy entities (existing integrations only)
+
+Do **not** adopt `/partner/entities/*` for new builds. Money ops not yet facaded under `customer_id` (deposit-instructions, sends, book-transfers, cards) remain on these paths for **existing** integrations until customer-scoped facades ship.
 
 | Method | Path |
 |--------|------|
@@ -46,10 +71,6 @@ Interactive reference for the Element Pay Partner API — discovery, quotes, ord
 | `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/freeze` |
 | `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/unfreeze` |
 
-<Note>
-The **`/partner/entities/*`** surface (international deposit accounts / entity KYC, deposit instructions, book-transfers, stablecoin sends, card funding, and card issuing) is exported into this site’s `openapi.json` under the `partner-entities` tag, so every endpoint above has its own Try-it page. For end-to-end walkthroughs, see [International deposit accounts](/deposit-accounts/overview), [Card funding](/deposit-accounts/card-funding), and [Card issuing](/deposit-accounts/card-issuing).
-</Note>
-
 ## Try it
 
-Use **Try it** on any endpoint with your sandbox `X-API-Key`. Requests are sent to the sandbox base URL configured for this site.
+Use **Try it** on any OpenAPI endpoint with your sandbox `X-API-Key`. Requests are sent to the sandbox base URL configured for this site.

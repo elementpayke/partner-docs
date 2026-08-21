@@ -1,12 +1,12 @@
 # Currency conversion
 
-Convert between deposit accounts for **one entity** using the shared **quote then accept** orders API. Balances stay on that entity’s rails; no external wallet is involved.
+Convert between deposit accounts for **one customer** using the shared **quote then accept** orders API. Balances stay on that customer’s rails; no external wallet is involved.
 
 <Note>
-Currency conversion uses **`/partner/orders`** (quote → accept), **not** `/partner/entities/...`. The rail is selected by `payment_method.network_id` from discovery plus the entity’s account ids.
+Currency conversion uses **`/partner/orders`** (quote → accept), **not** nested account money-op routes. The rail is selected by `payment_method.network_id` from discovery plus the customer’s account ids. Prefer vault `customer_id` for identity ([Customers quickstart](/customers/quickstart)). Legacy examples that pass `entity_id` on `payment_method` are for older integrations only — see OpenAPI for the current payment_method shape.
 </Note>
 
-**Same-entity only.** Accounts must be **`active`** and funded on the debit side before accept.
+**Same-customer only.** Accounts must be **`active`** and funded on the debit side before accept.
 
 ### Ready pairs (when accounts are active)
 

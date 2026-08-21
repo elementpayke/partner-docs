@@ -1,0 +1,14 @@
+{
+  "_note": "TEMPORARILY HIDDEN from docs.json navigation. Paste this group back under Guides when ready.",
+  "group": "Deposit accounts",
+  "pages": [
+    "deposit-accounts/overview",
+    "deposit-accounts/kyc",
+    "deposit-accounts/accounts",
+    "deposit-accounts/card-funding",
+    "deposit-accounts/card-issuing",
+    "deposit-accounts/currency-conversion",
+    "deposit-accounts/book-transfers",
+    "deposit-accounts/sends"
+  ]
+}

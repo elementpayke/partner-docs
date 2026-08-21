@@ -1,13 +1,17 @@
 # Book-transfers (fiat)
 
-Move funds **between two fiat accounts under your API key** (any entities you own) with **preview then confirm**. Both accounts must be `active` and the **same currency**. Fee observed for same-currency book-transfer: often **0**. See [Accounts & deposits](/deposit-accounts/accounts) first.
+Move funds **between two fiat accounts under your API key** with **preview then confirm**. Both accounts must be `active` and the **same currency**. Fee observed for same-currency book-transfer: often **0**. See [Accounts & deposits](/deposit-accounts/accounts) first.
 
 <Warning>
-**Fiat only.** There is **no** stablecoin book-transfer and **no** inter-entity crypto book-transfer product. To move USDC/USDT off-platform, use [Stablecoin sends](/deposit-accounts/sends). To change currency on-entity, use [Currency conversion](/deposit-accounts/currency-conversion).
+**Incremental facade:** Customer-scoped book-transfers under `/partner/customers/{customer_id}/…` are **coming**. Paths below are **legacy `/partner/entities/…`** for **existing** integrations only. **New integrators:** complete vault KYC + customer accounts now ([Customers quickstart](/customers/quickstart)); do not build new entity KYC or treat entity URLs as the long-term API.
+</Warning>
+
+<Warning>
+**Fiat only.** There is **no** stablecoin book-transfer and **no** inter-customer crypto book-transfer product. To move USDC/USDT off-platform, use [Stablecoin sends](/deposit-accounts/sends). To change currency, use [Currency conversion](/deposit-accounts/currency-conversion).
 </Warning>
 
 <Note>
-All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production). `$ACCOUNT_ID` is the **source** fiat account.
+All calls use `X-API-Key` and `$BASE` = sandbox or production. `$ACCOUNT_ID` is the **source** fiat account. `$ENTITY_ID` below is legacy only.
 </Note>
 
 ## Preview

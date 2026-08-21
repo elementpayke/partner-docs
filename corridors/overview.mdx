@@ -37,7 +37,7 @@ Provider lists in catalog **differ by direction** — filter with `?order_type=O
 - `payment_method.type`: `bank`
 - `payment_method.network_id`: from `GET /partner/payment-methods` `methods[].networks[]` or catalog `payment_methods.bank.providers[].id` (preferred for African local fiat, especially NG)
 - `account_number`, `account_name` required
-- Skip ids that look like deposit-account ledger rails (e.g. codes/labels such as `NGN_ACCOUNT_USDC` / “NGN account to USDC”) — those need `entity_id` + `account_id`, not retail bank transfer
+- Skip ids that look like deposit-account ledger rails (e.g. codes/labels such as `NGN_ACCOUNT_USDC` / “NGN account to USDC”) — those need deposit-account `account_id` (and legacy `entity_id` on older integrations), not retail bank transfer
 
 ## Customer type (retail vs institution)
 
