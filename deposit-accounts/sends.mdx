@@ -2,10 +2,6 @@
 
 Send **USDC** or **USDT** from a funded stablecoin deposit account to an **external wallet** (preview → confirm). Same shape as [book-transfers](/deposit-accounts/book-transfers), with `to_address` instead of `to_account_id`.
 
-<Warning>
-**Incremental facade:** Customer-scoped sends under `/partner/customers/{customer_id}/…` are **coming**. Paths below are **legacy `/partner/entities/…`** for **existing** integrations only. **New integrators:** use [Customers quickstart](/customers/quickstart) for identity + accounts; do not adopt entity URLs for new builds.
-</Warning>
-
 | Environment | Status |
 |-------------|--------|
 | **Live** external wallet (e.g. USDC on Base) | **Ready**. Prefer this path for GA. |
@@ -18,11 +14,11 @@ Send **USDC** or **USDT** from a funded stablecoin deposit account to an **exter
 
 - **Minimum:** typically `1.00` major units (preview `422` with field minimum when below).
 - **Network** must match the account.
-- **Endpoints (legacy):** `POST …/entities/{entity_id}/accounts/{account_id}/sends/preview`, `POST …/sends`, `GET …/sends/{send_id}`.
+- **Endpoints:** `POST …/sends/preview`, `POST …/sends`, `GET …/sends/{send_id}`.
 - **Statuses:** `processing` → `submitted` → `completed` \| `failed`.
 
 <Note>
-All calls use `X-API-Key` and `$BASE` = sandbox or production. `$ACCOUNT_ID` is the source **stablecoin** account, funded first ([Fund an account](/deposit-accounts/accounts#fund-an-account)). `$ENTITY_ID` below is legacy only.
+All calls use `X-API-Key` and `$BASE` = sandbox or production. `$ACCOUNT_ID` is the source **stablecoin** account, funded first ([Fund an account](/deposit-accounts/accounts#fund-an-account)).
 </Note>
 
 ## Fees

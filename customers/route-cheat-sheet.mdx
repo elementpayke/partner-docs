@@ -2,26 +2,17 @@
 
 Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
-## Vault
+## Vault KYC
 
 | Method | Path | Notes |
 |--------|------|-------|
 | `GET` | `/partner/customers/requirements` | `type=individual\|business`, optional `country` |
 | `POST` | `/partner/customers` | `partner_customer_ref`, `type`, `profile` |
 | `GET` | `/partner/customers` | Optional `status`, `limit` |
-| `GET` | `/partner/customers/{customer_id}` | Read `status` + `products.deposit_account` |
+| `GET` | `/partner/customers/{customer_id}` | Read `status` |
 | `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while incomplete |
 | `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
-| `POST` | `/partner/customers/{customer_id}/deposit-account/retry` | When product is `failed` |
-
-## Accounts (`deposit_account=ready`)
-
-| Method | Path |
-|--------|------|
-| `POST` | `/partner/customers/{customer_id}/accounts` |
-| `GET` | `/partner/customers/{customer_id}/accounts` |
-| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` |
 
 ## Orders
 
@@ -30,13 +21,8 @@ Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. B
 | `POST` | `/partner/orders/quote` | Prefer `customer_id` when `approved` |
 | `POST` | `/partner/orders/{quote_id}/accept` | Unchanged |
 
-## Gates
+## Gate
 
 | Action | Required |
 |--------|----------|
 | Quote / accept with `customer_id` | `status=approved` |
-| Open / list / get accounts | `deposit_account=ready` |
-
-<Warning>
-Do not use `/partner/entities/*` for new integrations. See [Customers quickstart — Roadmap](/customers/quickstart#roadmap).
-</Warning>

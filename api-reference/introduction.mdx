@@ -1,8 +1,8 @@
 # API reference
 
-Interactive reference for the Element Pay Partner API — discovery, quotes, order acceptance, customer vault, and deposit accounts.
+Interactive reference for the Element Pay Partner API — discovery, quotes, order acceptance, and customer vault KYC.
 
-Public identity for new integrations is **`customer_id`** (`pcus_*`). See [Customers quickstart](/customers/quickstart).
+Public customer identity is **`customer_id`** (`pcus_*`). See [Customers quickstart](/customers/quickstart).
 
 ## Ramps & discovery
 
@@ -18,7 +18,7 @@ Public identity for new integrations is **`customer_id`** (`pcus_*`). See [Custo
 | `POST` | `/partner/orders/{quote_id}/accept` |
 | `GET` | `/partner/orders/{order_id}` |
 
-## Customers (vault + accounts) — preferred
+## Customers (vault KYC)
 
 | Method | Path |
 |--------|------|
@@ -29,47 +29,12 @@ Public identity for new integrations is **`customer_id`** (`pcus_*`). See [Custo
 | `PATCH` | `/partner/customers/{customer_id}` |
 | `POST` | `/partner/customers/{customer_id}/documents` |
 | `POST` | `/partner/customers/{customer_id}/submit` |
-| `POST` | `/partner/customers/{customer_id}/deposit-account/retry` |
-| `POST` `GET` | `/partner/customers/{customer_id}/accounts` |
-| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` |
 
 Guides: [Customers quickstart](/customers/quickstart) · [Route cheat sheet](/customers/route-cheat-sheet).
 
 <Note>
 OpenAPI Try-it for customer routes appears once those operations are exported into this site’s `openapi.json`. Until then, use the curls in the Customers quickstart.
 </Note>
-
-## Legacy entities (existing integrations only)
-
-Do **not** adopt `/partner/entities/*` for new builds. Money ops not yet facaded under `customer_id` (deposit-instructions, sends, book-transfers, cards) remain on these paths for **existing** integrations until customer-scoped facades ship.
-
-| Method | Path |
-|--------|------|
-| `POST` | `/partner/entities/individuals` |
-| `POST` | `/partner/entities/businesses` |
-| `GET` | `/partner/entities` |
-| `GET` | `/partner/entities/requirements` |
-| `GET` | `/partner/entities/{entity_id}` |
-| `POST` | `/partner/entities/{entity_id}/documents` |
-| `POST` | `/partner/entities/{entity_id}/identification` |
-| `POST` | `/partner/entities/{entity_id}/business-profile` |
-| `POST` | `/partner/entities/{entity_id}/submit` |
-| `POST` `GET` | `/partner/entities/{entity_id}/accounts` |
-| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}` |
-| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/deposit-instructions` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/book-transfers/preview` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/book-transfers` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/sends/preview` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/sends` |
-| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/sends/{send_id}` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/card-charges` |
-| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/card-charges/{charge_id}` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
-| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
-| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}` |
-| `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/transactions` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/freeze` |
-| `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/unfreeze` |
 
 ## Try it
 

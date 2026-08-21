@@ -25,7 +25,7 @@ curl -sS "$BASE/partner/payment-methods?country=NG&order_type=OffRamp" \
 Take `network_id` from `methods[].networks[]` (or catalog `payment_methods.bank.providers[].id`) — bank institution names. Quote with `type: bank`, `account_number`, `account_name`, and BVN for retail.
 
 <Warning>
-Do **not** pick ids whose codes look like `NGN_ACCOUNT_USDC` / `USDC_NGN_ACCOUNT` (or labels such as “NGN account to USDC” / “USDC to NGN account”). Those are deposit-account ledger rails and require deposit-account account ids (legacy `payment_method.entity_id` + `payment_method.account_id` on older integrations), not retail bank transfer.
+Do **not** pick ids whose codes look like `NGN_ACCOUNT_USDC` / `USDC_NGN_ACCOUNT` (or labels such as “NGN account to USDC” / “USDC to NGN account”). Those are deposit-account ledger rails, not retail bank transfer institutions.
 </Warning>
 
 ## Sandbox bank account

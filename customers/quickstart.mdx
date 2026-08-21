@@ -1,19 +1,8 @@
 # Customers quickstart
 
-Onboard end-customers once into the **customer vault**, reuse a stable `customer_id` (`pcus_*`) on quotes, and open deposit rails when the deposit-account product is ready.
+Onboard end-customers once into the **customer vault**. You get a stable `customer_id` (`pcus_*`) to reuse on quotes instead of resending full KYC on every order.
 
-<Note>
-Public identity is **`customer_id`** only. Legacy `/partner/entities/*` exists for older banking ops **do not adopt it for new integrations**. Customer-scoped sends, payouts, cards, and deposit-instructions are coming next (see [Roadmap](#roadmap)).
-</Note>
-
-## Two independent gates
-
-| Gate | Condition | Unlocks |
-|------|-----------|---------|
-| **Orders** | `status=approved` | Quote / accept with `customer_id` |
-| **Deposit accounts** | `products.deposit_account.status=ready` | `GET` / `POST` `/partner/customers/{customer_id}/accounts` |
-
-Inline `customer` on `POST /partner/orders/quote` still works (require-`customer_id` flag is **not** enabled). Prefer `customer_id` for new integrations.
+Inline `customer` on `POST /partner/orders/quote` still works. Prefer `customer_id` once the vault case is `approved`.
 
 ## Auth and environments
 
@@ -35,27 +24,13 @@ Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
 
 ## Status model
 
-### Customer `status`
-
 | Status | Meaning |
 |--------|---------|
 | `incomplete` | Profile / docs still being collected |
 | `pending_review` | Submitted; waiting for Element Pay review |
-| `approved` | Cleared for quote/accept with `customer_id` |
+| `approved` | May quote / accept with `customer_id` |
 | `rejected` | Review declined |
 | `suspended` | Blocked |
-
-### `products.deposit_account.status`
-
-| Status | Meaning |
-|--------|---------|
-| `none` | Banking profile not started |
-| `provisioning` | Banking KYC in progress after EP approve |
-| `ready` | May open / list / get accounts under this customer |
-| `failed` | Provision failed — call [retry](#7-retry-deposit-account-if-failed) |
-| `unavailable` | Product not available for this case |
-
-`approved` alone does **not** unlock accounts.
 
 ## Happy path
 
@@ -72,11 +47,11 @@ Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
   <Step title="Submit">
     → typically `pending_review`
   </Step>
-  <Step title="Approve + deposit product">
-    Wait for `status=approved`. `deposit_account` may become `provisioning` then `ready`.
+  <Step title="Wait for approved">
+    Poll `GET /partner/customers/{customer_id}` until `status=approved`
   </Step>
-  <Step title="Quote and/or accounts">
-    **6a** Quote with `customer_id` when approved. **6b** Open/list accounts only when `deposit_account=ready`.
+  <Step title="Quote (optional)">
+    Pass `customer_id` on `POST /partner/orders/quote` instead of a full inline `customer`
   </Step>
 </Steps>
 
@@ -157,19 +132,19 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/documents" \
 curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/submit" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{}' | jq '.data | {id, status, products}'
+  -d '{}' | jq '.data | {id, status}'
 ```
 
 Incomplete package → **422** with `missing[]`.
 
-## 5. Check status + deposit account
+## 5. Poll until approved
 
 ```bash
 curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
   -H "X-API-Key: $API_KEY" | jq '{
     id: .data.id,
     status: .data.status,
-    deposit_account: .data.products.deposit_account
+    partner_customer_ref: .data.partner_customer_ref
   }'
 ```
 
@@ -179,18 +154,15 @@ Example (staging smoke, PII redacted):
 {
   "id": "pcus_06a83150db3c",
   "status": "approved",
-  "deposit_account": { "status": "ready" }
+  "partner_customer_ref": "aly-live"
 }
 ```
 
-| You need… | Wait until… |
-|-----------|-------------|
-| Quote with `customer_id` | `status == "approved"` |
-| Open / list accounts | `products.deposit_account.status == "ready"` |
+Use `customer_id` on quote only when `status == "approved"`.
 
-## 6a. Quote with `customer_id`
+## 6. Quote with `customer_id` (optional)
 
-`payment_method` and `asset` remain required. Omit full inline `customer` when using `customer_id`. Accept is unchanged (`POST /partner/orders/{quote_id}/accept` with `{}`); identity is already on the quote when hydrated from the vault.
+`payment_method` and `asset` remain required. Omit the full inline `customer` object when using `customer_id`. Accept is unchanged (`POST /partner/orders/{quote_id}/accept` with `{}`).
 
 Amounts / networks / `network_id` are illustrative — discover `network_id` from payment-methods or catalog for the same `country` + `order_type`.
 
@@ -219,86 +191,20 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
 
 Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
 
-## 6b. Accounts (`deposit_account=ready` only)
-
-```bash
-curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
-  -H "X-API-Key: $API_KEY" | jq '.data'
-
-curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
-  -H "X-API-Key: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "asset_type": "fiat",
-    "currency": "CAD"
-  }' | jq '.data'
-
-curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
-  -H "X-API-Key: $API_KEY" | jq '.data'
-```
-
-Body fields: `asset_type`, `currency`, optional `network` (stablecoin), optional `display_name`. If rejected, see [API reference](/api-reference/introduction) rather than guessing.
-
-Smoke: list with multiple rails; sample CAD account included `customer_id`.
-
-## 7. Retry deposit account if `failed`
-
-```bash
-curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/deposit-account/retry" \
-  -H "X-API-Key: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{}' | jq '.data | {id, status, products}'
-```
-
-Best-effort; errors are partner-neutral. Re-GET until `ready`, or contact Element Pay if stuck on `failed` / `unavailable`.
-
 ## Errors
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Missing profile/docs on submit | `422` + `missing[]` | PATCH / upload, resubmit |
 | Quote with unapproved `customer_id` | `4xx` | Wait for `approved` |
-| Accounts while not `ready` | `4xx` | Poll product; retry if `failed` |
 | Unknown / other-tenant id | `404` | Use id from this API key |
 | Bad key | `401` | Fix `X-API-Key` |
 
-## Migration
-
-| Phase | Behavior |
-|-------|----------|
-| **0 (now)** | Optional `customer_id`; inline `customer` still OK |
-| **1** | New end-users get `pcus_*`; prefer `customer_id` on quote |
-| **2** | Backfill repeat counterparties into the vault |
-| **3 (later)** | Require `customer_id` via flag — **not enabled yet** |
-
-## Roadmap
-
-Facades resolve vault `customer_id` → bound banking profile → existing services. Nesting mirrors accounts: `/partner/customers/{customer_id}/…`.
-
-| Increment | Scope |
-|-----------|--------|
-| **1 — Done** | Vault + accounts open/list/get + optional quote `customer_id` |
-| **2 — Next** | Deposit-instructions, stablecoin sends, book transfers |
-| **3 — Then** | Payouts, card issue/charge, remaining account-scoped ops |
-| **4 — Later** | Deprecate `/partner/entities/{entity_id}/…` in docs, then API |
-
-Do not build new integrations on `/partner/entities/*`.
-
-## Not in this guide
-
-- Wrapping all entity money ops under `customer_id`
-- Requiring `customer_id` on all quotes
-- Multi-provider KYC shopping
-- Full accept → settlement E2E
-- Admin UI beyond “Element Pay reviews and approves”
-
 ## FAQ
 
-**Inline `customer` still OK?** Yes while the require flag is off. Prefer `customer_id` once approved.
+**Inline `customer` still OK?** Yes. Prefer `customer_id` once the vault case is `approved`.
 
-**Approved but accounts fail?** Check `products.deposit_account.status` — must be `ready`.
-
-**Use `/partner/entities` for new apps?** No.
+**What about deposit accounts, sends, cards?** Coming in a later docs update under the same `customer_id`. This guide covers vault KYC and quote identity only.
 
 ## Next
 

@@ -1,19 +1,13 @@
 # International deposit accounts
 
-Open **bank deposit coordinates** and optional **stablecoin wallets** for your end-customers after vault KYC, under public Partner routes `/partner/customers/{customer_id}/accounts`.
-
-Identity is always **`customer_id`** (`pcus_*`). See [Customers quickstart](/customers/quickstart) for create → documents → submit → approve.
+Open **bank deposit coordinates** and optional **stablecoin wallets** for your end-customers after entity KYC, under public Partner routes `/partner/entities/*`. Then show deposit instructions and move money between accounts under your API key.
 
 This is a **separate product** from:
 
-- African local-fiat **quote to accept** ([Quickstart](/quickstart), [Corridors](/corridors/overview)) — you may attach `customer_id` on quote when `status=approved`
+- African local-fiat **quote to accept** ([Quickstart](/quickstart), [Corridors](/corridors/overview))
 - Catalog **`international_bank`** EUR/USD payin via quote to accept (a one-shot ramp, not reusable deposit accounts)
 
-Use **one product per checkout**; do not mix deposit-account rails with a local OnRamp/OffRamp quote in the same flow.
-
-<Warning>
-**Legacy `/partner/entities/*`:** still present for older banking integrations. **New integrations must not adopt entity routes.** Further money ops (deposit-instructions, sends, book transfers, cards) will land as `/partner/customers/{customer_id}/…` facades — see [Roadmap](/customers/quickstart#roadmap).
-</Warning>
+Use **one product per checkout**; do not mix entity deposit accounts with a local OnRamp/OffRamp quote in the same flow.
 
 ## Capability matrix
 
@@ -21,34 +15,33 @@ Honest **Ready / Limited / Hold** for integrators (same shapes as [errors](/erro
 
 | Job | Status | Notes |
 |-----|--------|--------|
-| Individual KYC (vault) | **Ready** | Wait for customer `approved` |
-| Business KYB (vault) | **Ready** | Prefer single-officer path first; see [Customer KYC](/deposit-accounts/kyc) |
-| Open EUR / GBP / CAD (fiat) | **Ready** | When `products.deposit_account.status=ready`, then account `active` + deposit-instructions when facaded |
-| Open USDC / USDT wallets | **Ready** | When deposit product `ready` and account `active` |
-| Open USD (business) | **Ready** (most) / **Limited** (e.g. KE business unconfirmed) | Poll until account `active` |
-| Open USD (individual) | **Limited** | KE individuals: **USD bank not available** (other fiats OK) |
-| Fiat book-transfer | **Ready** (legacy entity path today) | Customer-scoped facade **coming** — see roadmap |
-| Stablecoin or inter-customer “book-transfer” | **Hold** | Product does **not** exist. Fiat book-transfer only. |
-| External USDC / USDT send | **Ready** (live; legacy path today) | Customer-scoped facade **coming** |
-| Convert USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC | **Ready** | Same customer; **active** accounts; check quote `limits` |
-| GBP OffRamp convert | **Hold** | Until live accept settles |
-| Card **issue** (virtual / disposable on active USD) | **Ready** (legacy path today) | Facade **coming** |
-| Card **funding** (card-charges into fiat) | **Limited** | Legacy path today; facade **coming**. See [Card funding](/deposit-accounts/card-funding). |
+| Individual KYC | **Ready** | Wait for `approved` |
+| Business KYB | **Ready** | Prefer single-officer path first; multi-officer has PoA / document constraints. See [Entity KYC](/deposit-accounts/kyc). |
+| Open EUR / GBP / CAD (fiat) | **Ready** | When `active` + deposit-instructions |
+| Open USDC / USDT wallets | **Ready** | When `active`; address returned. On-chain inflows usually credit above a small floor (see [Fund an account](/deposit-accounts/accounts#fund-an-account)); still wait for balance / `account.credited` |
+| Open USD (business) | **Ready** (most) / **Limited** (e.g. KE business unconfirmed) | Often reaches `active`. Poll until active for deposit-instructions or [card issuing](/deposit-accounts/card-issuing). If KE (or other) business USD stays `pending`, contact Element Pay admin |
+| Open USD (individual) | **Limited** | KE individuals: **USD bank not available** (other fiats OK). Other individuals may lag bank-details KYC after entity `approved` (not always “slow provisioning” only) |
+| Fiat book-transfer | **Ready** | Same currency, accounts under your API key |
+| Stablecoin or inter-entity “book-transfer” | **Hold** | Product does **not** exist. Fiat book-transfer only. |
+| External USDC / USDT send | **Ready** (live) | Prefer external wallets for GA; sandbox confirm **limited** |
+| Send → another party’s standing deposit wallet | **Limited** | Prefer external wallets; standing-wallet dest not GA |
+| Convert USDT↔CAD/EUR, USDT→USD, USD→USDC, EUR→USDC | **Ready** | Same entity; **active** accounts; check quote `limits` (often ≥1 crypto unit) |
+| GBP OffRamp convert | **Hold** | Until live accept settles; quote `crypto_amount` often ≥ `1` (see [Currency conversion](/deposit-accounts/currency-conversion)) |
+| Card **issue** (virtual / disposable on active USD) | **Ready** | Live on active USD; sandbox e2e may be limited |
+| Card freeze / unfreeze / list / get / transactions | **API Ready** | Transactions empty until real spend |
+| Card **funding** (card-charges into fiat) | **Limited** | USD: any billing/card country. GBP/EUR: **UK + EU only**. Settlement lag. See [Card funding](/deposit-accounts/card-funding). |
 
 ## The flow
 
 <Steps>
-  <Step title="Customer vault KYC">
-    Create a customer (`pcus_*`), upload documents, submit, wait for `approved`. See [Customer KYC](/deposit-accounts/kyc) and [Customers quickstart](/customers/quickstart).
-  </Step>
-  <Step title="Deposit-account product gate">
-    After `approved`, poll until `products.deposit_account.status=ready` (may pass through `provisioning`). Only then open rails.
+  <Step title="Entity KYC">
+    Create an individual or business, upload documents, submit, and wait for `approved`. See [Entity KYC](/deposit-accounts/kyc).
   </Step>
   <Step title="Open accounts">
-    `POST /partner/customers/{customer_id}/accounts` for fiat and/or stablecoin. Wait until each account is `active`. See [Accounts & deposits](/deposit-accounts/accounts).
+    Open fiat (EUR / GBP / USD / CAD as enabled) and/or stablecoin (USDC / USDT) rails, then wait until `active` and fetch deposit instructions. See [Accounts & deposits](/deposit-accounts/accounts).
   </Step>
   <Step title="Fund and move money">
-    Deposit-instructions, [card funding](/deposit-accounts/card-funding), [card issuing](/deposit-accounts/card-issuing), [convert](/deposit-accounts/currency-conversion), [book-transfer](/deposit-accounts/book-transfers), and [sends](/deposit-accounts/sends) remain on **legacy entity paths for existing integrations** until customer-scoped facades ship. New integrators: vault + accounts now; do not build new entity KYC.
+    Fund via deposit instructions (and [card funding](/deposit-accounts/card-funding) where Limited is acceptable). Issue cards on **active USD** ([Card issuing](/deposit-accounts/card-issuing)). [Convert](/deposit-accounts/currency-conversion) on-entity, [book-transfer](/deposit-accounts/book-transfers) fiat, or [send](/deposit-accounts/sends) stablecoin to an external wallet.
   </Step>
 </Steps>
 
@@ -57,7 +50,7 @@ Honest **Ready / Limited / Hold** for integrators (same shapes as [errors](/erro
 | Use this when… | Prefer another product when… |
 |----------------|------------------------------|
 | Your customer needs reusable **deposit instructions** (bank fields and/or an on-chain wallet) after KYC | They pay **local African fiat** (momo/bank) for a one-shot ramp, see [Quickstart](/quickstart) |
-| You key customers by `partner_customer_ref` / `customer_id` and open rails after `deposit_account=ready` | You only need a binding FX quote for a single order (optional `customer_id` on quote when approved) |
+| You key customers by your own `customer_ref` and open rails after `approved` | You only need a binding FX quote for a single order |
 
 ## Auth
 
@@ -69,20 +62,22 @@ Content-Type: application/json
 ```
 
 ```bash
-export BASE_SANDBOX="$BASE_SANDBOX"
-export BASE_LIVE="$BASE_LIVE"
-export BASE="$BASE_SANDBOX"
-export API_KEY="is_test_YOUR_KEY_HERE"
+# Sandbox
+export BASE="https://sandbox.elementpay.net/api/v1"
+# Production
+# export BASE="https://api.elementpay.net/api/v1"
+# Staging (if your program uses it; not a public partner environment for all keys)
+# export BASE="https://staging.elementpay.net/api/v1"
+export API_KEY="is_test_YOUR_KEY_HERE"   # or production / staging key
 ```
 
 ## Concepts
 
 | Concept | Meaning |
 |---------|---------|
-| **Customer** | Your end-customer vault case (`pcus_*`), scoped to your API key, keyed by **`partner_customer_ref`** |
-| **Customer status** | `incomplete` → `pending_review` → `approved` \| `rejected` \| `suspended` |
-| **Deposit-account product** | `products.deposit_account.status`: `none` \| `provisioning` \| `ready` \| `failed` \| `unavailable` |
-| **Account** | A deposit rail on a customer with `deposit_account=ready` (fiat and/or stablecoin) |
+| **Entity** | Your end-customer (individual or business), scoped to your API key, keyed by **`customer_ref`** |
+| **Entity status** | `pending` → `submitted` → `approved` \| `rejected` \| `suspended` |
+| **Account** | A deposit rail on an **approved** entity (fiat and/or stablecoin) |
 | **Fiat account** | e.g. EUR / GBP / USD / CAD when enabled; bank fields when `active` |
 | **Stablecoin account** | e.g. USDC or USDT on a stated `network`, with `wallet_address` when ready |
 | **Balance** | `balance: { available, current, currency }` when known (may be `null` if refresh fails) |
@@ -94,47 +89,34 @@ Stablecoin rails (e.g. USDC) are **independent ledgers**. They are **not** tied 
 
 Partners **cannot** register their own wallet as the deposit address. Custody stays on the deposit rail Element Pay provisions.
 
-**Idempotency:** customer create is unique per API key tenant + `partner_customer_ref`. Account open is unique per `(customer, asset_type, currency, network)` (`network` empty for fiat): re-open returns the existing account (`200`); first open returns `201`.
+**Idempotency:** entity create is unique per API key + `customer_ref`. Account open is unique per `(entity, asset_type, currency, network)` (`network` empty for fiat): re-open returns the existing account (`200`); first open returns `201`.
 
 ## Status vocabulary
 
 | Object | States |
 |--------|--------|
-| **Customer** | `incomplete` → `pending_review` → `approved` \| `rejected` \| `suspended` |
-| **Deposit-account product** | `none` → `provisioning` → `ready` \| `failed` \| `unavailable` |
+| **Entity** | `pending` → `submitted` → `approved` \| `rejected` \| `suspended` |
 | **Account** | `pending` (no usable coords) → `active` (coords usable); also `failed` \| `closed` |
 | **Book-transfer** | `pending` \| `completed` \| `failed` (as returned by confirm) |
 | **Currency conversion** (order) | `processing` → `settled` \| `failed` |
 | **Send** | `processing` → `submitted` → `completed` \| `failed` |
 
-### Check deposit account before opening rails
-
-```bash
-curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
-  -H "X-API-Key: $API_KEY" | jq '{
-    id: .data.id,
-    status: .data.status,
-    deposit_account: .data.products.deposit_account
-  }'
-```
-
-Only when `deposit_account.status == "ready"` call `GET`/`POST` `/partner/customers/{customer_id}/accounts`. If `failed`, `POST …/deposit-account/retry` (best-effort).
-
-### USD readiness (per account)
+### USD readiness
 
 | Status | Meaning |
 |--------|---------|
-| `pending` | Open accepted; **no** usable bank coords yet |
+| `pending` | Open accepted; **no** usable bank coords yet (`account_number` may be null) |
 | `active` | Coords present; deposit-instructions / convert / issue using that USD can proceed |
 
 **Partner rules**
 
 1. Open may return `201` while still `pending`.
-2. Poll `GET …/accounts/{id}` until `status=active`, or wait for **`account.ready`** when that webhook applies.
-3. Deposit-instructions while not ready → **422** with hint to poll (legacy path today; customer-scoped facade coming).
-4. Card issue on pending or non-USD → **422** (active **USD** fiat only).
-5. **KE individuals:** USD bank is **not available**.
-6. **Business USD:** often reaches `active`; if it stays `pending`, contact Element Pay admin.
+2. Poll `GET …/accounts/{id}` until `status=active`, or wait for **`account.ready`**.
+3. `GET …/deposit-instructions` while not ready → **422** `"Deposit instructions are not ready yet"` with `hint` to poll account or wait for `account.ready`.
+4. Card issue on pending or non-USD → **422** readiness (active **USD** fiat only).
+5. **KE individuals:** USD bank is **not available** (EUR/GBP/CAD and stablecoin rails still apply as enabled). Do not treat as temporary lag.
+6. **Other individuals:** USD may stay `pending` after entity `approved` while bank-details KYC completes; not always “slow rail provisioning” alone.
+7. **Business USD:** often reaches `active`. KE business USD is still unconfirmed; if it stays `pending`, contact Element Pay admin.
 
 ## Webhooks
 
@@ -142,28 +124,55 @@ Configure `webhook_url` (and `webhook_secret`) on your API key. See [Webhooks](/
 
 | Event | When |
 |-------|------|
-| `customer.deposit_account.updated` | Vault deposit-account product status changed (when emitted) |
+| `entity.status.changed` | KYC / KYB status changed |
 | `account.opened` | Account open accepted |
 | `account.ready` | Usable coordinates (deposit-ready) |
 | `account.credited` | Inbound credit settled |
 | `account.send.completed` / `account.send.failed` | External wallet send terminal |
-| `card_charge.status.changed` | Card **funding** intent |
+| `card_charge.status.changed` | Card **funding** (acquiring) intent only, not card **issue** lifecycle |
 
-Prefer **`GET /partner/customers/{customer_id}`** (and customer-scoped account GET) as the source of truth for new integrations. Legacy `entity.*` events may still fire for older entity-based integrations.
+**Issued cards** (virtual / disposable): no dedicated partner webhook for create / freeze / unfreeze today. Poll `GET …/cards/{id}` or list. Conversions emit **order** webhooks (`order.processing` / `order.settled` / `order.failed`).
 
 ## Errors
 
-Same envelope as other Partner APIs ([Errors](/errors)). Do not surface raw upstream payloads to end-users.
+Same envelope as other Partner APIs ([Errors](/errors)):
+
+```json
+{
+  "status": "error",
+  "message": "Deposit instructions are not ready yet",
+  "data": {
+    "account_id": 17,
+    "status": "pending",
+    "hint": "Poll GET account or wait for account.ready"
+  }
+}
+```
+
+Do not surface raw upstream payloads to end-users.
 
 ## Sandbox notes
 
-- Always read customer `status` and `products.deposit_account` from GET — do not assume auto-approve.
-- KE individual **USD** is unavailable; other individual USD may stay `pending`.
-- No free USDC / USDT grant in partner APIs. See [Fund an account](/deposit-accounts/accounts#fund-an-account).
+- Individuals often reach `approved` without liveness; businesses may stay `submitted` longer.
+- KE individual **USD** is unavailable; other individual USD may stay `pending` after entity `approved`. Business USD often reaches `active` (confirm KE business separately).
+- No free USDC / USDT grant in partner APIs. Sandbox balances may need ops seed; see [Fund an account](/deposit-accounts/accounts#fund-an-account).
+- Stablecoin **send confirm** is **limited** in sandbox; **live** external sends are Ready.
+
+{/* INTERNAL TODO SENDS-SANDBOX: when sandbox send confirm is reliable, soften the sends row and sandbox bullets. */}
+{/* INTERNAL TODO SENDS-STUCK-SUBMITTED: reconciling send status stuck in submitted. */}
+{/* INTERNAL TODO INDIVIDUAL-USD: full USD unsupported region list + better region denial on webhook/GET (upstream WIP). */}
+{/* INTERNAL TODO KE-BUSINESS-USD: confirm KE business USD availability rule. */}
+{/* INTERNAL TODO GBP-OFFRAMP: when live accept settles, move GBP OffRamp to Ready. */}
+{/* INTERNAL TODO PENDING-PAYOUT-HOLD: document pending payout vs available balance hold when product settles language. */}
+{/* INTERNAL TODO FEE-SCHEDULE: commercial fee schedule when API or partner commercial pack exists. */}
 
 ## Next steps
 
-- [Customers quickstart](/customers/quickstart)
-- [Customer KYC](/deposit-accounts/kyc)
+- [Entity KYC](/deposit-accounts/kyc)
 - [Accounts & deposits](/deposit-accounts/accounts)
+- [Card funding](/deposit-accounts/card-funding) (Limited GA)
+- [Card issuing](/deposit-accounts/card-issuing) (Ready on active USD)
+- [Currency conversion](/deposit-accounts/currency-conversion)
+- [Book-transfers](/deposit-accounts/book-transfers) (fiat only)
+- [Stablecoin sends](/deposit-accounts/sends)
 - [Webhooks](/webhooks) · [Authentication](/authentication) · [API reference](/api-reference/introduction)

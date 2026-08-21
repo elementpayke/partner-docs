@@ -2,13 +2,9 @@
 
 Issue **disposable** or **virtual** cards on an **active fiat USD** deposit account. The card spends against that account’s balance. This is **not** [card funding](/deposit-accounts/card-funding) (acquiring into an account).
 
-<Warning>
-**Incremental facade:** Customer-scoped cards under `/partner/customers/{customer_id}/…` are **coming**. Paths below are **legacy `/partner/entities/…`** for **existing** integrations only. **New integrators:** [Customers quickstart](/customers/quickstart) for identity + accounts; do not adopt entity KYC for new builds.
-</Warning>
-
 Interactive request/response shapes live in the [API reference](/api-reference/introduction) Try-it for each operation below. Use those rather than hardcoding schemas from this guide.
 
-| Method | Path (legacy) |
+| Method | Path |
 |--------|------|
 | `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
 | `GET` | `/partner/entities/{entity_id}/accounts/{account_id}/cards` |
@@ -18,14 +14,14 @@ Interactive request/response shapes live in the [API reference](/api-reference/i
 | `POST` | `/partner/entities/{entity_id}/accounts/{account_id}/cards/{card_id}/unfreeze` |
 
 <Note>
-All calls use `X-API-Key` and `$BASE`. Prefer `customer_id` (`pcus_*`) as the public identity for all new work.
+All calls use `X-API-Key` and `$BASE` = `https://sandbox.elementpay.net/api/v1` (or production). Try-it path examples use `entity_id=11`, `account_id=17` (USD), `card_id=4`.
 </Note>
 
 ## Prerequisites
 
-1. Customer is `approved` and `products.deposit_account.status=ready` ([Customer KYC](/deposit-accounts/kyc)).
-2. Open a **fiat USD** account under that customer and wait until `status` is `active` ([Accounts & deposits](/deposit-accounts/accounts); `account.ready` or poll GET).
-3. Then call card issue on that account (legacy entity path until the customer-scoped facade ships).
+1. Entity is `approved` ([Entity KYC](/deposit-accounts/kyc)).
+2. Open a **fiat USD** account and wait until `status` is `active` ([Accounts & deposits](/deposit-accounts/accounts); `account.ready` or poll GET).
+3. Then call `POST …/cards` on that account.
 
 <Warning>
 **USD only.** Issuing requires an **active fiat USD** funding account. EUR / GBP (and card funding or IBAN funding of those rails) do **not** unlock issuing; those requests return `422`. If the USD account is still `pending`, create / list / lifecycle calls fail readiness checks; wait until `active`.
