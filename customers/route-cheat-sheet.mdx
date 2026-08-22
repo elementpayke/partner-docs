@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart) and [Stablecoin sends](/customers/stablecoin-sends). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -13,6 +13,21 @@ Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. B
 | `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while incomplete |
 | `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
+
+
+## Stablecoin sends (4C-a)
+
+Requires `status` approved/active **and** `products.deposit_account.status=ready`. Otherwise **409**.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/partner/customers/{customer_id}/accounts` | List; resolve stablecoin `account_id` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Get one account |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/preview` | → `preview_token` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends` | Confirm + `idempotency_key` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}` | Poll status |
+
+Guide: [Stablecoin sends](/customers/stablecoin-sends).
 
 ## Orders
 

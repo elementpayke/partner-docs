@@ -1,0 +1,147 @@
+# Stablecoin sends
+
+Send **stablecoins** from a customer-owned account (`pcus_*` → `account_id`) using preview → confirm → poll.
+
+Prerequisite: complete [Customers quickstart](/customers/quickstart). Banking routes require `products.deposit_account.status=ready`.
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
+export BASE_LIVE="$BASE_LIVE"         # live Partner API base
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"            # or is_live_… on live
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## Gates
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
+| **Banking** | `products.deposit_account.status` is `ready` | Account reads + stablecoin sends |
+
+`approved` alone does **not** unlock sends. Always read both fields from `GET /partner/customers/{customer_id}`.
+
+If banking routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+
+## Happy path
+
+<Steps>
+  <Step title="Confirm banking ready">
+    Poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+  </Step>
+  <Step title="Resolve stablecoin account_id">
+    `GET /partner/customers/{customer_id}/accounts` (use an existing stablecoin rail)
+  </Step>
+  <Step title="Send preview">
+    `POST …/accounts/{account_id}/sends/preview` → `preview_token`
+  </Step>
+  <Step title="Send confirm">
+    `POST …/accounts/{account_id}/sends` with `preview_token` + `idempotency_key`
+  </Step>
+  <Step title="Poll send">
+    `GET …/accounts/{account_id}/sends/{send_id}` until terminal status
+  </Step>
+</Steps>
+
+## 1. Poll customer
+
+```bash
+export CUSTOMER_ID="pcus_06a83150db3c"   # staging smoke — Aly
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '{
+    id: .data.id,
+    status: .data.status,
+    deposit_account: .data.products.deposit_account
+  }'
+```
+
+## 2. List accounts (get `account_id`)
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+export ACCOUNT_ID="21"
+```
+
+Opening new rails (`POST …/accounts`) is documented in a later draft. For sends, use an existing stablecoin `account_id`.
+
+## 3. Preview
+
+Preview and confirm must use the **same** `account_id`. The `preview_token` seals customer + account internally.
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+    "amount": "5.00",
+    "network": "Base",
+    "memo": "optional-stellar-memo"
+  }' | jq '.data'
+```
+
+Save `preview_token`. For Stellar destinations, include `memo` when required by the recipient.
+
+### Send headroom
+
+The send amount must be **strictly below** the account's displayed `available_balance`. Sending the full balance (for example `1.00` when available is `1.00`) returns **422** `Insufficient balance` with `available`, `amount`, and `currency` in `data` when known.
+
+Staging smoke: `pcus_51bbc9b3a504` (iSafari) — preview `1.00` when available is `1.00` → **422**.
+
+## 4. Confirm
+
+<Warning>
+On **live** (`https://api.elementpay.net/api/v1`), confirm submits a **real outbound transfer**. Use sandbox for full preview → confirm loops unless you intend to move funds.
+</Warning>
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preview_token": "<from preview response>",
+    "idempotency_key": "send-2026-08-22-001"
+  }' | jq '.data'
+```
+
+Reuse the same `idempotency_key` on retries after network errors.
+
+## 5. Poll send status
+
+```bash
+export SEND_ID="55"
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends/$SEND_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Staging smoke: `pcus_06a83150db3c` — Stellar send confirm passed.
+
+## Business rules
+
+1. **Preview → confirm:** same `account_id`; preview token is bound to that account.
+2. **Send headroom:** amount strictly less than `available_balance`.
+3. **Partner-neutral JSON:** error `message` / `data` do not expose upstream PSP names.
+4. **Confirm = real money** on live.
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
+| Send exceeds balance | `422` `Insufficient balance` | Lower amount below `available_balance` |
+| Preview token expired / wrong account | `4xx` | Re-preview on the same `account_id` |
+
+## Next
+
+- [Customers quickstart](/customers/quickstart)
+- [Route cheat sheet](/customers/route-cheat-sheet)

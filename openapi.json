@@ -3366,6 +3366,511 @@
           }
         }
       }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/sends": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Confirm a stablecoin send for a ready customer account",
+        "description": "Submit a stablecoin send using a prior preview token.",
+        "operationId": "partner_customer_confirm_send_partner_customers__customer_id__accounts__account_id__sends_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_06a83150db3c"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id",
+              "example": 21
+            },
+            "description": "Account id returned by the customer account API",
+            "example": 21
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntitySendConfirmRequest"
+              },
+              "example": {
+                "preview_token": "<from preview response>",
+                "idempotency_key": "send-2026-08-22-001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get one account for a ready customer",
+        "description": "Get one customer-owned account and its current coordinates.",
+        "operationId": "partner_customer_get_account_partner_customers__customer_id__accounts__account_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_06a83150db3c"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id",
+              "example": 21
+            },
+            "description": "Account id returned by the customer account API",
+            "example": 21
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get a stablecoin send for a ready customer account",
+        "description": "Get one stablecoin send status for a customer-owned account.",
+        "operationId": "partner_customer_get_send_partner_customers__customer_id__accounts__account_id__sends__send_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_06a83150db3c"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id",
+              "example": 21
+            },
+            "description": "Account id returned by the customer account API",
+            "example": 21
+          },
+          {
+            "name": "send_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Send id returned by the send API",
+              "title": "Send Id",
+              "example": 55
+            },
+            "description": "Send id returned by the send API",
+            "example": 55
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "List accounts for a ready customer",
+        "description": "List customer accounts, refreshing pending coordinates when available.",
+        "operationId": "partner_customer_list_accounts_partner_customers__customer_id__accounts_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_06a83150db3c"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_06a83150db3c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/sends/preview": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Preview a stablecoin send for a ready customer account",
+        "description": "Preview fees and amounts for a stablecoin send.",
+        "operationId": "partner_customer_preview_send_partner_customers__customer_id__accounts__account_id__sends_preview_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_06a83150db3c"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id",
+              "example": 21
+            },
+            "description": "Account id returned by the customer account API",
+            "example": 21
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntitySendPreviewRequest"
+              },
+              "example": {
+                "to_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                "amount": "5.00",
+                "network": "Base",
+                "memo": "optional-stellar-memo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4005,6 +4510,73 @@
           "type"
         ],
         "title": "PartnerCustomerCreateRequest"
+      },
+      "PartnerEntitySendPreviewRequest": {
+        "properties": {
+          "to_address": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "To Address"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount",
+            "description": "Decimal amount in USDC, e.g. 10.50"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network",
+            "description": "Must match the account network when set (Base or Polygon)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "to_address",
+          "amount"
+        ],
+        "title": "PartnerEntitySendPreviewRequest",
+        "description": "Preview a same-asset USDC send (fee + receive amount; not an FX quote).",
+        "example": {
+          "amount": "5.00",
+          "network": "Base",
+          "to_address": "0xRecipientWalletAddress"
+        }
+      },
+      "PartnerEntitySendConfirmRequest": {
+        "properties": {
+          "preview_token": {
+            "type": "string",
+            "minLength": 16,
+            "title": "Preview Token",
+            "description": "Token from sends/preview"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Idempotency Key",
+            "description": "Partner-stable id; same key returns the prior send"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preview_token",
+          "idempotency_key"
+        ],
+        "title": "PartnerEntitySendConfirmRequest",
+        "description": "Confirm a previewed send using the signed preview token.",
+        "example": {
+          "idempotency_key": "send-2026-07-30-001",
+          "preview_token": "preview_token_from_sends_preview_response"
+        }
       }
     },
     "securitySchemes": {

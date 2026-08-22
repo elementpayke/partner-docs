@@ -35,6 +35,19 @@ OpenAPI tag: **`partner-customers`**.
 
 Guide: [Customers quickstart](/customers/quickstart).
 
+
+## Stablecoin sends
+
+| Method | Path |
+|--------|------|
+| `GET` | `/partner/customers/{customer_id}/accounts` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/preview` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}` |
+
+Guide: [Stablecoin sends](/customers/stablecoin-sends).
+
 ## Try it
 
 Use **Try it** on any endpoint with your sandbox `X-API-Key`. Requests are sent to the sandbox base URL configured for this site.
