@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart) and [Stablecoin sends](/customers/stablecoin-sends). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart), [Stablecoin sends](/customers/stablecoin-sends), and [Book transfers](/customers/book-transfers). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -28,6 +28,17 @@ Requires `status` approved/active **and** `products.deposit_account.status=ready
 | `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}` | Poll status |
 
 Guide: [Stablecoin sends](/customers/stablecoin-sends).
+
+## Book transfers (4C-b)
+
+Same banking gate as sends (`deposit_account=ready`). Same-currency fiat → fiat under one API key.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/book-transfers/preview` | `to_account_id`, `amount` → `preview_token` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/book-transfers` | Confirm + `idempotency_key` |
+
+Guide: [Book transfers](/customers/book-transfers). Legacy: `/partner/entities/…/book-transfers` — do not adopt.
 
 ## Orders
 
