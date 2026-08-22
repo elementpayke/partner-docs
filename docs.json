@@ -45,6 +45,7 @@
             "pages": [
               "customers/quickstart",
               "customers/stablecoin-sends",
+              "customers/accounts",
               "customers/route-cheat-sheet"
             ]
           },

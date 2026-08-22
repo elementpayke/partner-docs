@@ -1,0 +1,17 @@
+# Customer accounts (draft)
+
+> **Placeholder.** Full docs for open / list / get account rails land here after product sign-off.
+>
+> Today: list/get appear in [Stablecoin sends](/customers/stablecoin-sends) so partners can resolve `account_id`. `POST …/accounts` Try-it is deferred.
+>
+> Stack position: **PR-C** — merge after PR-B, before deposit-instructions.
+
+## Planned routes
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts` | Open one rail; idempotent |
+| `GET` | `/partner/customers/{customer_id}/accounts` | List (already in sends guide) |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Get one |
+
+Gate: `status` approved/active **and** `products.deposit_account.status=ready`.
