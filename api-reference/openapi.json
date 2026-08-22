@@ -2687,6 +2687,685 @@
           "content": "Accept a previously created quote and create the local order.\n\nSend the same customer and payment method payload shape used at quote time (see [Test payloads](/sandbox/test-payloads)).\n\nOnRamp: final payment instructions are returned after accept when applicable."
         }
       }
+    },
+    "/partner/customers/{customer_id}/submit": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Submit customer package for review",
+        "description": "Submit an incomplete package \u2192 pending_review, or 422 with missing[].",
+        "operationId": "partner_customer_submit_partner_customers__customer_id__submit_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/documents": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Upload a customer document",
+        "description": "Upload a base64 document into the vault (off-host store + DB metadata). A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
+        "operationId": "partner_customer_upload_document_partner_customers__customer_id__documents_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerDocumentUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Create a customer vault case",
+        "description": "Create an incomplete customer case (idempotent on partner_customer_ref).",
+        "operationId": "partner_customer_create_partner_customers_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "List customers for this partner tenant",
+        "description": "List tenant-scoped customers (metadata only).",
+        "operationId": "partner_customer_list_partner_customers_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional status filter (e.g. incomplete, pending_review)",
+              "title": "Status"
+            },
+            "description": "Optional status filter (e.g. incomplete, pending_review)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get a customer vault case",
+        "description": "Get one tenant-owned customer including document metadata and missing[].",
+        "operationId": "partner_customer_get_partner_customers__customer_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Update a draft or correct a failed deposit-KYC profile",
+        "description": "Merge profile fields on a draft. A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
+        "operationId": "partner_customer_patch_partner_customers__customer_id__patch",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerProfilePatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/deposit-account/retry": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Retry deposit account provisioning after a failed attempt",
+        "description": "Re-queue an unchanged KYC/KYB attempt after a transient failure. Only valid when the customer is EP-approved and ``deposit_account.status`` is ``failed``. Profile/document corrections invalidate approval; after a correction, complete the package and submit it for EP review again.",
+        "operationId": "partner_customer_deposit_account_retry_partner_customers__customer_id__deposit_account_retry_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/requirements": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Customer KYC package requirements",
+        "description": "Return required profile fields and document categories for a customer type.",
+        "operationId": "partner_customer_requirements_partner_customers_requirements_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "individual or business",
+              "default": "individual",
+              "title": "Type"
+            },
+            "description": "individual or business"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id",
+              "title": "Country"
+            },
+            "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3216,6 +3895,116 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "PartnerCustomerDocumentUploadRequest": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Category",
+            "description": "Document key from requirements (e.g. identity, address).",
+            "examples": [
+              "identity"
+            ]
+          },
+          "content_base64": {
+            "type": "string",
+            "maxLength": 12000000,
+            "minLength": 1,
+            "title": "Content Base64",
+            "description": "Base64-encoded file bytes (max ~8 MiB decoded)."
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type",
+            "description": "MIME type. Required for upload: image/jpeg, image/png, or application/pdf.",
+            "examples": [
+              "image/jpeg",
+              "application/pdf"
+            ]
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name",
+            "description": "Optional original filename for the partner only; not stored in object keys."
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "content_base64"
+        ],
+        "title": "PartnerCustomerDocumentUploadRequest"
+      },
+      "PartnerCustomerProfilePatchRequest": {
+        "properties": {
+          "profile": {
+            "type": "object",
+            "title": "Profile",
+            "description": "Partial profile merge into the customer vault."
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile"
+        ],
+        "title": "PartnerCustomerProfilePatchRequest"
+      },
+      "PartnerCustomerCreateRequest": {
+        "properties": {
+          "partner_customer_ref": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Partner Customer Ref",
+            "description": "Partner's stable customer reference (unique per tenant).",
+            "examples": [
+              "cust-ke-001"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "individual or business",
+            "examples": [
+              "individual"
+            ]
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile",
+            "description": "Identity / KYB fields (see GET /customers/requirements)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "partner_customer_ref",
+          "type"
+        ],
+        "title": "PartnerCustomerCreateRequest"
       }
     },
     "securitySchemes": {
@@ -3237,7 +4026,11 @@
   "tags": [
     {
       "name": "partner",
-      "description": "Partner discovery, quotes, and order acceptance."
+      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including account currency conversion)."
+    },
+    {
+      "name": "partner-customers",
+      "description": "Customer vault KYC (pcus_*), deposit accounts, deposit instructions, and stablecoin sends from customer-scoped account paths."
     }
   ]
 }

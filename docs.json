@@ -41,6 +41,13 @@
             ]
           },
           {
+            "group": "Customers",
+            "pages": [
+              "customers/quickstart",
+              "customers/route-cheat-sheet"
+            ]
+          },
+          {
             "group": "Corridors",
             "pages": [
               "corridors/overview",

@@ -1,0 +1,28 @@
+# Customers route cheat sheet
+
+Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+
+## Vault KYC
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/partner/customers/requirements` | `type=individual\|business`, optional `country` |
+| `POST` | `/partner/customers` | `partner_customer_ref`, `type`, `profile` |
+| `GET` | `/partner/customers` | Optional `status`, `limit` |
+| `GET` | `/partner/customers/{customer_id}` | Read `status` |
+| `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while incomplete |
+| `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
+| `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
+
+## Orders
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/orders/quote` | Prefer `customer_id` when `approved` |
+| `POST` | `/partner/orders/{quote_id}/accept` | Unchanged |
+
+## Gate
+
+| Action | Required |
+|--------|----------|
+| Quote / accept with `customer_id` | `status=approved` |
