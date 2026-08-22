@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart) and [Accounts and banking](/customers/accounts-and-banking). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -9,10 +9,32 @@ Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. B
 | `GET` | `/partner/customers/requirements` | `type=individual\|business`, optional `country` |
 | `POST` | `/partner/customers` | `partner_customer_ref`, `type`, `profile` |
 | `GET` | `/partner/customers` | Optional `status`, `limit` |
-| `GET` | `/partner/customers/{customer_id}` | Read `status` |
-| `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while incomplete |
+| `GET` | `/partner/customers/{customer_id}` | Read `status`, `products.deposit_account` |
+| `PATCH` | `/partner/customers/{customer_id}` | Profile patch while incomplete / after failed deposit KYC |
 | `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
-| `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
+| `POST` | `/partner/customers/{customer_id}/submit` | → `pending_review` |
+| `POST` | `/partner/customers/{customer_id}/deposit-account/retry` | After `deposit_account.status=failed` |
+
+## Accounts (4B)
+
+Requires `status` is `approved` or `active` **and** `products.deposit_account.status=ready`. Otherwise **409** (`reason: banking_profile_incomplete`).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts` | Open one rail; idempotent |
+| `GET` | `/partner/customers/{customer_id}/accounts` | List; each row includes `customer_id` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Get one account |
+
+## Banking (4C-a)
+
+Same gate as accounts (`deposit_account=ready`).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/deposit-instructions` | Fiat IBAN/wire coordinates |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/preview` | Stablecoin preview → `preview_token` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends` | Confirm with `preview_token` + `idempotency_key` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}` | Poll send status |
 
 ## Orders
 
@@ -21,8 +43,13 @@ Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. B
 | `POST` | `/partner/orders/quote` | Prefer `customer_id` when `approved` |
 | `POST` | `/partner/orders/{quote_id}/accept` | Unchanged |
 
-## Gate
+## Gates
 
 | Action | Required |
 |--------|----------|
-| Quote / accept with `customer_id` | `status=approved` |
+| Quote / accept with `customer_id` | `status=approved` (or `active`) |
+| Accounts + banking | `products.deposit_account.status=ready` |
+
+## Legacy (do not adopt)
+
+Same operations under `/partner/entities/{entity_id}/accounts/...` — marked `[Legacy]` in OpenAPI. New integrations: `pcus_*` paths only.

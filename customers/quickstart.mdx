@@ -53,6 +53,9 @@ Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
   <Step title="Quote (optional)">
     Pass `customer_id` on `POST /partner/orders/quote` instead of a full inline `customer`
   </Step>
+  <Step title="Accounts and banking (optional)">
+    When `products.deposit_account.status=ready`, see [Accounts and banking](/customers/accounts-and-banking)
+  </Step>
 </Steps>
 
 ## 1. Requirements
@@ -144,7 +147,8 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
   -H "X-API-Key: $API_KEY" | jq '{
     id: .data.id,
     status: .data.status,
-    partner_customer_ref: .data.partner_customer_ref
+    partner_customer_ref: .data.partner_customer_ref,
+    deposit_account: .data.products.deposit_account
   }'
 ```
 
@@ -154,11 +158,17 @@ Example (staging smoke, PII redacted):
 {
   "id": "pcus_06a83150db3c",
   "status": "approved",
-  "partner_customer_ref": "aly-live"
+  "partner_customer_ref": "aly-live",
+  "deposit_account": { "status": "ready" }
 }
 ```
 
-Use `customer_id` on quote only when `status == "approved"`.
+| You need… | Wait until… |
+|-----------|-------------|
+| Quote with `customer_id` | `status == "approved"` |
+| Accounts / banking | `products.deposit_account.status == "ready"` |
+
+`approved` alone does not unlock accounts. When `deposit_account` is `ready`, continue to [Accounts and banking](/customers/accounts-and-banking).
 
 ## 6. Quote with `customer_id` (optional)
 
@@ -204,9 +214,12 @@ Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, 
 
 **Inline `customer` still OK?** Yes. Prefer `customer_id` once the vault case is `approved`.
 
-**What about deposit accounts, sends, cards?** Coming in a later docs update under the same `customer_id`. This guide covers vault KYC and quote identity only.
+**Why is my customer `approved` but accounts fail?** Check `products.deposit_account.status` — it must be `ready`. See [Accounts and banking](/customers/accounts-and-banking).
+
+**Where are deposit instructions and stablecoin sends?** Under the same `customer_id` — [Accounts and banking](/customers/accounts-and-banking).
 
 ## Next
 
+- [Accounts and banking](/customers/accounts-and-banking) (when `deposit_account=ready`)
 - [Route cheat sheet](/customers/route-cheat-sheet)
 - [Corridors](/corridors/overview) · [Orders quickstart](/quickstart)

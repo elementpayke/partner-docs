@@ -10,7 +10,7 @@ Integrate once against Element Pay — we route local African fiat (mobile money
 |---------|---------|------|
 | **OnRamp** | African local fiat — **see catalog** (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin on your chosen network |
 | **OffRamp** | Same corridors when enabled for your key | Customer sends stablecoin → receives fiat to momo or bank |
-| **Customers** | Vault KYC (`pcus_*`) | Create customer → upload docs → submit → `approved` → optional `customer_id` on quote. See [Customers quickstart](/customers/quickstart) |
+| **Customers** | Vault KYC (`pcus_*`) | Create customer → upload docs → submit → `approved` → optional `customer_id` on quote; when `deposit_account=ready`, open accounts and banking. See [Customers quickstart](/customers/quickstart) |
 
 Supported **countries and payment methods** (momo vs bank, provider lists, min/max) for African ramps are returned by discovery. Start with `GET /partner/catalog`. Details: [Corridors overview](/corridors/overview). Extra markets: contact compliance.
 
@@ -29,7 +29,7 @@ Settlement status is delivered on your API key **`webhook_url`** (`order.process
     Sandbox setup and first KE OnRamp in under 10 minutes.
   </Card>
   <Card title="Customers quickstart" icon="user" href="/customers/quickstart">
-    Vault KYC (`pcus_*`) and optional `customer_id` on quote.
+    Vault KYC (`pcus_*`), optional `customer_id` on quote, accounts and banking.
   </Card>
   <Card title="API reference" icon="code" href="/api-reference/introduction">
     OpenAPI-generated endpoint reference.

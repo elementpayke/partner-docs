@@ -44,6 +44,7 @@
             "group": "Customers",
             "pages": [
               "customers/quickstart",
+              "customers/accounts-and-banking",
               "customers/route-cheat-sheet"
             ]
           },

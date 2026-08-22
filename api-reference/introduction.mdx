@@ -1,8 +1,8 @@
 # API reference
 
-Interactive reference for the Element Pay Partner API — discovery, quotes, order acceptance, and customer vault KYC.
+Interactive reference for the Element Pay Partner API — discovery, quotes, order acceptance, customer vault KYC, deposit accounts, and stablecoin sends.
 
-Public customer identity is **`customer_id`** (`pcus_*`). See [Customers quickstart](/customers/quickstart).
+Public customer identity is **`customer_id`** (`pcus_*`). See [Customers quickstart](/customers/quickstart) and [Accounts and banking](/customers/accounts-and-banking).
 
 ## Included endpoints
 
@@ -18,7 +18,9 @@ Public customer identity is **`customer_id`** (`pcus_*`). See [Customers quickst
 | `POST` | `/partner/orders/{quote_id}/accept` |
 | `GET` | `/partner/orders/{order_id}` |
 
-## Customers (vault KYC)
+## Customers (vault KYC + accounts + banking)
+
+OpenAPI tag: **`partner-customers`**.
 
 | Method | Path |
 |--------|------|
@@ -29,11 +31,19 @@ Public customer identity is **`customer_id`** (`pcus_*`). See [Customers quickst
 | `PATCH` | `/partner/customers/{customer_id}` |
 | `POST` | `/partner/customers/{customer_id}/documents` |
 | `POST` | `/partner/customers/{customer_id}/submit` |
+| `POST` | `/partner/customers/{customer_id}/deposit-account/retry` |
+| `POST` | `/partner/customers/{customer_id}/accounts` |
+| `GET` | `/partner/customers/{customer_id}/accounts` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/deposit-instructions` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/preview` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}` |
 
-Guides: [Customers quickstart](/customers/quickstart) · [Route cheat sheet](/customers/route-cheat-sheet).
+Guides: [Customers quickstart](/customers/quickstart) · [Accounts and banking](/customers/accounts-and-banking) · [Route cheat sheet](/customers/route-cheat-sheet).
 
 <Note>
-OpenAPI Try-it for customer routes appears once those operations are exported into this site’s `openapi.json`. Until then, use the curls in the Customers quickstart.
+Legacy entity account routes under `/partner/entities/{entity_id}/accounts/...` remain for older integrations. New work should use `pcus_*` customer paths only.
 </Note>
 
 ## Try it

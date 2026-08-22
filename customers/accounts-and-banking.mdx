@@ -1,0 +1,240 @@
+# Accounts and banking
+
+Open **deposit accounts**, read **fiat deposit instructions**, and send **stablecoins** from customer-scoped account paths — all keyed by `customer_id` (`pcus_*`).
+
+Prerequisite: complete [Customers quickstart](/customers/quickstart) and wait until the customer is cleared for banking.
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
+export BASE_LIVE="$BASE_LIVE"         # live Partner API base
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"            # or is_live_… on live
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## Two gates
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on `POST /partner/orders/quote` |
+| **Banking** | `products.deposit_account.status` is `ready` | Accounts, deposit instructions, stablecoin sends |
+
+`approved` alone does **not** unlock account or banking routes. Always read both fields from `GET /partner/customers/{customer_id}`.
+
+### Deposit account product
+
+| Status | Meaning |
+|--------|---------|
+| `none` | Banking profile not started |
+| `provisioning` | Banking KYC in progress after EP approve |
+| `ready` | May open/list accounts and call banking routes |
+| `failed` | Provision failed — retry or contact Element Pay |
+| `unavailable` | Product not available for this case |
+
+If banking routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+
+## Happy path
+
+<Steps>
+  <Step title="Poll customer">
+    Confirm `status` and `products.deposit_account.status` from `GET /partner/customers/{customer_id}`
+  </Step>
+  <Step title="Open or list accounts">
+    `POST` or `GET /partner/customers/{customer_id}/accounts`
+  </Step>
+  <Step title="Deposit instructions (fiat)">
+    `GET …/accounts/{account_id}/deposit-instructions` for IBAN/wire coordinates
+  </Step>
+  <Step title="Send preview (stablecoin)">
+    `POST …/accounts/{account_id}/sends/preview` → `preview_token`
+  </Step>
+  <Step title="Send confirm">
+    `POST …/accounts/{account_id}/sends` with `preview_token` + `idempotency_key`
+  </Step>
+  <Step title="Poll send">
+    `GET …/accounts/{account_id}/sends/{send_id}` until terminal status
+  </Step>
+</Steps>
+
+## 1. Poll customer (both gates)
+
+```bash
+export CUSTOMER_ID="pcus_06a83150db3c"   # staging smoke — Aly
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '{
+    id: .data.id,
+    status: .data.status,
+    deposit_account: .data.products.deposit_account
+  }'
+```
+
+Example (staging, PII redacted):
+
+```json
+{
+  "id": "pcus_06a83150db3c",
+  "status": "approved",
+  "deposit_account": { "status": "ready" }
+}
+```
+
+If `deposit_account.status` is `failed`, retry provisioning:
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/deposit-account/retry" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq '.data | {id, status, products}'
+```
+
+While `incomplete` or after a failed deposit KYC, merge profile fixes with `PATCH /partner/customers/{customer_id}`.
+
+## 2. Open and list accounts
+
+Idempotent on `(customer, asset_type, currency, network)` per tenant.
+
+```bash
+# List (each row includes customer_id)
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+# Open fiat
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asset_type": "fiat",
+    "currency": "EUR"
+  }' | jq '.data'
+
+# Open stablecoin (network required)
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asset_type": "stablecoin",
+    "currency": "USDC",
+    "network": "Base"
+  }' | jq '.data'
+
+export ACCOUNT_ID="21"
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+**Stablecoin `network`:** `Base` | `Polygon` | `Stellar` (required when `asset_type` is `stablecoin`). USDT is not supported on Stellar.
+
+## 3. Deposit instructions (fiat)
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/deposit-instructions" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Returns partner-neutral IBAN/wire (or equivalent) coordinates for the account rail. Use when the customer needs to fund a fiat balance.
+
+## 4. Stablecoin send — preview
+
+Preview and confirm must use the **same** `account_id`. The `preview_token` seals customer + account internally.
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+    "amount": "5.00",
+    "network": "Base",
+    "memo": "optional-stellar-memo"
+  }' | jq '.data'
+```
+
+Save `preview_token` from the response. For Stellar destinations, include `memo` when required by the recipient.
+
+### Send headroom
+
+The send amount must be **strictly below** the account's displayed `available_balance`. Sending the full balance (for example `1.00` when available is `1.00`) returns **422** `Insufficient balance` with `available`, `amount`, and `currency` in `data` when known.
+
+Staging smoke: `pcus_51bbc9b3a504` (iSafari) — preview `1.00` when available is `1.00` → **422**.
+
+## 5. Stablecoin send — confirm
+
+<Warning>
+On **live** (`https://api.elementpay.net/api/v1`), confirm submits a **real outbound transfer**. Use sandbox for full preview → confirm loops unless you intend to move funds.
+</Warning>
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preview_token": "<from preview response>",
+    "idempotency_key": "send-2026-08-22-001"
+  }' | jq '.data'
+```
+
+Reuse the same `idempotency_key` on retries after network errors. Do not change the key for a different send.
+
+## 6. Poll send status
+
+```bash
+export SEND_ID="55"
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends/$SEND_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Staging smoke: `pcus_06a83150db3c` — Stellar send confirm passed.
+
+## Business rules
+
+1. **Preview → confirm:** use the same `account_id`; the preview token is bound to that account.
+2. **Send headroom:** amount must be strictly less than `available_balance` (see above).
+3. **Partner-neutral JSON:** error `message` and `data` do not expose upstream PSP names — safe to show in your UI.
+4. **Confirm = real money** on live.
+
+## Legacy routes
+
+The same account and banking operations exist under `/partner/entities/{entity_id}/accounts/...`. Those paths are **legacy** for existing integrations only. New builds should use `pcus_*` customer paths exclusively.
+
+## Live testing discipline
+
+A live list under a test partner key may only show Wave 1 smoke customers (`rejected` / `pending_review`, `deposit_account.status=none`). None of those can use account or banking routes.
+
+Before live banking tests, discover ready customers:
+
+```bash
+export BASE="https://api.elementpay.net/api/v1"
+
+curl -sS "$BASE/partner/customers?status=approved&limit=100" \
+  -H "X-API-Key: $API_KEY" \
+  | jq '.data.customers[] | select(.products.deposit_account.status=="ready") | {id, ref: .partner_customer_ref, deposit: .products.deposit_account.status}'
+```
+
+If empty → use **sandbox** for send preview/confirm tests, or onboard and get Element Pay approval on live first.
+
+On live: discovery, deposit-instructions, and **preview only** unless you intend a real outbound send.
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account`; retry if `failed` |
+| Send exceeds balance | `422` `Insufficient balance` | Lower amount below `available_balance` |
+| Preview token expired / wrong account | `4xx` | Re-preview on the same `account_id` |
+| Unknown customer / account | `404` | Use ids returned to this API key |
+| Bad key | `401` | Fix `X-API-Key` |
+
+## Next
+
+- [Route cheat sheet](/customers/route-cheat-sheet)
+- [Customers quickstart](/customers/quickstart) (vault KYC)
+- [API reference — partner-customers](/api-reference/introduction)
