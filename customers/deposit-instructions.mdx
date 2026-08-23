@@ -64,7 +64,7 @@ Exact keys follow the account rail — treat the response as source of truth.
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` until `ready` |
+| Banking gate not ready | `409` — `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
 | Account still provisioning coords | `422` + not ready | Poll `GET …/accounts/{account_id}` until coordinates exist, then retry |
 | Unknown account / customer | `404` | Use ids from this API key |
 
