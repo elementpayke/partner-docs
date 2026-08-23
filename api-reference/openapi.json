@@ -3594,7 +3594,7 @@
             }
           },
           "409": {
-            "description": "Banking profile incomplete",
+            "description": "Deposit account is not ready",
             "content": {
               "application/json": {
                 "schema": {
@@ -3602,10 +3602,9 @@
                 },
                 "example": {
                   "status": "error",
-                  "message": "Banking profile incomplete",
+                  "message": "Deposit account is not ready",
                   "data": {
-                    "deposit_account_status": "pending",
-                    "reason": "banking_profile_incomplete"
+                    "deposit_account_status": "pending"
                   }
                 }
               }
@@ -3690,7 +3689,7 @@
             }
           },
           "409": {
-            "description": "Banking profile incomplete",
+            "description": "Deposit account is not ready",
             "content": {
               "application/json": {
                 "schema": {
@@ -3698,10 +3697,9 @@
                 },
                 "example": {
                   "status": "error",
-                  "message": "Banking profile incomplete",
+                  "message": "Deposit account is not ready",
                   "data": {
-                    "deposit_account_status": "pending",
-                    "reason": "banking_profile_incomplete"
+                    "deposit_account_status": "pending"
                   }
                 }
               }
@@ -3794,7 +3792,7 @@
             }
           },
           "409": {
-            "description": "Banking profile incomplete",
+            "description": "Deposit account is not ready",
             "content": {
               "application/json": {
                 "schema": {
@@ -3802,10 +3800,9 @@
                 },
                 "example": {
                   "status": "error",
-                  "message": "Banking profile incomplete",
+                  "message": "Deposit account is not ready",
                   "data": {
-                    "deposit_account_status": "pending",
-                    "reason": "banking_profile_incomplete"
+                    "deposit_account_status": "pending"
                   }
                 }
               }

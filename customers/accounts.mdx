@@ -32,7 +32,7 @@ Content-Type: application/json
 
 `approved` alone does **not** unlock accounts. Always read both fields from `GET /partner/customers/{customer_id}`.
 
-If account routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+If account routes are called before `ready`, the API returns **409** with message `Deposit account is not ready`. Response `data` includes `deposit_account_status` (current status) or, in some cases, `reason: banking_profile_incomplete`.
 
 ## Happy path
 
@@ -126,7 +126,7 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` until `ready` |
+| Banking gate not ready | `409` — `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
 | Unknown / other-tenant customer | `404` | Use id from this API key |
 | Account not found | `404` | List accounts and pick a valid `account_id` |
 
