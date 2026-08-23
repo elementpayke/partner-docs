@@ -49,6 +49,7 @@
               "customers/stablecoin-sends",
               "customers/book-transfers",
               "customers/payouts",
+              "customers/cards",
               "customers/route-cheat-sheet"
             ]
           },

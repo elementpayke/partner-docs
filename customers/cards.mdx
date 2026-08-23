@@ -1,0 +1,226 @@
+# Cards (acquiring + issuing)
+
+Two card products on customer-owned accounts (`pcus_*`). Same banking gate as other customer money movement: `products.deposit_account.status=ready`.
+
+| Product | What it does |
+|---------|----------------|
+| **Card charges (acquiring)** | Charge an external card **into** a customer fiat account |
+| **Issued cards** | Disposable / virtual cards that spend from a **USD** account balance |
+
+| Flow | Destination / source |
+|------|----------------------|
+| [Book transfers](/customers/book-transfers) | Another ledger account under the same API key |
+| [Payouts](/customers/payouts) | External bank |
+| [Stablecoin sends](/customers/stablecoin-sends) | Crypto wallet |
+| **Card charge** | External card → fiat account |
+| **Issued card** | USD account balance → card spend |
+
+Prerequisite: [Customers quickstart](/customers/quickstart).
+
+<Warning>
+**Sandbox:** card flows are narrower than live. **USD** fiat accounts may stay `pending` and not fully unlock issuing. Self-serve funding may not credit usable balance (see [deposit instructions](/customers/deposit-instructions)). Prefer sandbox **test PAN** fixtures for acquiring shape checks; do not assume full charge settlement or issued-card spend QA. Contact Element Pay if you need a sandbox credit or USD readiness. **Live:** acquiring and spend move real funds; treat confirm / create as money movement.
+</Warning>
+
+<Warning>
+**PAN / CVV** are accepted only on create. GET and list responses do **not** return full card numbers or CVV.
+</Warning>
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
+export BASE_LIVE="$BASE_LIVE"         # live Partner API base
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"            # or is_live_… on live
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## Gates
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
+| **Banking** | `products.deposit_account.status` is `ready` | Card charges and issued cards for that customer's accounts |
+
+Source `account_id` must belong to `{customer_id}`. Issuing additionally needs an **active USD** fiat account.
+
+<Warning>
+**Kenya individuals and USD:** issued cards require an **active USD** fiat account. **USD fiat open is not available** for **individual** customers with Kenya residence (API **422**, `data.code: unsupported_region`, message class *USD bank accounts are not available for this customer region*). Other fiats (EUR/GBP/CAD, …) can still open for those individuals when eligible. Use a **business** customer (or a non-KE individual) when you need USD + issuing. See [Accounts](/customers/accounts).
+</Warning>
+
+If banking routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+
+## Card charges (acquiring)
+
+Charge an external card into a fiat account (USD / GBP / EUR depending on account support).
+
+<Note>
+A successful charge does not always mean immediate `available` balance. Settlement can take several days. Poll the charge and account balance (or wait for credit webhooks) rather than assuming instant funds.
+</Note>
+
+### Happy path
+
+<Steps>
+  <Step title="Confirm banking ready">
+    Poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+  </Step>
+  <Step title="List accounts">
+    Resolve fiat `account_id` via `GET …/accounts`
+  </Step>
+  <Step title="Create charge">
+    `POST …/card-charges` with `amount`, `reference`, `card`, `billing_address`, `customer`
+  </Step>
+  <Step title="Poll">
+    `GET …/card-charges/{charge_id}` until terminal status
+  </Step>
+</Steps>
+
+### Create charge
+
+```bash
+export FROM_CUSTOMER="pcus_…"   # approved/active + deposit_account ready
+export ACCOUNT_ID="…"           # fiat account (USD/GBP/EUR)
+
+curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/card-charges" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "10.00",
+    "reference": "topup-2026-08-23-001",
+    "description": "Wallet top-up",
+    "auth_model": "3ds_disabled",
+    "card": {
+      "number": "4000000000002701",
+      "expiry_month": "12",
+      "expiry_year": "2030",
+      "cvv": "123",
+      "holder_name": "Ada Lovelace"
+    },
+    "billing_address": {
+      "line_1": "1 Example Street",
+      "city": "New York",
+      "state": "NY",
+      "country": "US",
+      "postal_code": "10001"
+    },
+    "customer": {
+      "first_name": "Ada",
+      "last_name": "Lovelace",
+      "email": "ada@example.com"
+    }
+  }' | jq '.'
+```
+
+`auth_model` is `3ds_disabled` (sandbox non-3DS test cards) or `3ds_required` (then `return_url` and `browser_info` are required). Reuse the same `reference` for idempotent retries after network errors.
+
+### Get charge
+
+```bash
+curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/card-charges/$CHARGE_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.'
+```
+
+## Issued cards
+
+Issue a **disposable** or **virtual** card linked to a **USD** fiat account. Spend draws from that account balance. Optional `amount` is a placeholder for future load behaviour; omit it for normal issue.
+
+<Note>
+**Sandbox:** issuing is often not fully exercisable while USD stays `pending` or spend simulation is unavailable. Use **live** (or an Element Pay-enabled sandbox USD account) for end-to-end issuing QA. **Kenya individuals** cannot open USD fiat at all (see Gates), so do not plan issuing QA on KE individual customers.
+</Note>
+
+### Happy path
+
+<Steps>
+  <Step title="Confirm banking ready">
+    Same gate as acquiring
+  </Step>
+  <Step title="Resolve USD account">
+    `GET …/accounts` → USD fiat `account_id` with usable status
+  </Step>
+  <Step title="Issue">
+    `POST …/cards` with `type`, `reference`, `cardholder` → card id (PAN/CVV only on create)
+  </Step>
+  <Step title="Manage">
+    List / get / transactions / freeze / unfreeze as needed
+  </Step>
+</Steps>
+
+### Issue card
+
+```bash
+export USD_ACCOUNT_ID="…"   # USD fiat account
+
+curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "virtual",
+    "reference": "card-issue-2026-08-23-001",
+    "card_name": "Ops card",
+    "cardholder": {
+      "first_name": "Ada",
+      "last_name": "Lovelace",
+      "email": "ada@example.com",
+      "phone_number": "+12125550198"
+    }
+  }' | jq '.'
+```
+
+`type` is `virtual` or `disposable`. Disposable cards also require `expiration_month` / `expiration_year`. Optional `spending_controls` apply to virtual cards only. Store PAN/CVV from the **create** response if you need them; later GET/list omit them.
+
+### List / get / transactions
+
+```bash
+curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards" \
+  -H "X-API-Key: $API_KEY" | jq '.'
+
+curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards/$CARD_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.'
+
+curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards/$CARD_ID/transactions" \
+  -H "X-API-Key: $API_KEY" | jq '.'
+```
+
+### Freeze / unfreeze
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards/$CARD_ID/freeze" \
+  -H "X-API-Key: $API_KEY" | jq '.'
+
+curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards/$CARD_ID/unfreeze" \
+  -H "X-API-Key: $API_KEY" | jq '.'
+```
+
+## Business rules
+
+1. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
+2. **Acquiring** supports configured fiat currencies (typically USD / GBP / EUR); **issuing** requires a **USD** account.
+3. **PAN/CVV** only on create charge / create card; never on GET or list.
+4. Reuse stable `reference` values for idempotent creates after timeouts.
+5. Same banking gate as [book transfers](/customers/book-transfers) and [payouts](/customers/payouts).
+
+## Legacy routes
+
+The same operations exist under `/partner/entities/{entity_id}/accounts/.../card-charges` and `.../cards`. Those paths are **legacy**. New integrations should use `pcus_*` customer paths only.
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
+| KE individual opens USD fiat | `422` + `unsupported_region` | Use non-USD fiat, or a business / non-KE individual for USD + issuing |
+| Unsupported currency / non-USD issue | `422` | Use a supported fiat / USD account |
+| Invalid card or cardholder fields | `422` | Fix required fields (`auth_model`, disposable expiry, etc.) |
+| Duplicate `reference` with different details | `409` | New reference or retry identical payload |
+| Card / charge not found | `404` | Check ids and account ownership |
+
+## Next
+
+- [External bank payouts](/customers/payouts)
+- [Book transfers](/customers/book-transfers)
+- [Deposit instructions](/customers/deposit-instructions)
+- [Route cheat sheet](/customers/route-cheat-sheet)
