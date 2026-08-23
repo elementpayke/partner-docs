@@ -262,14 +262,6 @@ Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, 
 | Unknown / other-tenant id | `404` | Use id from this API key |
 | Bad key | `401` | Fix `X-API-Key` |
 
-## FAQ
-
-**Inline `customer` still OK?** Yes — still accepted on quote. Prefer vault `customer_id` once `approved`; that is the main path for new integrations.
-
-**Do I have to poll?** No. Prefer webhooks for `customer.approved` / `customer.rejected`; poll GET as backup. Configure `webhook_url` on the API key — see [Webhooks](/webhooks).
-
-**What about deposit accounts, sends, cards?** Coming in a later docs update under the same `customer_id`. This guide covers vault KYC and quote identity only.
-
 ## Next
 
 - [Route cheat sheet](/customers/route-cheat-sheet)
