@@ -13,6 +13,10 @@ Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status`
 **Sandbox funding:** usable balance for outbound [stablecoin sends](/customers/stablecoin-sends) may require an Element Pay sandbox credit. See [deposit instructions](/customers/deposit-instructions).
 </Note>
 
+<Warning>
+**USD fiat for Kenya individuals:** opening a **USD** fiat account is **not available** when the customer is an **individual** with Kenya residence (`country` / residence **KE**). The API returns **422** with partner-neutral copy such as `USD bank accounts are not available for this customer region` and `data.code: unsupported_region`. **EUR / GBP / CAD** (and other non-USD fiats) and **stablecoin** rails can still open for those customers when otherwise eligible. **Business** customers are not covered by this individual KE rule; confirm USD business eligibility with Element Pay if unsure. Issuing cards needs an active USD account ([Cards](/customers/cards)), so KE individuals cannot use issuing until a USD path exists for them.
+</Warning>
+
 ## Auth and environments
 
 ```bash
@@ -132,7 +136,8 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Banking gate not ready | `409` — `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
+| Banking gate not ready | `409` with message `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
+| KE individual opens USD fiat | `422` + `unsupported_region` | Open EUR/GBP/CAD (or stablecoin); use business / non-KE individual for USD |
 | Unknown / other-tenant customer | `404` | Use id from this API key |
 | Account not found | `404` | List accounts and pick a valid `account_id` |
 

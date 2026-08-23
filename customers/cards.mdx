@@ -48,6 +48,10 @@ Content-Type: application/json
 
 Source `account_id` must belong to `{customer_id}`. Issuing additionally needs an **active USD** fiat account.
 
+<Warning>
+**Kenya individuals and USD:** issued cards require an **active USD** fiat account. **USD fiat open is not available** for **individual** customers with Kenya residence (API **422**, `data.code: unsupported_region`, message class *USD bank accounts are not available for this customer region*). Other fiats (EUR/GBP/CAD, …) can still open for those individuals when eligible. Use a **business** customer (or a non-KE individual) when you need USD + issuing. See [Accounts](/customers/accounts).
+</Warning>
+
 If banking routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
 
 ## Card charges (acquiring)
@@ -125,7 +129,7 @@ curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/card-charg
 Issue a **disposable** or **virtual** card linked to a **USD** fiat account. Spend draws from that account balance. Optional `amount` is a placeholder for future load behaviour; omit it for normal issue.
 
 <Note>
-**Sandbox:** issuing is often not fully exercisable while USD stays `pending` or spend simulation is unavailable. Use **live** (or an Element Pay-enabled sandbox USD account) for end-to-end issuing QA.
+**Sandbox:** issuing is often not fully exercisable while USD stays `pending` or spend simulation is unavailable. Use **live** (or an Element Pay-enabled sandbox USD account) for end-to-end issuing QA. **Kenya individuals** cannot open USD fiat at all (see Gates), so do not plan issuing QA on KE individual customers.
 </Note>
 
 ### Happy path
@@ -208,6 +212,7 @@ The same operations exist under `/partner/entities/{entity_id}/accounts/.../card
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
+| KE individual opens USD fiat | `422` + `unsupported_region` | Use non-USD fiat, or a business / non-KE individual for USD + issuing |
 | Unsupported currency / non-USD issue | `422` | Use a supported fiat / USD account |
 | Invalid card or cardholder fields | `422` | Fix required fields (`auth_model`, disposable expiry, etc.) |
 | Duplicate `reference` with different details | `409` | New reference or retry identical payload |
