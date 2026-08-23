@@ -2688,14 +2688,14 @@
         }
       }
     },
-    "/partner/customers/{customer_id}/submit": {
-      "post": {
+    "/partner/customers/requirements": {
+      "get": {
         "tags": [
           "partner-customers"
         ],
-        "summary": "Submit customer package for review",
-        "description": "Submit an incomplete package \u2192 pending_review, or 422 with missing[].",
-        "operationId": "partner_customer_submit_partner_customers__customer_id__submit_post",
+        "summary": "Customer KYC package requirements",
+        "description": "Return required profile fields and document categories for a customer type.",
+        "operationId": "partner_customer_requirements_partner_customers_requirements_get",
         "security": [
           {
             "APIKeyHeader": []
@@ -2703,113 +2703,40 @@
         ],
         "parameters": [
           {
-            "name": "customer_id",
-            "in": "path",
-            "required": true,
+            "name": "type",
+            "in": "query",
+            "required": false,
             "schema": {
               "type": "string",
-              "description": "Public customer id returned on create",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id"
+              "description": "individual or business",
+              "default": "individual",
+              "title": "Type"
             },
-            "description": "Public customer id returned on create",
-            "example": "pcus_a1b2c3d4e5f6"
+            "description": "individual or business",
+            "example": "individual"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id",
+              "title": "Country"
+            },
+            "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id",
+            "example": "US"
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  }
-                },
-                "example": {
-                  "status": "error",
-                  "message": "Validation error",
-                  "data": {
-                    "field": "country"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/partner/customers/{customer_id}/documents": {
-      "post": {
-        "tags": [
-          "partner-customers"
-        ],
-        "summary": "Upload a customer document",
-        "description": "Upload a base64 document into the vault (off-host store + DB metadata). A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
-        "operationId": "partner_customer_upload_document_partner_customers__customer_id__documents_post",
-        "security": [
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "customer_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Public customer id returned on create",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id"
-            },
-            "description": "Public customer id returned on create",
-            "example": "pcus_a1b2c3d4e5f6"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PartnerCustomerDocumentUploadRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -2877,6 +2804,49 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PartnerCustomerCreateRequest"
+              },
+              "examples": {
+                "individual": {
+                  "summary": "Individual create",
+                  "value": {
+                    "partner_customer_ref": "partner-cust-001",
+                    "type": "individual",
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "address": {
+                        "line_1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "partner_customer_ref": "partner-cust-001",
+                "type": "individual",
+                "profile": {
+                  "first_name": "Jane",
+                  "last_name": "Doe",
+                  "email": "jane@example.com",
+                  "date_of_birth": "1990-01-15",
+                  "country_of_residence": "GB",
+                  "phone": "+447700900123",
+                  "gender": "f",
+                  "address": {
+                    "line_1": "1 Example Street",
+                    "city": "London",
+                    "country": "GB",
+                    "postal_code": "E1 6AN"
+                  }
+                }
               }
             }
           }
@@ -3138,10 +3108,224 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PartnerCustomerProfilePatchRequest"
+              },
+              "examples": {
+                "profile_patch": {
+                  "summary": "Partial profile merge",
+                  "value": {
+                    "profile": {
+                      "phone": "+447700900999",
+                      "address": {
+                        "line_1": "2 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "profile": {
+                  "phone": "+447700900999",
+                  "address": {
+                    "line_1": "2 Example Street",
+                    "city": "London",
+                    "country": "GB",
+                    "postal_code": "E1 6AN"
+                  }
+                }
               }
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/documents": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Upload a customer document",
+        "description": "Upload a base64 document into the vault (off-host store + DB metadata). A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
+        "operationId": "partner_customer_upload_document_partner_customers__customer_id__documents_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerDocumentUploadRequest"
+              },
+              "examples": {
+                "identity_pdf": {
+                  "summary": "Identity document (illustrative Base64)",
+                  "value": {
+                    "category": "identity",
+                    "file_name": "passport.pdf",
+                    "content_type": "application/pdf",
+                    "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+                  }
+                }
+              },
+              "example": {
+                "category": "identity",
+                "file_name": "passport.pdf",
+                "content_type": "application/pdf",
+                "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/submit": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Submit customer package for review",
+        "description": "Submit an incomplete package \u2192 pending_review, or 422 with missing[].",
+        "operationId": "partner_customer_submit_partner_customers__customer_id__submit_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3220,101 +3404,6 @@
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  }
-                },
-                "example": {
-                  "status": "error",
-                  "message": "Validation error",
-                  "data": {
-                    "field": "country"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/partner/customers/requirements": {
-      "get": {
-        "tags": [
-          "partner-customers"
-        ],
-        "summary": "Customer KYC package requirements",
-        "description": "Return required profile fields and document categories for a customer type.",
-        "operationId": "partner_customer_requirements_partner_customers_requirements_get",
-        "security": [
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "individual or business",
-              "default": "individual",
-              "title": "Type"
-            },
-            "description": "individual or business"
-          },
-          {
-            "name": "country",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id",
-              "title": "Country"
-            },
-            "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id"
           }
         ],
         "responses": {
@@ -3913,7 +4002,8 @@
             "maxLength": 12000000,
             "minLength": 1,
             "title": "Content Base64",
-            "description": "Base64-encoded file bytes (max ~8 MiB decoded)."
+            "description": "Base64-encoded file bytes (max ~8 MiB decoded).",
+            "example": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
           },
           "content_type": {
             "anyOf": [
@@ -3950,7 +4040,13 @@
           "category",
           "content_base64"
         ],
-        "title": "PartnerCustomerDocumentUploadRequest"
+        "title": "PartnerCustomerDocumentUploadRequest",
+        "example": {
+          "category": "identity",
+          "file_name": "passport.pdf",
+          "content_type": "application/pdf",
+          "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+        }
       },
       "PartnerCustomerProfilePatchRequest": {
         "properties": {
@@ -3964,7 +4060,18 @@
         "required": [
           "profile"
         ],
-        "title": "PartnerCustomerProfilePatchRequest"
+        "title": "PartnerCustomerProfilePatchRequest",
+        "example": {
+          "profile": {
+            "phone": "+447700900999",
+            "address": {
+              "line_1": "2 Example Street",
+              "city": "London",
+              "country": "GB",
+              "postal_code": "E1 6AN"
+            }
+          }
+        }
       },
       "PartnerCustomerCreateRequest": {
         "properties": {
@@ -4004,7 +4111,26 @@
           "partner_customer_ref",
           "type"
         ],
-        "title": "PartnerCustomerCreateRequest"
+        "title": "PartnerCustomerCreateRequest",
+        "example": {
+          "partner_customer_ref": "partner-cust-001",
+          "type": "individual",
+          "profile": {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane@example.com",
+            "date_of_birth": "1990-01-15",
+            "country_of_residence": "GB",
+            "phone": "+447700900123",
+            "gender": "f",
+            "address": {
+              "line_1": "1 Example Street",
+              "city": "London",
+              "country": "GB",
+              "postal_code": "E1 6AN"
+            }
+          }
+        }
       }
     },
     "securitySchemes": {
