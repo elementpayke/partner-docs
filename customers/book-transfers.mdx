@@ -1,6 +1,6 @@
 # Book transfers
 
-Move **same-currency fiat** between accounts under your partner API key — for example Aly’s EUR account to Khamisi’s EUR account. Source is always a customer-owned fiat `account_id` (`pcus_*`). Destination may be another customer’s (or legacy entity) account id reachable under the **same** key.
+Move **same-currency fiat** between accounts under your partner API key (for example one customer's EUR account to another customer's EUR account). Source is always a customer-owned fiat `account_id` (`pcus_*`). Destination may be another customer's (or legacy entity) account id reachable under the **same** key.
 
 Prerequisite: [Customers quickstart](/customers/quickstart). Banking gate: `products.deposit_account.status=ready`.
 
@@ -23,7 +23,7 @@ Content-Type: application/json
 | Gate | Field | Unlocks |
 |------|-------|---------|
 | **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
-| **Banking** | `products.deposit_account.status` is `ready` | Fiat book transfers from that customer’s accounts |
+| **Banking** | `products.deposit_account.status` is `ready` | Fiat book transfers from that customer's accounts |
 
 Source `account_id` must belong to `{customer_id}`. Destination `to_account_id` must be under the same API key (may belong to another `pcus_*` or a legacy entity account).
 
@@ -42,7 +42,7 @@ If banking routes are called before `ready`, expect **409** with partner-neutral
     `POST …/book-transfers/preview` with `to_account_id` + `amount` → `preview_token`
   </Step>
   <Step title="Confirm">
-    `POST …/book-transfers` with `preview_token` + `idempotency_key` (tokens expire quickly — use a fresh preview)
+    `POST …/book-transfers` with `preview_token` + `idempotency_key` (tokens expire quickly; use a fresh preview)
   </Step>
   <Step title="Re-list balances">
     `GET …/accounts` on both sides to confirm balances moved
@@ -51,11 +51,11 @@ If banking routes are called before `ready`, expect **409** with partner-neutral
 
 ## 1. Resolve accounts
 
-Staging smoke (Aly → Khamisi):
+Use ids returned by **your** API key (do not hardcode from this guide).
 
 ```bash
-export FROM_CUSTOMER="pcus_06a83150db3c"   # Aly
-export TO_CUSTOMER="pcus_6bc2cc9626a5"     # Khamisi
+export FROM_CUSTOMER="pcus_…"
+export TO_CUSTOMER="pcus_…"
 
 curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts" \
   -H "X-API-Key: $API_KEY" | jq '.data'
@@ -63,11 +63,9 @@ curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts" \
 curl -sS "$BASE/partner/customers/$TO_CUSTOMER/accounts" \
   -H "X-API-Key: $API_KEY" | jq '.data'
 
-export ACCOUNT_ID="1"      # Aly EUR (staging smoke)
-export TO_ACCOUNT_ID="7"   # Khamisi EUR
+export ACCOUNT_ID="<source fiat account_id>"
+export TO_ACCOUNT_ID="<destination fiat account_id>"
 ```
-
-Sandbox smoke: Acme `pcus_722ec09f39c9` EUR **63** → peer entity/account EUR **16**.
 
 ## 2. Preview
 
@@ -77,13 +75,13 @@ Preview and confirm must use the **same** source `account_id`. The `preview_toke
 curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/book-transfers/preview" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "to_account_id": 7,
-    "amount": "0.50"
-  }' | jq '.'
+  -d "{
+    \"to_account_id\": $TO_ACCOUNT_ID,
+    \"amount\": \"0.50\"
+  }" | jq '.'
 ```
 
-Typical success shape (field names may vary slightly; prefer a captured staging body for Try-it):
+Typical success shape (field names may vary slightly):
 
 ```json
 {
@@ -92,22 +90,22 @@ Typical success shape (field names may vary slightly; prefer a captured staging 
   "data": {
     "preview_token": "ep_book_prev_…",
     "currency": "EUR",
-    "from_account_id": 1,
-    "to_account_id": 7,
+    "from_account_id": 18,
+    "to_account_id": 21,
     "amount": "0.50",
     "fee": "0.00",
     "receive_amount": "0.50",
-    "customer_id": "pcus_06a83150db3c"
+    "customer_id": "pcus_…"
   }
 }
 ```
 
-Save `preview_token`. Tokens expire quickly — confirm promptly with a fresh preview if needed.
+Save `preview_token`. Tokens expire quickly; confirm promptly or re-preview if needed.
 
 ## 3. Confirm
 
 <Warning>
-On **live**, confirm moves **real** fiat balances. Prefer sandbox/staging for full preview → confirm loops unless you intend to transfer funds.
+On **live**, confirm moves **real** fiat balances. Prefer sandbox for full preview → confirm loops unless you intend to transfer funds.
 </Warning>
 
 ```bash
@@ -116,23 +114,19 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/bo
   -H "Content-Type: application/json" \
   -d '{
     "preview_token": "<from preview response>",
-    "idempotency_key": "book-aly-kh-2026-08-22-001"
+    "idempotency_key": "book-2026-08-23-001"
   }' | jq '.'
 ```
 
 Reuse the same `idempotency_key` on retries after network errors. Confirm success typically includes `status: completed` (or submitted), `id`, amounts, `customer_id`, and fee status `final`.
 
-Staging smoke: Aly EUR **1** → Khamisi EUR **7**, €0.50 — balances moved (e.g. 0.70→0.20 / 0.50→1.00).
-
 ## Business rules
 
 1. **Same currency fiat → fiat** only (e.g. EUR → EUR).
-2. **Same partner API key** — destination must be reachable under this key (another `pcus_*` or legacy entity account).
+2. **Same partner API key**: destination must be reachable under this key (another `pcus_*` or legacy entity account).
 3. **Preview → confirm** on the same source `account_id`; use a fresh preview if the token expired.
-4. **Partner-neutral JSON** — error `message` / `data` do not expose upstream PSP names.
+4. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
 5. **Balance:** book transfers require `available >= amount` (exact balance is allowed). This differs from [stablecoin sends](/customers/stablecoin-sends), which need amount **strictly below** `available` (1 minor-unit headroom). Insufficient balance still returns **422** with partner-neutral `data.available`, `data.amount`, and `data.currency` when known.
-
-Staging smoke (insufficient): Aly EUR **1** available `0.20` — preview `1.20` → **422**; preview `0.20` → **201** (preview only; not confirmed).
 
 ## Legacy routes
 
@@ -149,8 +143,6 @@ The same operations exist under `/partner/entities/{entity_id}/accounts/.../book
 
 ## Next
 
+- [Accounts](/customers/accounts) · [Deposit instructions](/customers/deposit-instructions)
 - [Stablecoin sends](/customers/stablecoin-sends)
-- [Customers quickstart](/customers/quickstart)
-- [External bank payouts](/customers/payouts)
-- [Cards](/customers/cards)
 - [Route cheat sheet](/customers/route-cheat-sheet)

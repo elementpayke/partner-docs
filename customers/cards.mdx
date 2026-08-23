@@ -9,13 +9,21 @@ Two card products on customer-owned accounts (`pcus_*`). Same banking gate as ot
 
 | Flow | Destination / source |
 |------|----------------------|
-| [Book transfer](/customers/book-transfers) | Another ledger account under the same API key |
-| [Payout](/customers/payouts) | External bank |
-| [Stablecoin send](/customers/stablecoin-sends) | Crypto wallet |
+| [Book transfers](/customers/book-transfers) | Another ledger account under the same API key |
+| [Payouts](/customers/payouts) | External bank |
+| [Stablecoin sends](/customers/stablecoin-sends) | Crypto wallet |
 | **Card charge** | External card → fiat account |
 | **Issued card** | USD account balance → card spend |
 
 Prerequisite: [Customers quickstart](/customers/quickstart).
+
+<Warning>
+**Sandbox:** card flows are narrower than live. **USD** fiat accounts may stay `pending` and not fully unlock issuing. Self-serve funding may not credit usable balance (see [deposit instructions](/customers/deposit-instructions)). Prefer sandbox **test PAN** fixtures for acquiring shape checks; do not assume full charge settlement or issued-card spend QA. Contact Element Pay if you need a sandbox credit or USD readiness. **Live:** acquiring and spend move real funds; treat confirm / create as money movement.
+</Warning>
+
+<Warning>
+**PAN / CVV** are accepted only on create. GET and list responses do **not** return full card numbers or CVV.
+</Warning>
 
 ## Auth and environments
 
@@ -36,21 +44,19 @@ Content-Type: application/json
 | Gate | Field | Unlocks |
 |------|-------|---------|
 | **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
-| **Banking** | `products.deposit_account.status` is `ready` | Card charges and issued cards for that customer’s accounts |
+| **Banking** | `products.deposit_account.status` is `ready` | Card charges and issued cards for that customer's accounts |
 
-Source `account_id` must belong to `{customer_id}`.
+Source `account_id` must belong to `{customer_id}`. Issuing additionally needs an **active USD** fiat account.
 
 If banking routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
-
-<Warning>
-**PAN / CVV** are accepted only on create. GET and list responses do **not** return full card numbers or CVV. Prefer sandbox for try-it; live acquiring and spend move real funds.
-</Warning>
-
----
 
 ## Card charges (acquiring)
 
 Charge an external card into a fiat account (USD / GBP / EUR depending on account support).
+
+<Note>
+A successful charge does not always mean immediate `available` balance. Settlement can take several days. Poll the charge and account balance (or wait for credit webhooks) rather than assuming instant funds.
+</Note>
 
 ### Happy path
 
@@ -114,11 +120,13 @@ curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/card-charg
   -H "X-API-Key: $API_KEY" | jq '.'
 ```
 
----
-
 ## Issued cards
 
-Issue a **disposable** or **virtual** card linked to a **USD** fiat account. Spend draws from that account balance. Optional `amount` is a placeholder for future load behaviour — omit it for normal issue.
+Issue a **disposable** or **virtual** card linked to a **USD** fiat account. Spend draws from that account balance. Optional `amount` is a placeholder for future load behaviour; omit it for normal issue.
+
+<Note>
+**Sandbox:** issuing is often not fully exercisable while USD stays `pending` or spend simulation is unavailable. Use **live** (or an Element Pay-enabled sandbox USD account) for end-to-end issuing QA.
+</Note>
 
 ### Happy path
 
@@ -127,7 +135,7 @@ Issue a **disposable** or **virtual** card linked to a **USD** fiat account. Spe
     Same gate as acquiring
   </Step>
   <Step title="Resolve USD account">
-    `GET …/accounts` → USD fiat `account_id`
+    `GET …/accounts` → USD fiat `account_id` with usable status
   </Step>
   <Step title="Issue">
     `POST …/cards` with `type`, `reference`, `cardholder` → card id (PAN/CVV only on create)
@@ -158,7 +166,7 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_I
   }' | jq '.'
 ```
 
-`type` is `virtual` or `disposable`. Disposable cards also require `expiration_month` / `expiration_year`. Optional `spending_controls` apply to virtual cards only. Store PAN/CVV from the **create** response if you need them — later GET/list omit them.
+`type` is `virtual` or `disposable`. Disposable cards also require `expiration_month` / `expiration_year`. Optional `spending_controls` apply to virtual cards only. Store PAN/CVV from the **create** response if you need them; later GET/list omit them.
 
 ### List / get / transactions
 
@@ -183,17 +191,13 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_I
   -H "X-API-Key: $API_KEY" | jq '.'
 ```
 
----
-
 ## Business rules
 
-1. **Partner-neutral JSON** — error `message` / `data` do not expose upstream PSP names.
+1. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
 2. **Acquiring** supports configured fiat currencies (typically USD / GBP / EUR); **issuing** requires a **USD** account.
-3. **PAN/CVV** only on create charge / create card — never on GET or list.
+3. **PAN/CVV** only on create charge / create card; never on GET or list.
 4. Reuse stable `reference` values for idempotent creates after timeouts.
 5. Same banking gate as [book transfers](/customers/book-transfers) and [payouts](/customers/payouts).
-
-Live smoke for cards usually needs sandbox PAN fixtures and a funded USD account — prefer sandbox; treat live as real money / real spend.
 
 ## Legacy routes
 
@@ -213,6 +217,5 @@ The same operations exist under `/partner/entities/{entity_id}/accounts/.../card
 
 - [External bank payouts](/customers/payouts)
 - [Book transfers](/customers/book-transfers)
-- [Stablecoin sends](/customers/stablecoin-sends)
-- [Customers quickstart](/customers/quickstart)
+- [Deposit instructions](/customers/deposit-instructions)
 - [Route cheat sheet](/customers/route-cheat-sheet)

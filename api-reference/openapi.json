@@ -2688,14 +2688,14 @@
         }
       }
     },
-    "/partner/customers/{customer_id}/submit": {
-      "post": {
+    "/partner/customers/requirements": {
+      "get": {
         "tags": [
           "partner-customers"
         ],
-        "summary": "Submit customer package for review",
-        "description": "Submit an incomplete package \u2192 pending_review, or 422 with missing[].",
-        "operationId": "partner_customer_submit_partner_customers__customer_id__submit_post",
+        "summary": "Customer KYC package requirements",
+        "description": "Return required profile fields and document categories for a customer type.",
+        "operationId": "partner_customer_requirements_partner_customers_requirements_get",
         "security": [
           {
             "APIKeyHeader": []
@@ -2703,113 +2703,40 @@
         ],
         "parameters": [
           {
-            "name": "customer_id",
-            "in": "path",
-            "required": true,
+            "name": "type",
+            "in": "query",
+            "required": false,
             "schema": {
               "type": "string",
-              "description": "Public customer id returned on create",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id"
+              "description": "individual or business",
+              "default": "individual",
+              "title": "Type"
             },
-            "description": "Public customer id returned on create",
-            "example": "pcus_a1b2c3d4e5f6"
+            "description": "individual or business",
+            "example": "individual"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id",
+              "title": "Country"
+            },
+            "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id",
+            "example": "US"
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  }
-                },
-                "example": {
-                  "status": "error",
-                  "message": "Validation error",
-                  "data": {
-                    "field": "country"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/partner/customers/{customer_id}/documents": {
-      "post": {
-        "tags": [
-          "partner-customers"
-        ],
-        "summary": "Upload a customer document",
-        "description": "Upload a base64 document into the vault (off-host store + DB metadata). A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
-        "operationId": "partner_customer_upload_document_partner_customers__customer_id__documents_post",
-        "security": [
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "customer_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Public customer id returned on create",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id"
-            },
-            "description": "Public customer id returned on create",
-            "example": "pcus_a1b2c3d4e5f6"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PartnerCustomerDocumentUploadRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -2877,6 +2804,49 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PartnerCustomerCreateRequest"
+              },
+              "examples": {
+                "default": {
+                  "summary": "Example",
+                  "value": {
+                    "partner_customer_ref": "cust-ke-001",
+                    "type": "individual",
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "address": {
+                        "line_1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "partner_customer_ref": "cust-ke-001",
+                "type": "individual",
+                "profile": {
+                  "first_name": "Jane",
+                  "last_name": "Doe",
+                  "email": "jane@example.com",
+                  "date_of_birth": "1990-01-15",
+                  "country_of_residence": "GB",
+                  "phone": "+447700900123",
+                  "gender": "f",
+                  "address": {
+                    "line_1": "1 Example Street",
+                    "city": "London",
+                    "country": "GB",
+                    "postal_code": "E1 6AN"
+                  }
+                }
               }
             }
           }
@@ -3048,7 +3018,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3126,7 +3097,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3138,10 +3110,238 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PartnerCustomerProfilePatchRequest"
+              },
+              "examples": {
+                "default": {
+                  "summary": "Example",
+                  "value": {
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "address": {
+                        "line_1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "profile": {
+                  "first_name": "Jane",
+                  "last_name": "Doe",
+                  "email": "jane@example.com",
+                  "date_of_birth": "1990-01-15",
+                  "country_of_residence": "GB",
+                  "phone": "+447700900123",
+                  "gender": "f",
+                  "address": {
+                    "line_1": "1 Example Street",
+                    "city": "London",
+                    "country": "GB",
+                    "postal_code": "E1 6AN"
+                  }
+                }
               }
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/documents": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Upload a customer document",
+        "description": "Upload a base64 document into the vault (off-host store + DB metadata). A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
+        "operationId": "partner_customer_upload_document_partner_customers__customer_id__documents_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerDocumentUploadRequest"
+              },
+              "examples": {
+                "default": {
+                  "summary": "Identity document",
+                  "value": {
+                    "category": "identity",
+                    "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
+                    "content_type": "application/pdf",
+                    "file_name": "passport.pdf"
+                  }
+                }
+              },
+              "example": {
+                "category": "identity",
+                "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
+                "content_type": "application/pdf",
+                "file_name": "passport.pdf"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/submit": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Submit customer package for review",
+        "description": "Submit an incomplete package \u2192 pending_review, or 422 with missing[].",
+        "operationId": "partner_customer_submit_partner_customers__customer_id__submit_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3216,7 +3416,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3272,109 +3473,14 @@
         }
       }
     },
-    "/partner/customers/requirements": {
-      "get": {
-        "tags": [
-          "partner-customers"
-        ],
-        "summary": "Customer KYC package requirements",
-        "description": "Return required profile fields and document categories for a customer type.",
-        "operationId": "partner_customer_requirements_partner_customers_requirements_get",
-        "security": [
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "individual or business",
-              "default": "individual",
-              "title": "Type"
-            },
-            "description": "individual or business"
-          },
-          {
-            "name": "country",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id",
-              "title": "Country"
-            },
-            "description": "Optional ISO country (e.g. US) for corridor-conditioned fields like tax_id"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  }
-                },
-                "example": {
-                  "status": "error",
-                  "message": "Validation error",
-                  "data": {
-                    "field": "country"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/partner/customers/{customer_id}/accounts/{account_id}/sends": {
+    "/partner/customers/{customer_id}/accounts": {
       "post": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
-        "summary": "Confirm a stablecoin send for a ready customer account",
-        "description": "Submit a stablecoin send using a prior preview token.",
-        "operationId": "partner_customer_confirm_send_partner_customers__customer_id__accounts__account_id__sends_post",
+        "summary": "Open an account for a ready customer",
+        "description": "Open one idempotent fiat or stablecoin rail. Same rail tuple returns the existing account.",
+        "operationId": "partner_customer_open_account",
         "security": [
           {
             "APIKeyHeader": []
@@ -3385,31 +3491,12 @@
             "name": "customer_id",
             "in": "path",
             "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
             "schema": {
               "type": "string",
-              "description": "Public customer id returned by POST /partner/customers",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
-            "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
-          },
-          {
-            "name": "account_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "description": "Account id returned by the customer account API",
-              "title": "Account Id",
-              "example": 21
-            },
-            "description": "Account id returned by the customer account API",
-            "example": 21
+            "example": "pcus_a1b2c3d4e5f6"
           }
         ],
         "requestBody": {
@@ -3417,11 +3504,28 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PartnerEntitySendConfirmRequest"
+                "$ref": "#/components/schemas/PartnerCustomerAccountOpenRequest"
               },
               "example": {
-                "preview_token": "<from preview response>",
-                "idempotency_key": "send-2026-08-22-001"
+                "asset_type": "fiat",
+                "currency": "EUR"
+              },
+              "examples": {
+                "fiat_eur": {
+                  "summary": "Fiat EUR",
+                  "value": {
+                    "asset_type": "fiat",
+                    "currency": "EUR"
+                  }
+                },
+                "usdc_base": {
+                  "summary": "USDC on Base",
+                  "value": {
+                    "asset_type": "stablecoin",
+                    "currency": "USDC",
+                    "network": "Base"
+                  }
+                }
               }
             }
           }
@@ -3431,43 +3535,171 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Account opened",
+                  "data": {
+                    "id": 18,
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "asset_type": "fiat",
+                    "currency": "EUR",
+                    "network": null,
+                    "status": "active",
+                    "display_name": "EUR",
+                    "account_number": "DE89370400440532013000",
+                    "bank_name": "Example Bank",
+                    "swift_bic": "COBADEFFXXX",
+                    "balance": {
+                      "available": "250.00",
+                      "currency": "EUR"
+                    },
+                    "created_at": "2026-08-01T12:00:00+00:00"
+                  }
+                }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Account already exists",
+                  "data": {
+                    "id": 18,
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "asset_type": "fiat",
+                    "currency": "EUR",
+                    "network": null,
+                    "status": "active",
+                    "display_name": "EUR",
+                    "account_number": "DE89370400440532013000",
+                    "bank_name": "Example Bank",
+                    "swift_bic": "COBADEFFXXX",
+                    "balance": {
+                      "available": "250.00",
+                      "currency": "EUR"
                     },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
+                    "created_at": "2026-08-01T12:00:00+00:00"
                   }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deposit account is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 },
                 "example": {
                   "status": "error",
-                  "message": "Validation error",
+                  "message": "Deposit account is not ready",
                   "data": {
-                    "field": "country"
+                    "deposit_account_status": "pending"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "partner-customer-accounts"
+        ],
+        "summary": "List accounts for a ready customer",
+        "description": "List customer accounts, refreshing pending coordinates when available.",
+        "operationId": "partner_customer_list_accounts",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
+            "schema": {
+              "type": "string",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Accounts",
+                  "data": {
+                    "accounts": [
+                      {
+                        "id": 21,
+                        "customer_id": "pcus_a1b2c3d4e5f6",
+                        "asset_type": "stablecoin",
+                        "currency": "USDC",
+                        "network": "Base",
+                        "status": "active",
+                        "display_name": "USDC Base",
+                        "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                        "balance": {
+                          "available": "12.50",
+                          "currency": "USDC"
+                        },
+                        "created_at": "2026-08-01T12:00:00+00:00"
+                      },
+                      {
+                        "id": 18,
+                        "customer_id": "pcus_a1b2c3d4e5f6",
+                        "asset_type": "fiat",
+                        "currency": "EUR",
+                        "network": null,
+                        "status": "active",
+                        "display_name": "EUR",
+                        "account_number": "DE89370400440532013000",
+                        "bank_name": "Example Bank",
+                        "swift_bic": "COBADEFFXXX",
+                        "balance": {
+                          "available": "250.00",
+                          "currency": "EUR"
+                        },
+                        "created_at": "2026-08-01T12:00:00+00:00"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deposit account is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Deposit account is not ready",
+                  "data": {
+                    "deposit_account_status": "pending"
                   }
                 }
               }
@@ -3479,11 +3711,11 @@
     "/partner/customers/{customer_id}/accounts/{account_id}": {
       "get": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Get one account for a ready customer",
         "description": "Get one customer-owned account and its current coordinates.",
-        "operationId": "partner_customer_get_account_partner_customers__customer_id__accounts__account_id__get",
+        "operationId": "partner_customer_get_account",
         "security": [
           {
             "APIKeyHeader": []
@@ -3494,30 +3726,23 @@
             "name": "customer_id",
             "in": "path",
             "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
             "schema": {
               "type": "string",
-              "description": "Public customer id returned by POST /partner/customers",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
-            "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
             "in": "path",
             "required": true,
+            "description": "Account id from list/open",
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "Account id returned by the customer account API",
-              "title": "Account Id",
               "example": 21
             },
-            "description": "Account id returned by the customer account API",
             "example": 21
           }
         ],
@@ -3526,43 +3751,58 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Account",
+                  "data": {
+                    "id": 21,
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "asset_type": "stablecoin",
+                    "currency": "USDC",
+                    "network": "Base",
+                    "status": "active",
+                    "display_name": "USDC Base",
+                    "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                    "balance": {
+                      "available": "12.50",
+                      "currency": "USDC"
+                    },
+                    "created_at": "2026-08-01T12:00:00+00:00"
+                  }
+                }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "404": {
+            "description": "Account not found",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  }
+                  "type": "object"
                 },
                 "example": {
                   "status": "error",
-                  "message": "Validation error",
+                  "message": "Account not found",
+                  "data": null
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deposit account is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Deposit account is not ready",
                   "data": {
-                    "field": "country"
+                    "deposit_account_status": "pending"
                   }
                 }
               }
@@ -3571,14 +3811,14 @@
         }
       }
     },
-    "/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}": {
+    "/partner/customers/{customer_id}/accounts/{account_id}/deposit-instructions": {
       "get": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
-        "summary": "Get a stablecoin send for a ready customer account",
-        "description": "Get one stablecoin send status for a customer-owned account.",
-        "operationId": "partner_customer_get_send_partner_customers__customer_id__accounts__account_id__sends__send_id__get",
+        "summary": "Get deposit instructions for an account",
+        "description": "Funding coordinates for one customer account (fiat bank details or stablecoin wallet). Account must be active with usable coordinates.",
+        "operationId": "partner_customer_get_deposit_instructions",
         "security": [
           {
             "APIKeyHeader": []
@@ -3589,45 +3829,24 @@
             "name": "customer_id",
             "in": "path",
             "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
             "schema": {
               "type": "string",
-              "description": "Public customer id returned by POST /partner/customers",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
-            "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
             "in": "path",
             "required": true,
+            "description": "Account id from list/open",
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "Account id returned by the customer account API",
-              "title": "Account Id",
               "example": 21
             },
-            "description": "Account id returned by the customer account API",
             "example": 21
-          },
-          {
-            "name": "send_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "description": "Send id returned by the send API",
-              "title": "Send Id",
-              "example": 55
-            },
-            "description": "Send id returned by the send API",
-            "example": 55
           }
         ],
         "responses": {
@@ -3635,124 +3854,98 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  }
+                  "type": "object"
                 },
                 "example": {
-                  "status": "error",
-                  "message": "Validation error",
+                  "status": "success",
+                  "message": "Deposit instructions",
                   "data": {
-                    "field": "country"
+                    "account_id": 18,
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "asset_type": "fiat",
+                    "currency": "EUR",
+                    "network": null,
+                    "status": "ready",
+                    "account_holder_name": "Jane Doe",
+                    "account_number": "DE89370400440532013000",
+                    "bank_code": "COBADEFF",
+                    "bank_name": "Example Bank",
+                    "swift_bic": "COBADEFFXXX",
+                    "instructions": "Show the account holder name and these bank details to the customer. They should send a bank transfer in the account currency to this account."
+                  }
+                },
+                "examples": {
+                  "fiat": {
+                    "summary": "Fiat IBAN / bank transfer",
+                    "value": {
+                      "status": "success",
+                      "message": "Deposit instructions",
+                      "data": {
+                        "account_id": 18,
+                        "customer_id": "pcus_a1b2c3d4e5f6",
+                        "asset_type": "fiat",
+                        "currency": "EUR",
+                        "network": null,
+                        "status": "ready",
+                        "account_holder_name": "Jane Doe",
+                        "account_number": "DE89370400440532013000",
+                        "bank_code": "COBADEFF",
+                        "bank_name": "Example Bank",
+                        "swift_bic": "COBADEFFXXX",
+                        "instructions": "Show the account holder name and these bank details to the customer. They should send a bank transfer in the account currency to this account."
+                      }
+                    }
+                  },
+                  "stablecoin": {
+                    "summary": "Stablecoin wallet",
+                    "value": {
+                      "status": "success",
+                      "message": "Deposit instructions",
+                      "data": {
+                        "account_id": 21,
+                        "customer_id": "pcus_a1b2c3d4e5f6",
+                        "asset_type": "stablecoin",
+                        "currency": "USDC",
+                        "network": "Base",
+                        "status": "ready",
+                        "account_holder_name": "Jane Doe",
+                        "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                        "chain_disclaimer": "Send only USDC on Base to this address. Funds sent on the wrong network may be lost.",
+                        "instructions": "Show the wallet address and network to the customer. They must send the matching stablecoin on that network only."
+                      }
+                    }
                   }
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/partner/customers/{customer_id}/accounts": {
-      "get": {
-        "tags": [
-          "partner-customers"
-        ],
-        "summary": "List accounts for a ready customer",
-        "description": "List customer accounts, refreshing pending coordinates when available.",
-        "operationId": "partner_customer_list_accounts_partner_customers__customer_id__accounts_get",
-        "security": [
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "customer_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Public customer id returned by POST /partner/customers",
-              "examples": [
-                "pcus_a1b2c3d4e5f6"
-              ],
-              "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
-            },
-            "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
+          },
+          "409": {
+            "description": "Banking gate not ready",
             "content": {
               "application/json": {
-                "schema": {}
+                "example": {
+                  "status": "error",
+                  "message": "Banking profile incomplete",
+                  "data": {
+                    "deposit_account_status": "pending",
+                    "reason": "banking_profile_incomplete"
+                  }
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Coordinates not ready yet",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    }
-                  }
-                },
                 "example": {
                   "status": "error",
-                  "message": "Validation error",
+                  "message": "Deposit instructions are not ready yet",
                   "data": {
-                    "field": "country"
+                    "account_id": 18,
+                    "status": "pending",
+                    "hint": "Poll GET account or wait for account.ready"
                   }
                 }
               }
@@ -3764,7 +3957,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/preview": {
       "post": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Preview a stablecoin send for a ready customer account",
         "description": "Preview fees and amounts for a stablecoin send.",
@@ -3786,10 +3979,10 @@
                 "pcus_a1b2c3d4e5f6"
               ],
               "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
@@ -3872,10 +4065,228 @@
         }
       }
     },
+    "/partner/customers/{customer_id}/accounts/{account_id}/sends": {
+      "post": {
+        "tags": [
+          "partner-customer-accounts"
+        ],
+        "summary": "Confirm a stablecoin send for a ready customer account",
+        "description": "Submit a stablecoin send using a prior preview token.",
+        "operationId": "partner_customer_confirm_send_partner_customers__customer_id__accounts__account_id__sends_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id",
+              "example": 21
+            },
+            "description": "Account id returned by the customer account API",
+            "example": 21
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntitySendConfirmRequest"
+              },
+              "example": {
+                "preview_token": "<from preview response>",
+                "idempotency_key": "send-2026-08-22-001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}": {
+      "get": {
+        "tags": [
+          "partner-customer-accounts"
+        ],
+        "summary": "Get a stablecoin send for a ready customer account",
+        "description": "Get one stablecoin send status for a customer-owned account.",
+        "operationId": "partner_customer_get_send_partner_customers__customer_id__accounts__account_id__sends__send_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id",
+              "example": 21
+            },
+            "description": "Account id returned by the customer account API",
+            "example": 21
+          },
+          {
+            "name": "send_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Send id returned by the send API",
+              "title": "Send Id",
+              "example": 55
+            },
+            "description": "Send id returned by the send API",
+            "example": 55
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/partner/customers/{customer_id}/accounts/{account_id}/book-transfers/preview": {
       "post": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Preview a fiat book-transfer for a ready customer account",
         "operationId": "partner_customer_preview_book_transfer_partner_customers__customer_id__accounts__account_id__book_transfers_preview_post",
@@ -4234,7 +4645,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/book-transfers": {
       "post": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Confirm a fiat book-transfer for a ready customer account",
         "operationId": "partner_customer_confirm_book_transfer_partner_customers__customer_id__accounts__account_id__book_transfers_post",
@@ -5173,14 +5584,16 @@
             "description": "Document key from requirements (e.g. identity, address).",
             "examples": [
               "identity"
-            ]
+            ],
+            "example": "identity"
           },
           "content_base64": {
             "type": "string",
             "maxLength": 12000000,
             "minLength": 1,
             "title": "Content Base64",
-            "description": "Base64-encoded file bytes (max ~8 MiB decoded)."
+            "description": "Base64-encoded file bytes (max ~8 MiB decoded).",
+            "example": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
           },
           "content_type": {
             "anyOf": [
@@ -5196,7 +5609,8 @@
             "examples": [
               "image/jpeg",
               "application/pdf"
-            ]
+            ],
+            "example": "application/pdf"
           },
           "file_name": {
             "anyOf": [
@@ -5209,7 +5623,8 @@
               }
             ],
             "title": "File Name",
-            "description": "Optional original filename for the partner only; not stored in object keys."
+            "description": "Optional original filename for the partner only; not stored in object keys.",
+            "example": "passport.pdf"
           }
         },
         "type": "object",
@@ -5217,21 +5632,59 @@
           "category",
           "content_base64"
         ],
-        "title": "PartnerCustomerDocumentUploadRequest"
+        "title": "PartnerCustomerDocumentUploadRequest",
+        "example": {
+          "category": "identity",
+          "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
+          "content_type": "application/pdf",
+          "file_name": "passport.pdf"
+        }
       },
       "PartnerCustomerProfilePatchRequest": {
         "properties": {
           "profile": {
             "type": "object",
             "title": "Profile",
-            "description": "Partial profile merge into the customer vault."
+            "description": "Partial profile merge into the customer vault.",
+            "example": {
+              "first_name": "Jane",
+              "last_name": "Doe",
+              "email": "jane@example.com",
+              "date_of_birth": "1990-01-15",
+              "country_of_residence": "GB",
+              "phone": "+447700900123",
+              "gender": "f",
+              "address": {
+                "line_1": "1 Example Street",
+                "city": "London",
+                "country": "GB",
+                "postal_code": "E1 6AN"
+              }
+            }
           }
         },
         "type": "object",
         "required": [
           "profile"
         ],
-        "title": "PartnerCustomerProfilePatchRequest"
+        "title": "PartnerCustomerProfilePatchRequest",
+        "example": {
+          "profile": {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane@example.com",
+            "date_of_birth": "1990-01-15",
+            "country_of_residence": "GB",
+            "phone": "+447700900123",
+            "gender": "f",
+            "address": {
+              "line_1": "1 Example Street",
+              "city": "London",
+              "country": "GB",
+              "postal_code": "E1 6AN"
+            }
+          }
+        }
       },
       "PartnerCustomerCreateRequest": {
         "properties": {
@@ -5243,7 +5696,8 @@
             "description": "Partner's stable customer reference (unique per tenant).",
             "examples": [
               "cust-ke-001"
-            ]
+            ],
+            "example": "cust-ke-001"
           },
           "type": {
             "type": "string",
@@ -5251,7 +5705,8 @@
             "description": "individual or business",
             "examples": [
               "individual"
-            ]
+            ],
+            "example": "individual"
           },
           "profile": {
             "anyOf": [
@@ -5263,7 +5718,22 @@
               }
             ],
             "title": "Profile",
-            "description": "Identity / KYB fields (see GET /customers/requirements)."
+            "description": "Identity / KYB fields (see GET /customers/requirements).",
+            "example": {
+              "first_name": "Jane",
+              "last_name": "Doe",
+              "email": "jane@example.com",
+              "date_of_birth": "1990-01-15",
+              "country_of_residence": "GB",
+              "phone": "+447700900123",
+              "gender": "f",
+              "address": {
+                "line_1": "1 Example Street",
+                "city": "London",
+                "country": "GB",
+                "postal_code": "E1 6AN"
+              }
+            }
           }
         },
         "type": "object",
@@ -5271,7 +5741,57 @@
           "partner_customer_ref",
           "type"
         ],
-        "title": "PartnerCustomerCreateRequest"
+        "title": "PartnerCustomerCreateRequest",
+        "example": {
+          "partner_customer_ref": "cust-ke-001",
+          "type": "individual",
+          "profile": {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane@example.com",
+            "date_of_birth": "1990-01-15",
+            "country_of_residence": "GB",
+            "phone": "+447700900123",
+            "gender": "f",
+            "address": {
+              "line_1": "1 Example Street",
+              "city": "London",
+              "country": "GB",
+              "postal_code": "E1 6AN"
+            }
+          }
+        }
+      },
+      "PartnerCustomerAccountOpenRequest": {
+        "type": "object",
+        "required": [
+          "asset_type",
+          "currency"
+        ],
+        "properties": {
+          "asset_type": {
+            "type": "string",
+            "description": "fiat or stablecoin",
+            "example": "fiat"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "network": {
+            "type": "string",
+            "description": "Required for stablecoin: Base or Polygon",
+            "example": "Base"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "EUR operating"
+          }
+        },
+        "example": {
+          "asset_type": "fiat",
+          "currency": "EUR"
+        }
       },
       "PartnerEntitySendPreviewRequest": {
         "properties": {
@@ -5339,59 +5859,6 @@
           "idempotency_key": "send-2026-07-30-001",
           "preview_token": "preview_token_from_sends_preview_response"
         }
-      },
-      "PartnerEntityBookTransferPreviewRequest": {
-        "properties": {
-          "to_account_id": {
-            "type": "integer",
-            "title": "To Account Id",
-            "description": "Destination partner account id"
-          },
-          "amount": {
-            "type": "string",
-            "title": "Amount",
-            "description": "Decimal amount in account currency, e.g. 10.50"
-          }
-        },
-        "type": "object",
-        "required": [
-          "to_account_id",
-          "amount"
-        ],
-        "title": "PartnerEntityBookTransferPreviewRequest",
-        "description": "Preview a same-currency fiat book-transfer between two accounts under this API key.",
-        "example": {
-          "to_account_id": 7,
-          "amount": "0.50"
-        }
-      },
-      "PartnerEntityBookTransferConfirmRequest": {
-        "properties": {
-          "preview_token": {
-            "type": "string",
-            "minLength": 16,
-            "title": "Preview Token",
-            "description": "Token from book-transfers/preview"
-          },
-          "idempotency_key": {
-            "type": "string",
-            "maxLength": 64,
-            "minLength": 8,
-            "title": "Idempotency Key",
-            "description": "Partner-stable id; forwarded as upstream unique_reference"
-          }
-        },
-        "type": "object",
-        "required": [
-          "preview_token",
-          "idempotency_key"
-        ],
-        "title": "PartnerEntityBookTransferConfirmRequest",
-        "description": "Confirm a previewed book-transfer using the signed preview token.",
-        "example": {
-          "preview_token": "<from preview response>",
-          "idempotency_key": "book-aly-kh-2026-08-22-001"
-        }
       }
     },
     "securitySchemes": {
@@ -5413,11 +5880,29 @@
   "tags": [
     {
       "name": "partner",
-      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including account currency conversion)."
+      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including account currency conversion).",
+      "x-group": "Partner"
     },
     {
       "name": "partner-customers",
-      "description": "Customer vault KYC (pcus_*), deposit accounts, stablecoin sends, and same-currency fiat book transfers from customer-scoped account paths."
+      "description": "Vault KYC: requirements, create, list, get/update, documents, and submit (pcus_*).",
+      "x-group": "Customers"
+    },
+    {
+      "name": "partner-customer-accounts",
+      "description": "Customer accounts and funding: open/list/get rails, deposit instructions, stablecoin sends, and same-currency fiat book transfers.",
+      "x-group": "Customer accounts"
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://sandbox.elementpay.net/api/v1",
+      "description": "Sandbox"
+    }
+  ],
+  "security": [
+    {
+      "APIKeyHeader": []
     }
   ]
 }

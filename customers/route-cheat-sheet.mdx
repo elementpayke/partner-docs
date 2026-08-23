@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart), [Stablecoin sends](/customers/stablecoin-sends), [Book transfers](/customers/book-transfers), [Payouts](/customers/payouts), and [Cards](/customers/cards). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customers/accounts), [Deposit instructions](/customers/deposit-instructions), [Stablecoin sends](/customers/stablecoin-sends), [Book transfers](/customers/book-transfers), [External bank payouts](/customers/payouts), and [Cards](/customers/cards). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -14,35 +14,54 @@ Companion to [Customers quickstart](/customers/quickstart), [Stablecoin sends](/
 | `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
 
-
-## Stablecoin sends (4C-a)
+## Accounts
 
 Requires `status` approved/active **and** `products.deposit_account.status=ready`. Otherwise **409**.
 
 | Method | Path | Notes |
 |--------|------|-------|
-| `GET` | `/partner/customers/{customer_id}/accounts` | List; resolve stablecoin `account_id` |
-| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Get one account |
+| `POST` | `/partner/customers/{customer_id}/accounts` | Open one rail; idempotent |
+| `GET` | `/partner/customers/{customer_id}/accounts` | List; resolve `account_id` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Get one |
+
+Guide: [Accounts](/customers/accounts).
+
+## Deposit instructions
+
+Same banking gate as accounts. Coordinates may be **422** until the rail finishes provisioning.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/deposit-instructions` | Fiat bank details or stablecoin wallet |
+
+Guide: [Deposit instructions](/customers/deposit-instructions).
+
+## Stablecoin sends
+
+Same banking gate. Resolve `account_id` via [Accounts](/customers/accounts); fund via [Deposit instructions](/customers/deposit-instructions) when needed.
+
+| Method | Path | Notes |
+|--------|------|-------|
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/preview` | → `preview_token` |
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends` | Confirm + `idempotency_key` |
 | `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}` | Poll status |
 
 Guide: [Stablecoin sends](/customers/stablecoin-sends).
 
-## Book transfers (4C-b)
+## Book transfers
 
-Same banking gate as sends (`deposit_account=ready`). Same-currency fiat → fiat under one API key.
+Same banking gate (`deposit_account=ready`). Same-currency fiat → fiat under one API key.
 
 | Method | Path | Notes |
 |--------|------|-------|
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/book-transfers/preview` | `to_account_id`, `amount` → `preview_token` |
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/book-transfers` | Confirm + `idempotency_key` |
 
-Guide: [Book transfers](/customers/book-transfers). Legacy: `/partner/entities/…/book-transfers` — do not adopt.
+Guide: [Book transfers](/customers/book-transfers). Legacy: `/partner/entities/…/book-transfers` (do not adopt).
 
-## External bank payouts (4C-c)
+## External bank payouts
 
-Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another ledger account). Same-currency only.
+Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another ledger account). Same-currency only. Sandbox full E2E is often unavailable (funding / beneficiary limits); see the guide Warning.
 
 | Method | Path | Notes |
 |--------|------|-------|
@@ -50,11 +69,11 @@ Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another 
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts` | Confirm + `idempotency_key` |
 | `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}` | Poll status |
 
-Guide: [External bank payouts](/customers/payouts). Legacy: `/partner/entities/…/payouts` — do not adopt.
+Guide: [External bank payouts](/customers/payouts). Legacy: `/partner/entities/…/payouts` (do not adopt).
 
-## Cards (4C-d)
+## Cards
 
-Same banking gate (`deposit_account=ready`). Acquiring charges a card into fiat; issuing creates disposable/virtual USD cards.
+Same banking gate (`deposit_account=ready`). Acquiring charges a card into fiat; issuing creates disposable/virtual USD cards. Sandbox USD / issuing may be limited; see the cards guide Warning.
 
 | Method | Path | Notes |
 |--------|------|-------|
@@ -67,7 +86,7 @@ Same banking gate (`deposit_account=ready`). Acquiring charges a card into fiat;
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/freeze` | Freeze |
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/unfreeze` | Unfreeze |
 
-Guide: [Cards](/customers/cards). Legacy: `/partner/entities/…/card-charges` and `/cards` — do not adopt.
+Guide: [Cards](/customers/cards). Legacy: `/partner/entities/…/card-charges` and `/cards` (do not adopt).
 
 ## Orders
 
@@ -81,3 +100,9 @@ Guide: [Cards](/customers/cards). Legacy: `/partner/entities/…/card-charges` a
 | Action | Required |
 |--------|----------|
 | Quote / accept with `customer_id` | `status=approved` |
+| Account open / list / get | `approved`/`active` **and** `deposit_account.status=ready` |
+| Deposit instructions | Same banking gate; **422** if coords not ready |
+| Stablecoin send | Same banking gate; amount **strictly below** available |
+| Book transfer | Same banking gate; same-currency fiat; `available >= amount` |
+| External bank payout | Same banking gate; `available >= amount`; sandbox E2E often needs Element Pay credit |
+| Card charge / issue | Same banking gate; issuing needs **USD**; sandbox USD/issuing often limited |
