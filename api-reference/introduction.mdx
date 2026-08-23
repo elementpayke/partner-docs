@@ -67,6 +67,21 @@ Guide: [Book transfers](/customers/book-transfers).
 
 Guide: [External bank payouts](/customers/payouts).
 
+## Cards
+
+| Method | Path |
+|--------|------|
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/card-charges` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/card-charges/{charge_id}` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/transactions` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/freeze` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/unfreeze` |
+
+Guide: [Cards](/customers/cards).
+
 ## Try it
 
 Use **Try it** on any endpoint with your sandbox `X-API-Key`. Requests are sent to the sandbox base URL configured for this site.

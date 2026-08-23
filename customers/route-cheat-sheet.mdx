@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart), [Stablecoin sends](/customers/stablecoin-sends), and [Book transfers](/customers/book-transfers). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart), [Stablecoin sends](/customers/stablecoin-sends), [Book transfers](/customers/book-transfers), [Payouts](/customers/payouts), and [Cards](/customers/cards). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -51,6 +51,23 @@ Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another 
 | `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}` | Poll status |
 
 Guide: [External bank payouts](/customers/payouts). Legacy: `/partner/entities/…/payouts` — do not adopt.
+
+## Cards (4C-d)
+
+Same banking gate (`deposit_account=ready`). Acquiring charges a card into fiat; issuing creates disposable/virtual USD cards.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/card-charges` | Acquiring create |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/card-charges/{charge_id}` | Poll charge |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` | Issue card (PAN/CVV on create only) |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` | List |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}` | Get (no PAN/CVV) |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/transactions` | Card txs |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/freeze` | Freeze |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/unfreeze` | Unfreeze |
+
+Guide: [Cards](/customers/cards). Legacy: `/partner/entities/…/card-charges` and `/cards` — do not adopt.
 
 ## Orders
 
