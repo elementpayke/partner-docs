@@ -9,7 +9,7 @@ Send **stablecoins** from a customer-owned account (`pcus_*` → `account_id`) w
 3. [Deposit instructions](/customers/deposit-instructions) — fund the rail if you need inbound balance
 
 <Warning>
-**Sandbox:** self-serve deposits may not credit usable balance for outbound sends. Contact Element Pay for a sandbox credit if you need to exercise preview → confirm. **Live:** fund via [deposit instructions](/customers/deposit-instructions) (bank or on-chain), then send.
+**Sandbox:** self-serve deposits may not credit usable balance for outbound sends. Contact Element Pay for a sandbox credit if you need to exercise preview → confirm. **Live:** fund via [deposit instructions](/customers/deposit-instructions) (bank or on-chain) or corridor [quote → accept](/quickstart) where applicable, then send. On-chain credits usually need the correct network and about **~2.00** major units or more; wait for balance / `account.credited` before sending.
 </Warning>
 
 ## Auth and environments
@@ -43,7 +43,7 @@ Same banking gate as accounts. If send routes run before `ready`, the API return
     `POST …/accounts/{account_id}/sends` with `preview_token` + `idempotency_key`
   </Step>
   <Step title="Poll">
-    `GET …/accounts/{account_id}/sends/{send_id}` until terminal status
+    `GET …/accounts/{account_id}/sends/{send_id}` until a **terminal** status (`completed` / `failed`, or your mapped equivalents). Prefer webhooks `account.send.completed` / `account.send.failed` when configured.
   </Step>
 </Steps>
 
@@ -105,13 +105,16 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends/$SEND_
   -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
+Prefer webhooks `account.send.completed` / `account.send.failed` when configured ([Webhooks](/webhooks)). Poll GET until a **terminal** status. If the source was debited but status stays non-terminal (for example long `submitted`) for an extended time, treat that as abnormal: keep polling, do **not** assume the destination credited, and escalate to Element Pay ops rather than retrying a second confirm.
+
 ## Errors
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Banking gate not ready | `409` — `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
-| Amount ≥ available | `422` insufficient balance | Lower amount below available |
+| Banking gate not ready | `409` with message `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
+| Amount ≥ available | `422` insufficient balance | Lower amount strictly below available |
 | Preview expired / wrong account | `4xx` | Re-preview on the same `account_id` |
+| Stuck non-terminal after debit | Long `submitted` / processing | Poll GET; escalate; do not double-confirm |
 
 ## Next
 

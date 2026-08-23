@@ -49,17 +49,24 @@ Content-Type: application/json
 Source `account_id` must belong to `{customer_id}`. Issuing additionally needs an **active USD** fiat account.
 
 <Warning>
-**Kenya individuals and USD:** issued cards require an **active USD** fiat account. **USD fiat open is not available** for **individual** customers with Kenya residence (API **422**, `data.code: unsupported_region`, message class *USD bank accounts are not available for this customer region*). Other fiats (EUR/GBP/CAD, …) can still open for those individuals when eligible. Use a **business** customer (or a non-KE individual) when you need USD + issuing. See [Accounts](/customers/accounts).
+**Kenya individuals and USD:** issued cards require an **active USD** fiat account. **USD fiat open is not available** for **individual** customers with Kenya residence (API **422**, `data.code: unsupported_region`, message `USD bank accounts are not available for this customer region`). Other fiats (EUR/GBP/CAD, …) can still open for those individuals when eligible. Without a USD account, KE individuals cannot issue cards. Issuing is also unavailable for some other residence countries. See [Accounts](/customers/accounts).
 </Warning>
 
-If banking routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+If banking routes are called before `ready`, expect **409** with `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
 
 ## Card charges (acquiring)
 
 Charge an external card into a fiat account (USD / GBP / EUR depending on account support).
 
+| Charge currency | Billing / cardholder country |
+|-----------------|------------------------------|
+| **USD** | Any country where Element Pay has enabled the rail for your key |
+| **GBP** or **EUR** | **UK and EU only** (Kenya and other non-UK/EU billing remain blocked / Limited) |
+
+**Issuing** is USD-account-only. Customers who cannot open USD fiat (including Kenya individuals, and some other residence countries) cannot issue cards.
+
 <Note>
-A successful charge does not always mean immediate `available` balance. Settlement can take several days. Poll the charge and account balance (or wait for credit webhooks) rather than assuming instant funds.
+A successful charge does not always mean immediate `available` balance. Settlement can take several days (often about **six**). Poll the charge and account balance (or wait for credit webhooks such as `account.credited`) rather than assuming instant funds.
 </Note>
 
 ### Happy path
@@ -197,8 +204,8 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_I
 
 ## Business rules
 
-1. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
-2. **Acquiring** supports configured fiat currencies (typically USD / GBP / EUR); **issuing** requires a **USD** account.
+1. Error `message` / `data` do not expose upstream provider names.
+2. **Acquiring** supports configured fiat currencies (typically USD / GBP / EUR); billing country rules differ by charge currency (see table above). **Issuing** requires a **USD** account and is unavailable for some residence countries.
 3. **PAN/CVV** only on create charge / create card; never on GET or list.
 4. Reuse stable `reference` values for idempotent creates after timeouts.
 5. Same banking gate as [book transfers](/customers/book-transfers) and [payouts](/customers/payouts).
@@ -212,7 +219,8 @@ The same operations exist under `/partner/entities/{entity_id}/accounts/.../card
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
-| KE individual opens USD fiat | `422` + `unsupported_region` | Use non-USD fiat, or a business / non-KE individual for USD + issuing |
+| KE individual opens USD fiat | `422` + `unsupported_region` | Use non-USD fiat; for USD + issuing use a non-KE individual |
+| GBP/EUR charge with non-UK/EU billing | `422` / declined | Use UK/EU billing for GBP/EUR |
 | Unsupported currency / non-USD issue | `422` | Use a supported fiat / USD account |
 | Invalid card or cardholder fields | `422` | Fix required fields (`auth_model`, disposable expiry, etc.) |
 | Duplicate `reference` with different details | `409` | New reference or retry identical payload |

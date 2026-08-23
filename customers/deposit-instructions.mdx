@@ -1,12 +1,14 @@
 # Deposit instructions
 
-Fetch **funding coordinates** for a customer account: fiat bank details (IBAN / bank transfer) or a stablecoin wallet + network.
+Fetch **funding coordinates** for a customer account: fiat bank details (IBAN / account+routing / SWIFT as returned) or a stablecoin wallet + network.
 
 Prerequisite: open or list an account in [Accounts](/customers/accounts). Same banking gate: vault `approved`/`active` and `products.deposit_account.status=ready`.
 
 <Warning>
-**Sandbox:** returned coordinates may not credit usable balance for outbound testing. Contact Element Pay for a sandbox credit if you need to exercise [stablecoin sends](/customers/stablecoin-sends). **Live:** show these details to the end-customer and wait for real funding.
+**Sandbox:** returned coordinates often do **not** credit usable balance for outbound testing. Contact Element Pay for a sandbox credit if you need to exercise [stablecoin sends](/customers/stablecoin-sends) or other debit flows. **Live:** show these details to the end-customer and wait for real funding. On-chain stablecoin deposits typically need the **correct network** and a practical minimum around **~2.00** major units; dust / wrong-network sends may never credit. Confirm with `GET …/accounts/{account_id}` `available` balance and/or the `account.credited` webhook before spending.
 </Warning>
+
+Alternate funding / exit path for the same customer: corridor [quote → accept](/quickstart) (OnRamp into crypto or OffRamp out), where your key and catalog allow it.
 
 ## Auth and environments
 
