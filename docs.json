@@ -45,6 +45,7 @@
             "pages": [
               "customers/quickstart",
               "customers/accounts",
+              "customers/deposit-instructions",
               "customers/route-cheat-sheet"
             ]
           },

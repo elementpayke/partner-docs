@@ -1,0 +1,74 @@
+# Deposit instructions
+
+Fetch **funding coordinates** for a customer account — fiat bank details (IBAN / bank transfer) or a stablecoin wallet + network.
+
+Prerequisite: open or list an account in [Accounts](/customers/accounts). Same banking gate: vault `approved`/`active` and `products.deposit_account.status=ready`.
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"
+export BASE_LIVE="$BASE_LIVE"
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## When to call
+
+| Goal | Use |
+|------|-----|
+| Fund a **fiat** rail | Show returned bank fields to the end-customer |
+| Fund a **stablecoin** rail | Show `wallet_address` + `network` (and any chain disclaimer) |
+| Outbound send / payout | Not this route — use balance on the account, then [stablecoin sends](/customers/stablecoin-sends) or later payout guides |
+
+## Happy path
+
+<Steps>
+  <Step title="Resolve account_id">
+    [Accounts](/customers/accounts) — open or list until you have an `account_id`
+  </Step>
+  <Step title="Get deposit instructions">
+    `GET …/accounts/{account_id}/deposit-instructions`
+  </Step>
+  <Step title="Show coords to the customer">
+    Use `instructions` / disclaimer fields as display copy; do not invent bank or chain details
+  </Step>
+</Steps>
+
+## Request
+
+```bash
+export CUSTOMER_ID="pcus_06a83150db3c"
+export ACCOUNT_ID="18"   # fiat example; use a stablecoin account_id for wallet rails
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/deposit-instructions" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+### Fiat-shaped fields (illustrative)
+
+`account_holder_name`, `account_number`, `bank_name`, `bank_code`, `swift_bic`, `currency`, plus `instructions` for display copy.
+
+### Stablecoin-shaped fields (illustrative)
+
+`wallet_address`, `network`, `currency`, `chain_disclaimer`, plus `instructions`.
+
+Exact keys follow the account rail — treat the response as source of truth.
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` until `ready` |
+| Account still provisioning coords | `422` + not ready | Poll `GET …/accounts/{account_id}` until coordinates exist, then retry |
+| Unknown account / customer | `404` | Use ids from this API key |
+
+## Next
+
+- [Stablecoin sends](/customers/stablecoin-sends) once the account has balance
+- [Accounts](/customers/accounts) · [Route cheat sheet](/customers/route-cheat-sheet)

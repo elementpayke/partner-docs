@@ -3810,6 +3810,149 @@
           }
         }
       }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/deposit-instructions": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get deposit instructions for an account",
+        "description": "Funding coordinates for one customer account (fiat bank details or stablecoin wallet). Account must be active with usable coordinates.",
+        "operationId": "partner_customer_get_deposit_instructions",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
+            "schema": {
+              "type": "string",
+              "example": "pcus_06a83150db3c"
+            },
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "description": "Account id from list/open",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "example": 21
+            },
+            "example": 21
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Deposit instructions",
+                  "data": {
+                    "account_id": 18,
+                    "customer_id": "pcus_06a83150db3c",
+                    "asset_type": "fiat",
+                    "currency": "EUR",
+                    "network": null,
+                    "status": "ready",
+                    "account_holder_name": "Aly Example",
+                    "account_number": "DE89370400440532013000",
+                    "bank_code": "COBADEFF",
+                    "bank_name": "Example Bank",
+                    "swift_bic": "COBADEFFXXX",
+                    "instructions": "Show the account holder name and these bank details to the customer. They should send a bank transfer in the account currency to this account."
+                  }
+                },
+                "examples": {
+                  "fiat": {
+                    "summary": "Fiat bank transfer",
+                    "value": {
+                      "status": "success",
+                      "message": "Deposit instructions",
+                      "data": {
+                        "account_id": 18,
+                        "customer_id": "pcus_06a83150db3c",
+                        "asset_type": "fiat",
+                        "currency": "EUR",
+                        "network": null,
+                        "status": "ready",
+                        "account_holder_name": "Aly Example",
+                        "account_number": "DE89370400440532013000",
+                        "bank_code": "COBADEFF",
+                        "bank_name": "Example Bank",
+                        "swift_bic": "COBADEFFXXX",
+                        "instructions": "Show the account holder name and these bank details to the customer. They should send a bank transfer in the account currency to this account."
+                      }
+                    }
+                  },
+                  "stablecoin": {
+                    "summary": "Stablecoin wallet",
+                    "value": {
+                      "status": "success",
+                      "message": "Deposit instructions",
+                      "data": {
+                        "account_id": 21,
+                        "customer_id": "pcus_06a83150db3c",
+                        "asset_type": "stablecoin",
+                        "currency": "USDC",
+                        "network": "Base",
+                        "status": "ready",
+                        "account_holder_name": "Aly Example",
+                        "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                        "chain_disclaimer": "Send only USDC on Base to this address. Funds sent on the wrong network may be lost.",
+                        "instructions": "Show the wallet address and network to the customer. They must send the matching stablecoin on that network only."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Banking gate not ready",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "message": "Banking profile incomplete",
+                  "data": {
+                    "deposit_account_status": "pending",
+                    "reason": "banking_profile_incomplete"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Coordinates not ready yet",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "error",
+                  "message": "Deposit instructions are not ready yet",
+                  "data": {
+                    "account_id": 18,
+                    "status": "pending",
+                    "hint": "Poll GET account or wait for account.ready"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
