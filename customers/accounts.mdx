@@ -14,7 +14,7 @@ Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status`
 </Note>
 
 <Warning>
-**USD fiat for Kenya individuals:** opening a **USD** fiat account is **not available** when the customer is an **individual** with Kenya residence (`country` / residence **KE**). The API returns **422** with partner-neutral copy such as `USD bank accounts are not available for this customer region` and `data.code: unsupported_region`. **EUR / GBP / CAD** (and other non-USD fiats) and **stablecoin** rails can still open for those customers when otherwise eligible. **Business** USD is often available for non-KE businesses; **KE business** USD is not confirmed — check with Element Pay before relying on it. Issuing cards needs an active USD account ([Cards](/customers/cards)), so KE individuals cannot use issuing until a USD path exists for them.
+**USD fiat for Kenya individuals:** opening a **USD** fiat account is **not available** when the customer is an **individual** with Kenya residence (`country` / residence **KE**). The API returns **422** with message `USD bank accounts are not available for this customer region` and `data.code: unsupported_region`. **EUR / GBP / CAD** (and other non-USD fiats) and **stablecoin** rails can still open for those customers when otherwise eligible. Issued cards require an active USD account ([Cards](/customers/cards)), so KE individuals cannot issue cards.
 </Warning>
 
 ## Auth and environments
@@ -137,7 +137,7 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Banking gate not ready | `409` with message `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
-| KE individual opens USD fiat | `422` + `unsupported_region` | Open EUR/GBP/CAD (or stablecoin); for USD use a non-KE individual, or a business where Element Pay has confirmed USD eligibility |
+| KE individual opens USD fiat | `422` + `unsupported_region` | Open EUR/GBP/CAD (or stablecoin); for USD (and issuing) use a non-KE individual |
 | Unknown / other-tenant customer | `404` | Use id from this API key |
 | Account not found | `404` | List accounts and pick a valid `account_id` |
 

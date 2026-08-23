@@ -27,7 +27,7 @@ Content-Type: application/json
 
 Source `account_id` must belong to `{customer_id}`. Destination `to_account_id` must be under the same API key (may belong to another `pcus_*` or a legacy entity account).
 
-If banking routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+If banking routes are called before `ready`, expect **409** with `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
 
 ## Happy path
 
@@ -126,7 +126,7 @@ Reuse the same `idempotency_key` on retries after network errors. Confirm succes
 2. **Same partner API key**: destination must be reachable under this key (another `pcus_*` or legacy entity account).
 3. **Preview → confirm** on the same source `account_id`; use a fresh preview if the token expired.
 4. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
-5. **Balance:** book transfers require `available >= amount` (exact balance is allowed). This differs from [stablecoin sends](/customers/stablecoin-sends), which need amount **strictly below** `available` (1 minor-unit headroom). Insufficient balance still returns **422** with partner-neutral `data.available`, `data.amount`, and `data.currency` when known.
+5. **Balance:** book transfers require `available >= amount` (exact balance is allowed). This differs from [stablecoin sends](/customers/stablecoin-sends), which need amount **strictly below** `available` (1 minor-unit headroom). Insufficient balance still returns **422** with `data.available`, `data.amount`, and `data.currency` when known.
 
 ## Legacy routes
 
