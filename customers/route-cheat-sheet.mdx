@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customers/accounts), and [Deposit instructions](/customers/deposit-instructions). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customers/accounts), [Deposit instructions](/customers/deposit-instructions), and [Stablecoin sends](/customers/stablecoin-sends). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -40,6 +40,20 @@ Same banking gate as accounts. Coordinates may be **422** until the rail finishe
 Guide: [Deposit instructions](/customers/deposit-instructions).
 
 
+
+## Stablecoin sends
+
+Same banking gate. Resolve `account_id` via [Accounts](/customers/accounts); fund via [Deposit instructions](/customers/deposit-instructions) when needed.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/preview` | → `preview_token` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/sends` | Confirm + `idempotency_key` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}` | Poll status |
+
+Guide: [Stablecoin sends](/customers/stablecoin-sends).
+
+
 ## Orders
 
 | Method | Path | Notes |
@@ -54,3 +68,4 @@ Guide: [Deposit instructions](/customers/deposit-instructions).
 | Quote / accept with `customer_id` | `status=approved` |
 | Account open / list / get | `approved`/`active` **and** `deposit_account.status=ready` |
 | Deposit instructions | Same banking gate; **422** if coords not ready |
+| Stablecoin send | Same banking gate; amount **strictly below** available |
