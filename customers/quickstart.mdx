@@ -198,8 +198,9 @@ We send signed partner webhooks for vault lifecycle events (same key `webhook_ur
 | `customer.approved` | Element Pay approves the case |
 | `customer.rejected` | Review declines the case |
 | `customer.updated` | Material status / product update |
+| `customer.deposit_account.updated` | Deposit-account product status changes (e.g. `ready` for [Accounts](/customers/accounts)) |
 
-Treat webhooks as the primary signal for review outcomes. Poll `GET /partner/customers/{customer_id}` as a backup if a webhook is delayed or missed. See [Webhooks](/webhooks).
+Treat webhooks as the primary signal for review outcomes and banking readiness. Poll `GET /partner/customers/{customer_id}` as a backup if a webhook is delayed or missed. Full payload shapes: [Webhooks](/webhooks).
 
 ```bash
 curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
@@ -210,13 +211,13 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
   }'
 ```
 
-Example (staging smoke, PII redacted):
+Example:
 
 ```json
 {
-  "id": "pcus_06a83150db3c",
+  "id": "pcus_…",
   "status": "approved",
-  "partner_customer_ref": "aly-live"
+  "partner_customer_ref": "partner-cust-001"
 }
 ```
 
@@ -237,7 +238,7 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
     "currency": "KES",
     "country": "KE",
     "local_amount": 100,
-    "customer_id": "pcus_06a83150db3c",
+    "customer_id": "pcus_…",
     "asset": {
       "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
       "currency": "USDT",
@@ -251,7 +252,7 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
   }' | jq '{quote_id: .data.quote_id, status: .data.status}'
 ```
 
-Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
+Successful response includes a `quote_id` like `ep_bank_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
 
 ## Errors
 
@@ -264,6 +265,7 @@ Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, 
 
 ## Next
 
+- [Accounts](/customers/accounts)
 - [Route cheat sheet](/customers/route-cheat-sheet)
 - [Webhooks](/webhooks)
 - [Corridors](/corridors/overview) · [Orders quickstart](/quickstart)
