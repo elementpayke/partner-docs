@@ -16,6 +16,25 @@ Interactive reference for the Element Pay Partner API — discovery, quotes, and
 | `POST` | `/partner/orders/{quote_id}/accept` |
 | `GET` | `/partner/orders/{order_id}` |
 
+
+
+## Customers (vault KYC)
+
+OpenAPI tag: **`partner-customers`**.
+
+| Method | Path |
+|--------|------|
+| `GET` | `/partner/customers/requirements` |
+| `POST` | `/partner/customers` |
+| `GET` | `/partner/customers` |
+| `GET` | `/partner/customers/{customer_id}` |
+| `PATCH` | `/partner/customers/{customer_id}` |
+| `POST` | `/partner/customers/{customer_id}/documents` |
+| `POST` | `/partner/customers/{customer_id}/submit` |
+| `POST` | `/partner/customers/{customer_id}/deposit-account/retry` |
+
+Guide: [Customers quickstart](/customers/quickstart).
+
 ## Try it
 
 Use **Try it** on any endpoint with your sandbox `X-API-Key`. Requests are sent to the sandbox base URL configured for this site.

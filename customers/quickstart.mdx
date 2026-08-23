@@ -1,0 +1,269 @@
+# Customers quickstart
+
+Onboard end-customers once into the **customer vault**. You get a stable `customer_id` (`pcus_*`) to reuse on quotes instead of resending full KYC on every order.
+
+Inline `customer` on `POST /partner/orders/quote` still works. Prefer `customer_id` once the vault case is `approved`.
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"   # fill: sandbox Partner API base
+export BASE_LIVE="$BASE_LIVE"         # fill: live Partner API base
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"            # or is_live_… on live
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
+
+**Live:** after submit, Element Pay reviews and approves customers. Always read `status` from `GET /partner/customers/{customer_id}` — do not assume automatic approval on any environment.
+
+## Status model
+
+| Status | Meaning |
+|--------|---------|
+| `incomplete` | Profile / docs still being collected |
+| `pending_review` | Submitted; waiting for Element Pay review |
+| `approved` | May quote / accept with `customer_id` |
+| `rejected` | Review declined |
+| `suspended` | Blocked |
+
+## Happy path
+
+<Steps>
+  <Step title="Requirements">
+    `GET /partner/customers/requirements`
+  </Step>
+  <Step title="Create">
+    `POST /partner/customers` with profile
+  </Step>
+  <Step title="Documents">
+    Upload required categories
+  </Step>
+  <Step title="Submit">
+    → typically `pending_review`
+  </Step>
+  <Step title="Wait for approved">
+    Prefer webhooks (`customer.approved`); poll `GET /partner/customers/{customer_id}` as backup until `status=approved`
+  </Step>
+  <Step title="Quote (optional)">
+    Pass `customer_id` on `POST /partner/orders/quote` instead of a full inline `customer`
+  </Step>
+</Steps>
+
+## 1. Requirements
+
+```bash
+curl -sS "$BASE/partner/customers/requirements?type=individual" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+curl -sS "$BASE/partner/customers/requirements?type=business&country=US" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+Collect exactly the returned `required_fields` and `required_documents`.
+
+## 2. Create customer
+
+Idempotent on `partner_customer_ref` per tenant. Call requirements first for the exact `required_fields` / `required_documents` for `type=individual` or `type=business` (and `country` when relevant).
+
+### Individual
+
+```bash
+curl -sS -X POST "$BASE/partner/customers" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partner_customer_ref": "partner-cust-001",
+    "type": "individual",
+    "profile": {
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane@example.com",
+      "date_of_birth": "1990-01-15",
+      "country_of_residence": "GB",
+      "phone": "+447700900123",
+      "gender": "f",
+      "address": {
+        "line_1": "1 Example Street",
+        "city": "London",
+        "country": "GB",
+        "postal_code": "E1 6AN"
+      }
+    }
+  }' | jq '.data | {id, status, partner_customer_ref, missing}'
+```
+
+### Business
+
+Illustrative shape — treat requirements as source of truth. US-incorporated businesses also need `tax_id` (EIN). Officers and KYB documents are required before submit.
+
+```bash
+curl -sS -X POST "$BASE/partner/customers" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partner_customer_ref": "partner-biz-001",
+    "type": "business",
+    "profile": {
+      "legal_name": "Acme Payments Ltd",
+      "email": "ops@acme.example",
+      "phone": "+14155550100",
+      "website": "https://acme.example",
+      "business_type": "llc",
+      "country_of_incorporation": "US",
+      "tax_id": "123456789",
+      "registration_number": "REG-001",
+      "industry": "fintech",
+      "description": "B2B payments for SMEs",
+      "registered_address": {
+        "line_1": "100 Market Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "country": "US",
+        "postal_code": "94105"
+      },
+      "incorporation_meta": {"year": 2020},
+      "monthly_payments_count": 100,
+      "monthly_transaction_value": 250000,
+      "max_transfer_amount": 50000,
+      "annual_turnover": 2000000,
+      "customer_types": ["b2b"],
+      "funding_source": "equity",
+      "officers": [
+        {
+          "role": "director",
+          "first_name": "Ada",
+          "last_name": "Lovelace",
+          "email": "ada@acme.example"
+        }
+      ]
+    }
+  }' | jq '.data | {id, status, partner_customer_ref, missing}'
+```
+
+
+Save `data.id` (`pcus_*`). While incomplete: `PATCH /partner/customers/{customer_id}` with `{"profile": { … }}`. List: `GET /partner/customers?status=incomplete&limit=50`.
+
+## 3. Upload documents
+
+JSON + Base64. `category` must match a requirements document key.
+
+```bash
+export CUSTOMER_ID="pcus_…"
+
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/documents" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "identity",
+    "file_name": "passport.pdf",
+    "content_type": "application/pdf",
+    "content_base64": "<BASE64>"
+  }' | jq '.data'
+
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/documents" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "address",
+    "file_name": "utility_bill.pdf",
+    "content_type": "application/pdf",
+    "content_base64": "<BASE64>"
+  }' | jq '.data'
+```
+
+## 4. Submit
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/submit" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq '.data | {id, status}'
+```
+
+Incomplete package → **422** with `missing[]`.
+
+## 5. Wait until approved (webhooks + poll)
+
+We send signed partner webhooks for vault lifecycle events (same key `webhook_url` / `webhook_secret` as orders). Typical events:
+
+| Event | When |
+|-------|------|
+| `customer.submitted` | After a successful submit |
+| `customer.approved` | Element Pay approves the case |
+| `customer.rejected` | Review declines the case |
+| `customer.updated` | Material status / product update |
+
+Treat webhooks as the primary signal for review outcomes. Poll `GET /partner/customers/{customer_id}` as a backup if a webhook is delayed or missed. See [Webhooks](/webhooks).
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '{
+    id: .data.id,
+    status: .data.status,
+    partner_customer_ref: .data.partner_customer_ref
+  }'
+```
+
+Example (staging smoke, PII redacted):
+
+```json
+{
+  "id": "pcus_06a83150db3c",
+  "status": "approved",
+  "partner_customer_ref": "aly-live"
+}
+```
+
+Use `customer_id` on quote only when `status == "approved"`.
+
+## 6. Quote with `customer_id` (optional)
+
+`payment_method` and `asset` remain required. Omit the full inline `customer` object when using `customer_id`. Accept is unchanged (`POST /partner/orders/{quote_id}/accept` with `{}`).
+
+Amounts / networks / `network_id` are illustrative — discover `network_id` from payment-methods or catalog for the same `country` + `order_type`.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OffRamp",
+    "currency": "KES",
+    "country": "KE",
+    "local_amount": 100,
+    "customer_id": "pcus_06a83150db3c",
+    "asset": {
+      "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+      "currency": "USDT",
+      "network": "POLYGON"
+    },
+    "payment_method": {
+      "type": "mobile_money",
+      "phone_number": "+2547XXXXXXXX",
+      "network_id": "<FROM_CATALOG_OR_PAYMENT_METHODS>"
+    }
+  }' | jq '{quote_id: .data.quote_id, status: .data.status}'
+```
+
+Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Missing profile/docs on submit | `422` + `missing[]` | PATCH / upload, resubmit |
+| Quote with unapproved `customer_id` | `4xx` | Wait for `approved` |
+| Unknown / other-tenant id | `404` | Use id from this API key |
+| Bad key | `401` | Fix `X-API-Key` |
+
+## Next
+
+- [Route cheat sheet](/customers/route-cheat-sheet)
+- [Webhooks](/webhooks)
+- [Corridors](/corridors/overview) · [Orders quickstart](/quickstart)
