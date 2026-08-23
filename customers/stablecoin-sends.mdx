@@ -46,7 +46,7 @@ Same banking gate as accounts. If send routes run before `ready`, the API return
 ## 1. Resolve stablecoin account
 
 ```bash
-export CUSTOMER_ID="pcus_06a83150db3c"
+export CUSTOMER_ID="pcus_…"
 
 curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
   -H "X-API-Key: $API_KEY" | jq '.data'
