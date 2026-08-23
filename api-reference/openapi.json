@@ -3957,7 +3957,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/preview": {
       "post": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Preview a stablecoin send for a ready customer account",
         "description": "Preview fees and amounts for a stablecoin send.",
@@ -3979,10 +3979,10 @@
                 "pcus_a1b2c3d4e5f6"
               ],
               "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
@@ -4068,7 +4068,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends": {
       "post": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Confirm a stablecoin send for a ready customer account",
         "description": "Submit a stablecoin send using a prior preview token.",
@@ -4090,10 +4090,10 @@
                 "pcus_a1b2c3d4e5f6"
               ],
               "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
@@ -4177,7 +4177,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}": {
       "get": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Get a stablecoin send for a ready customer account",
         "description": "Get one stablecoin send status for a customer-owned account.",
@@ -4199,10 +4199,10 @@
                 "pcus_a1b2c3d4e5f6"
               ],
               "title": "Customer Id",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned by POST /partner/customers",
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
@@ -5128,7 +5128,7 @@
     },
     {
       "name": "partner-customer-accounts",
-      "description": "Open, list, and get rails; deposit instructions (IBAN or stablecoin wallet).",
+      "description": "Customer accounts and funding: open/list/get rails, deposit instructions, and stablecoin sends (preview \u2192 confirm \u2192 get).",
       "x-group": "Customer accounts"
     }
   ],

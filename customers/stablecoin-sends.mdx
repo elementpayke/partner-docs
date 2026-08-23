@@ -8,6 +8,10 @@ Send **stablecoins** from a customer-owned account (`pcus_*` → `account_id`) w
 2. [Accounts](/customers/accounts) — banking `products.deposit_account.status=ready`, resolve `account_id`
 3. [Deposit instructions](/customers/deposit-instructions) — fund the rail if you need inbound balance
 
+<Warning>
+**Sandbox:** self-serve deposits may not credit usable balance for outbound sends. Contact Element Pay for a sandbox credit if you need to exercise preview → confirm. **Live:** fund via [deposit instructions](/customers/deposit-instructions) (bank or on-chain), then send.
+</Warning>
+
 ## Auth and environments
 
 ```bash
