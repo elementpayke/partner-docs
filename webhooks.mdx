@@ -1,10 +1,10 @@
 # Webhooks
 
-Element Pay notifies your backend when **orders** and **customers** change. **Treat webhooks as the source of truth** for settlement and KYC / banking readiness — HTTP responses only confirm the request was accepted. If a webhook is delayed, poll the matching GET endpoint as a backup.
+Element Pay notifies your backend when **orders**, **customers**, and **accounts** change. **Treat webhooks as the source of truth** for settlement, KYC / banking readiness, and account credits / sends — HTTP responses only confirm the request was accepted. If a webhook is delayed, poll the matching GET endpoint as a backup.
 
 ## Configuration
 
-Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox and production separately). The same endpoint receives order and customer events.
+Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox and production separately). The same endpoint receives order, customer, and account events.
 
 ## Order events
 
@@ -67,6 +67,20 @@ Fired as `customer.deposit_account.updated`:
 ```
 
 When `products.deposit_account.status` is `ready` (and `can_open_deposit_account` is true), you may call [Accounts](/customers/accounts) open/list/get. See also [Customers quickstart](/customers/quickstart).
+
+## Account events
+
+Same signing headers and secret. These fire for customer deposit-account rails (and related money movement). Backup poll: `GET /partner/customers/{customer_id}/accounts/{account_id}` (and send/payout GET where applicable).
+
+| Header `X-Webhook-Event` | When |
+|--------------------------|------|
+| `account.opened` | First successful open of a rail |
+| `account.ready` | Coordinates become usable (bank fields or wallet) |
+| `account.credited` | Inbound credit posted (deposit, card charge, or other credit source) |
+| `account.send.completed` | Outbound stablecoin send reached a success terminal state |
+| `account.send.failed` | Outbound stablecoin send reached a failure terminal state |
+
+Use `account.credited` / account GET balance before spending. For sends, prefer `account.send.completed` / `account.send.failed`; if GET stays non-terminal after debit for a long time, escalate rather than assuming destination credit.
 
 ## HTTP delivery
 

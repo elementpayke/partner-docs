@@ -105,7 +105,7 @@ Save `preview_token`. Tokens expire quickly; confirm promptly or re-preview if n
 ## 3. Confirm
 
 <Warning>
-On **live**, confirm moves **real** fiat balances. Prefer sandbox for full preview → confirm loops unless you intend to transfer funds.
+On **live**, confirm moves **real** fiat balances. Prefer sandbox for full preview → confirm loops **only when both accounts already have usable balance** (sandbox self-serve funding is often unavailable). Otherwise validate preview errors (for example insufficient balance → **422**) without confirming.
 </Warning>
 
 ```bash

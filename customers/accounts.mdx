@@ -2,10 +2,10 @@
 
 Give each vault customer **bankable and on-chain balances** under one `customer_id` (`pcus_*`):
 
-- **Fiat accounts** — e.g. **EUR** and **USD** rails with **IBAN** (and related bank coordinates) for receiving transfers
+- **Fiat accounts** — e.g. **EUR** (IBAN) and **USD** (account / routing or SWIFT when returned) bank rails for receiving transfers
 - **Stablecoin accounts** — e.g. **USDC** / **USDT** wallets on **Base** or **Polygon**
 
-Open or list rails, then use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), and later book transfers / payouts / cards.
+Open or list rails, then use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), book transfers / payouts / cards, or corridor [quote → accept](/quickstart) where that funds the same customer.
 
 Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status` is `approved` (or `active`).
 
@@ -14,7 +14,7 @@ Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status`
 </Note>
 
 <Warning>
-**USD fiat for Kenya individuals:** opening a **USD** fiat account is **not available** when the customer is an **individual** with Kenya residence (`country` / residence **KE**). The API returns **422** with partner-neutral copy such as `USD bank accounts are not available for this customer region` and `data.code: unsupported_region`. **EUR / GBP / CAD** (and other non-USD fiats) and **stablecoin** rails can still open for those customers when otherwise eligible. **Business** customers are not covered by this individual KE rule; confirm USD business eligibility with Element Pay if unsure. Issuing cards needs an active USD account ([Cards](/customers/cards)), so KE individuals cannot use issuing until a USD path exists for them.
+**USD fiat for Kenya individuals:** opening a **USD** fiat account is **not available** when the customer is an **individual** with Kenya residence (`country` / residence **KE**). The API returns **422** with partner-neutral copy such as `USD bank accounts are not available for this customer region` and `data.code: unsupported_region`. **EUR / GBP / CAD** (and other non-USD fiats) and **stablecoin** rails can still open for those customers when otherwise eligible. **Business** USD is often available for non-KE businesses; **KE business** USD is not confirmed — check with Element Pay before relying on it. Issuing cards needs an active USD account ([Cards](/customers/cards)), so KE individuals cannot use issuing until a USD path exists for them.
 </Warning>
 
 ## Auth and environments
@@ -60,7 +60,7 @@ If account routes are called before `ready`, the API returns **409** with messag
     `GET /partner/customers/{customer_id}/accounts/{account_id}`
   </Step>
   <Step title="Next">
-    Fund via [deposit instructions](/customers/deposit-instructions), then [stablecoin sends](/customers/stablecoin-sends) when you have balance
+    Fund via [deposit instructions](/customers/deposit-instructions), corridor [quote → accept](/quickstart) where applicable, then [stablecoin sends](/customers/stablecoin-sends) or other money-movement guides when you have balance
   </Step>
 </Steps>
 
@@ -81,9 +81,9 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
 
 Idempotent on the rail tuple (`asset_type` + `currency` + `network` for stablecoin). Opening an existing rail returns **200** with the existing account; a new rail returns **201**.
 
-### Fiat (IBAN / bank rail)
+### Fiat (bank rail)
 
-Example: **EUR** (same pattern for **USD** where enabled for your key).
+Example: **EUR** (IBAN). **USD** (where enabled) returns account / routing or SWIFT-style fields when ready, not always an IBAN.
 
 ```bash
 curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
@@ -95,7 +95,7 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
   }' | jq '.data'
 ```
 
-After open, [deposit instructions](/customers/deposit-instructions) return the **IBAN** and bank fields to show the end-customer.
+After open, [deposit instructions](/customers/deposit-instructions) return the **bank coordinates** to show the end-customer (EUR: IBAN/BIC; USD: account number and routing / SWIFT when provisioned; GBP: account and sort code when returned).
 
 ### Stablecoin
 
@@ -137,12 +137,13 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Banking gate not ready | `409` with message `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
-| KE individual opens USD fiat | `422` + `unsupported_region` | Open EUR/GBP/CAD (or stablecoin); use business / non-KE individual for USD |
+| KE individual opens USD fiat | `422` + `unsupported_region` | Open EUR/GBP/CAD (or stablecoin); for USD use a non-KE individual, or a business where Element Pay has confirmed USD eligibility |
 | Unknown / other-tenant customer | `404` | Use id from this API key |
 | Account not found | `404` | List accounts and pick a valid `account_id` |
 
 ## Next
 
-- [Deposit instructions](/customers/deposit-instructions) — fund a fiat (or check stablecoin) rail
-- [Stablecoin sends](/customers/stablecoin-sends) — preview → confirm → poll
+- [Deposit instructions](/customers/deposit-instructions): fund a fiat or stablecoin rail
+- [Quickstart](/quickstart): corridor quote → accept as an alternate funding / exit path
+- [Stablecoin sends](/customers/stablecoin-sends): preview → confirm → poll
 - [Route cheat sheet](/customers/route-cheat-sheet)

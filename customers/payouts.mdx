@@ -137,7 +137,7 @@ curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/payouts/$P
 2. **Preview → confirm** on the same source `account_id`; use a fresh preview if the token expired.
 3. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
 4. **Balance:** like [book transfers](/customers/book-transfers), require `available >= amount` (exact balance is allowed). This differs from [stablecoin sends](/customers/stablecoin-sends), which need amount **strictly below** `available` (1 minor-unit headroom). Insufficient balance returns **422** with partner-neutral `data.available`, `data.amount`, and `data.currency` when known.
-5. Fees may be `pending_confirm` on preview and final on confirm/GET.
+5. Fees may be `pending_confirm` on preview and final on confirm/GET. **Fees can dominate small principals** (for example a fixed fee larger than a tiny payout). Always read preview / confirm / GET fee fields and do not invent a fee schedule; do not assume net receive equals `amount`.
 
 Practical sandbox check (insufficient only): preview with `amount` above `available` → **422** + balance fields. Do **not** confirm unless you have usable balance and intend a bank push.
 
