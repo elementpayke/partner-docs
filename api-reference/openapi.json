@@ -3476,7 +3476,7 @@
     "/partner/customers/{customer_id}/accounts": {
       "post": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Open an account for a ready customer",
         "description": "Open one idempotent fiat or stablecoin rail. Same rail tuple returns the existing account.",
@@ -3614,7 +3614,7 @@
       },
       "get": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "List accounts for a ready customer",
         "description": "List customer accounts, refreshing pending coordinates when available.",
@@ -3711,7 +3711,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}": {
       "get": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Get one account for a ready customer",
         "description": "Get one customer-owned account and its current coordinates.",
@@ -3814,7 +3814,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/deposit-instructions": {
       "get": {
         "tags": [
-          "partner-customers"
+          "partner-customer-accounts"
         ],
         "summary": "Get deposit instructions for an account",
         "description": "Funding coordinates for one customer account (fiat bank details or stablecoin wallet). Account must be active with usable coordinates.",
@@ -3832,9 +3832,9 @@
             "description": "Public customer id returned by POST /partner/customers",
             "schema": {
               "type": "string",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
@@ -3862,12 +3862,12 @@
                   "message": "Deposit instructions",
                   "data": {
                     "account_id": 18,
-                    "customer_id": "pcus_06a83150db3c",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
                     "asset_type": "fiat",
                     "currency": "EUR",
                     "network": null,
                     "status": "ready",
-                    "account_holder_name": "Aly Example",
+                    "account_holder_name": "Jane Doe",
                     "account_number": "DE89370400440532013000",
                     "bank_code": "COBADEFF",
                     "bank_name": "Example Bank",
@@ -3877,18 +3877,18 @@
                 },
                 "examples": {
                   "fiat": {
-                    "summary": "Fiat bank transfer",
+                    "summary": "Fiat IBAN / bank transfer",
                     "value": {
                       "status": "success",
                       "message": "Deposit instructions",
                       "data": {
                         "account_id": 18,
-                        "customer_id": "pcus_06a83150db3c",
+                        "customer_id": "pcus_a1b2c3d4e5f6",
                         "asset_type": "fiat",
                         "currency": "EUR",
                         "network": null,
                         "status": "ready",
-                        "account_holder_name": "Aly Example",
+                        "account_holder_name": "Jane Doe",
                         "account_number": "DE89370400440532013000",
                         "bank_code": "COBADEFF",
                         "bank_name": "Example Bank",
@@ -3904,12 +3904,12 @@
                       "message": "Deposit instructions",
                       "data": {
                         "account_id": 21,
-                        "customer_id": "pcus_06a83150db3c",
+                        "customer_id": "pcus_a1b2c3d4e5f6",
                         "asset_type": "stablecoin",
                         "currency": "USDC",
                         "network": "Base",
                         "status": "ready",
-                        "account_holder_name": "Aly Example",
+                        "account_holder_name": "Jane Doe",
                         "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
                         "chain_disclaimer": "Send only USDC on Base to this address. Funds sent on the wrong network may be lost.",
                         "instructions": "Show the wallet address and network to the customer. They must send the matching stablecoin on that network only."
@@ -4722,11 +4722,18 @@
   "tags": [
     {
       "name": "partner",
-      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including account currency conversion)."
+      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including account currency conversion).",
+      "x-group": "Partner"
     },
     {
       "name": "partner-customers",
-      "description": "Customer vault KYC (pcus_*), deposit accounts, deposit instructions, and stablecoin sends from customer-scoped account paths."
+      "description": "Vault KYC: requirements, create, list, get/update, documents, and submit (pcus_*).",
+      "x-group": "Customers"
+    },
+    {
+      "name": "partner-customer-accounts",
+      "description": "Open, list, and get rails; deposit instructions (IBAN or stablecoin wallet).",
+      "x-group": "Customer accounts"
     }
   ],
   "servers": [
