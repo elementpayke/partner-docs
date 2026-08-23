@@ -137,6 +137,8 @@ curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/payouts/$P
 
 Practical smoke (insufficient only): preview with `amount` above `available` → **422** + balance fields. Do **not** confirm unless you intend a real bank push.
 
+Staging smoke (insufficient): Aly EUR **1** available `0.20` — preview `1.20` → **422** with `available` / `amount` / `currency` (preview only; not confirmed).
+
 ## Legacy routes
 
 The same operations exist under `/partner/entities/{entity_id}/accounts/.../payouts`. Those paths are **legacy**. New integrations should use `pcus_*` customer paths only.
