@@ -3494,9 +3494,9 @@
             "description": "Public customer id returned by POST /partner/customers",
             "schema": {
               "type": "string",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           }
         ],
         "requestBody": {
@@ -3543,7 +3543,7 @@
                   "message": "Account opened",
                   "data": {
                     "id": 18,
-                    "customer_id": "pcus_06a83150db3c",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
                     "asset_type": "fiat",
                     "currency": "EUR",
                     "network": null,
@@ -3574,7 +3574,7 @@
                   "message": "Account already exists",
                   "data": {
                     "id": 18,
-                    "customer_id": "pcus_06a83150db3c",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
                     "asset_type": "fiat",
                     "currency": "EUR",
                     "network": null,
@@ -3632,9 +3632,9 @@
             "description": "Public customer id returned by POST /partner/customers",
             "schema": {
               "type": "string",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           }
         ],
         "responses": {
@@ -3652,7 +3652,7 @@
                     "accounts": [
                       {
                         "id": 21,
-                        "customer_id": "pcus_06a83150db3c",
+                        "customer_id": "pcus_a1b2c3d4e5f6",
                         "asset_type": "stablecoin",
                         "currency": "USDC",
                         "network": "Base",
@@ -3667,7 +3667,7 @@
                       },
                       {
                         "id": 18,
-                        "customer_id": "pcus_06a83150db3c",
+                        "customer_id": "pcus_a1b2c3d4e5f6",
                         "asset_type": "fiat",
                         "currency": "EUR",
                         "network": null,
@@ -3729,9 +3729,9 @@
             "description": "Public customer id returned by POST /partner/customers",
             "schema": {
               "type": "string",
-              "example": "pcus_06a83150db3c"
+              "example": "pcus_a1b2c3d4e5f6"
             },
-            "example": "pcus_06a83150db3c"
+            "example": "pcus_a1b2c3d4e5f6"
           },
           {
             "name": "account_id",
@@ -3759,7 +3759,7 @@
                   "message": "Account",
                   "data": {
                     "id": 21,
-                    "customer_id": "pcus_06a83150db3c",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
                     "asset_type": "stablecoin",
                     "currency": "USDC",
                     "network": "Base",

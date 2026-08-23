@@ -32,13 +32,15 @@ Content-Type: application/json
 
 `approved` alone does **not** unlock accounts. Always read both fields from `GET /partner/customers/{customer_id}`.
 
+Prefer the `customer.deposit_account.updated` webhook (and `customer.approved`) over polling — see [Webhooks](/webhooks). Poll GET as a backup until `products.deposit_account.status` is `ready`.
+
 If account routes are called before `ready`, the API returns **409** with message `Deposit account is not ready`. Response `data` includes `deposit_account_status` (current status) or, in some cases, `reason: banking_profile_incomplete`.
 
 ## Happy path
 
 <Steps>
   <Step title="Confirm banking ready">
-    Poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+    Prefer `customer.deposit_account.updated` ([Webhooks](/webhooks)); or poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
   </Step>
   <Step title="Open a rail (optional)">
     `POST /partner/customers/{customer_id}/accounts` when you need a new fiat or stablecoin rail
@@ -57,7 +59,7 @@ If account routes are called before `ready`, the API returns **409** with messag
 ## 1. Poll customer
 
 ```bash
-export CUSTOMER_ID="pcus_06a83150db3c"   # staging smoke — Aly
+export CUSTOMER_ID="pcus_…"
 
 curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
   -H "X-API-Key: $API_KEY" | jq '{

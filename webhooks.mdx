@@ -1,12 +1,12 @@
 # Webhooks
 
-Element Pay notifies your backend when order status changes. **Treat webhooks as the source of truth** for settlement — the HTTP accept response only confirms intent to proceed. If a webhook is delayed, poll **`GET /partner/orders/{order_id}`** as a backup.
+Element Pay notifies your backend when **orders** and **customers** change. **Treat webhooks as the source of truth** for settlement and KYC / banking readiness — HTTP responses only confirm the request was accepted. If a webhook is delayed, poll the matching GET endpoint as a backup.
 
 ## Configuration
 
-Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox and production separately).
+Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox and production separately). The same endpoint receives order and customer events.
 
-## Events
+## Order events
 
 | Header `X-Webhook-Event` | When |
 |--------------------------|------|
@@ -14,6 +14,59 @@ Set **`webhook_url`** and **`webhook_secret`** on your partner API key (sandbox 
 | `order.settled` | Order completed successfully |
 | `order.failed` | Terminal failure |
 | `order.refunded` | Refund issued (when applicable) |
+
+Backup poll: `GET /partner/orders/{order_id}`.
+
+## Customer events
+
+Same signing headers and secret as orders. Backup poll: `GET /partner/customers/{customer_id}`.
+
+| Header `X-Webhook-Event` | When |
+|--------------------------|------|
+| `customer.submitted` | After a successful submit |
+| `customer.approved` | Element Pay approves the vault case |
+| `customer.rejected` | Review declines the case |
+| `customer.updated` | Material status / product update |
+| `customer.deposit_account.updated` | Deposit-account product status changes (e.g. becomes `ready` so you may open accounts) |
+
+### Customer payload (example)
+
+```json
+{
+  "customer_id": "pcus_…",
+  "partner_customer_ref": "partner-cust-001",
+  "type": "individual",
+  "status": "approved",
+  "environment": "sandbox",
+  "submitted_at": "2026-08-01T12:00:00+00:00",
+  "reviewed_at": "2026-08-01T12:05:00+00:00",
+  "products": {
+    "deposit_account": {
+      "status": "ready"
+    }
+  }
+}
+```
+
+### Deposit-account payload (example)
+
+Fired as `customer.deposit_account.updated`:
+
+```json
+{
+  "customer_id": "pcus_…",
+  "partner_customer_ref": "partner-cust-001",
+  "status": "approved",
+  "products": {
+    "deposit_account": {
+      "status": "ready"
+    }
+  },
+  "can_open_deposit_account": true
+}
+```
+
+When `products.deposit_account.status` is `ready` (and `can_open_deposit_account` is true), you may call [Accounts](/customers/accounts) open/list/get. See also [Customers quickstart](/customers/quickstart).
 
 ## HTTP delivery
 
@@ -26,9 +79,9 @@ X-Webhook-Id: <uuid>
 X-Webhook-Signature: t=<unix_ts>,v1=<base64_signature>
 ```
 
-## Payload (example)
+## Order payload (example)
 
-Webhook bodies are **provider-neutral**: no internal routing metadata or upstream PSP blobs. Typical fields:
+Webhook bodies have no internal routing metadata or upstream PSP blobs. Typical order fields:
 
 ```json
 {
