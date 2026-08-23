@@ -3472,6 +3472,347 @@
           }
         }
       }
+    },
+    "/partner/customers/{customer_id}/accounts": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Open an account for a ready customer",
+        "description": "Open one idempotent fiat or stablecoin rail. Same rail tuple returns the existing account.",
+        "operationId": "partner_customer_open_account",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
+            "schema": {
+              "type": "string",
+              "example": "pcus_06a83150db3c"
+            },
+            "example": "pcus_06a83150db3c"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerAccountOpenRequest"
+              },
+              "example": {
+                "asset_type": "fiat",
+                "currency": "EUR"
+              },
+              "examples": {
+                "fiat_eur": {
+                  "summary": "Fiat EUR",
+                  "value": {
+                    "asset_type": "fiat",
+                    "currency": "EUR"
+                  }
+                },
+                "usdc_base": {
+                  "summary": "USDC on Base",
+                  "value": {
+                    "asset_type": "stablecoin",
+                    "currency": "USDC",
+                    "network": "Base"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Account opened",
+                  "data": {
+                    "id": 18,
+                    "customer_id": "pcus_06a83150db3c",
+                    "asset_type": "fiat",
+                    "currency": "EUR",
+                    "network": null,
+                    "status": "active",
+                    "display_name": "EUR",
+                    "account_number": "DE89370400440532013000",
+                    "bank_name": "Example Bank",
+                    "swift_bic": "COBADEFFXXX",
+                    "balance": {
+                      "available": "250.00",
+                      "currency": "EUR"
+                    },
+                    "created_at": "2026-08-01T12:00:00+00:00"
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Account already exists",
+                  "data": {
+                    "id": 18,
+                    "customer_id": "pcus_06a83150db3c",
+                    "asset_type": "fiat",
+                    "currency": "EUR",
+                    "network": null,
+                    "status": "active",
+                    "display_name": "EUR",
+                    "account_number": "DE89370400440532013000",
+                    "bank_name": "Example Bank",
+                    "swift_bic": "COBADEFFXXX",
+                    "balance": {
+                      "available": "250.00",
+                      "currency": "EUR"
+                    },
+                    "created_at": "2026-08-01T12:00:00+00:00"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Banking profile incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Banking profile incomplete",
+                  "data": {
+                    "deposit_account_status": "pending",
+                    "reason": "banking_profile_incomplete"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "List accounts for a ready customer",
+        "description": "List customer accounts, refreshing pending coordinates when available.",
+        "operationId": "partner_customer_list_accounts",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
+            "schema": {
+              "type": "string",
+              "example": "pcus_06a83150db3c"
+            },
+            "example": "pcus_06a83150db3c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Accounts",
+                  "data": {
+                    "accounts": [
+                      {
+                        "id": 21,
+                        "customer_id": "pcus_06a83150db3c",
+                        "asset_type": "stablecoin",
+                        "currency": "USDC",
+                        "network": "Base",
+                        "status": "active",
+                        "display_name": "USDC Base",
+                        "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                        "balance": {
+                          "available": "12.50",
+                          "currency": "USDC"
+                        },
+                        "created_at": "2026-08-01T12:00:00+00:00"
+                      },
+                      {
+                        "id": 18,
+                        "customer_id": "pcus_06a83150db3c",
+                        "asset_type": "fiat",
+                        "currency": "EUR",
+                        "network": null,
+                        "status": "active",
+                        "display_name": "EUR",
+                        "account_number": "DE89370400440532013000",
+                        "bank_name": "Example Bank",
+                        "swift_bic": "COBADEFFXXX",
+                        "balance": {
+                          "available": "250.00",
+                          "currency": "EUR"
+                        },
+                        "created_at": "2026-08-01T12:00:00+00:00"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Banking profile incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Banking profile incomplete",
+                  "data": {
+                    "deposit_account_status": "pending",
+                    "reason": "banking_profile_incomplete"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get one account for a ready customer",
+        "description": "Get one customer-owned account and its current coordinates.",
+        "operationId": "partner_customer_get_account",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "description": "Public customer id returned by POST /partner/customers",
+            "schema": {
+              "type": "string",
+              "example": "pcus_06a83150db3c"
+            },
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "description": "Account id from list/open",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "example": 21
+            },
+            "example": 21
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Account",
+                  "data": {
+                    "id": 21,
+                    "customer_id": "pcus_06a83150db3c",
+                    "asset_type": "stablecoin",
+                    "currency": "USDC",
+                    "network": "Base",
+                    "status": "active",
+                    "display_name": "USDC Base",
+                    "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                    "balance": {
+                      "available": "12.50",
+                      "currency": "USDC"
+                    },
+                    "created_at": "2026-08-01T12:00:00+00:00"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Account not found",
+                  "data": null
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Banking profile incomplete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Banking profile incomplete",
+                  "data": {
+                    "deposit_account_status": "pending",
+                    "reason": "banking_profile_incomplete"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4188,6 +4529,37 @@
               "postal_code": "E1 6AN"
             }
           }
+        }
+      },
+      "PartnerCustomerAccountOpenRequest": {
+        "type": "object",
+        "required": [
+          "asset_type",
+          "currency"
+        ],
+        "properties": {
+          "asset_type": {
+            "type": "string",
+            "description": "fiat or stablecoin",
+            "example": "fiat"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "network": {
+            "type": "string",
+            "description": "Required for stablecoin: Base, Polygon, or Stellar",
+            "example": "Base"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "EUR operating"
+          }
+        },
+        "example": {
+          "asset_type": "fiat",
+          "currency": "EUR"
         }
       }
     },

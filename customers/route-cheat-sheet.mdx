@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart) and [Accounts](/customers/accounts). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -14,6 +14,20 @@ Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. B
 | `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
 
+
+## Accounts
+
+Requires `status` approved/active **and** `products.deposit_account.status=ready`. Otherwise **409**.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts` | Open one rail; idempotent |
+| `GET` | `/partner/customers/{customer_id}/accounts` | List; resolve `account_id` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Get one |
+
+Guide: [Accounts](/customers/accounts).
+
+
 ## Orders
 
 | Method | Path | Notes |
@@ -26,3 +40,4 @@ Companion to [Customers quickstart](/customers/quickstart). Auth: `X-API-Key`. B
 | Action | Required |
 |--------|----------|
 | Quote / accept with `customer_id` | `status=approved` |
+| Account open / list / get | `approved`/`active` **and** `deposit_account.status=ready` |

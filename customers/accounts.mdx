@@ -1,0 +1,128 @@
+# Customer accounts
+
+Open and read customer-owned account rails (`pcus_*` → `account_id`). Use the `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), and later book transfers / payouts / cards.
+
+Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status` is `approved` (or `active`).
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
+export BASE_LIVE="$BASE_LIVE"         # live Partner API base
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"            # or is_live_… on live
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## Gate
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
+| **Banking** | `products.deposit_account.status` is `ready` | Account open / list / get |
+
+`approved` alone does **not** unlock accounts. Always read both fields from `GET /partner/customers/{customer_id}`.
+
+If account routes are called before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+
+## Happy path
+
+<Steps>
+  <Step title="Confirm banking ready">
+    Poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+  </Step>
+  <Step title="Open a rail (optional)">
+    `POST /partner/customers/{customer_id}/accounts` when you need a new fiat or stablecoin rail
+  </Step>
+  <Step title="List accounts">
+    `GET /partner/customers/{customer_id}/accounts` → pick `account_id`
+  </Step>
+  <Step title="Get one (optional)">
+    `GET /partner/customers/{customer_id}/accounts/{account_id}`
+  </Step>
+  <Step title="Next">
+    Fund via [deposit instructions](/customers/deposit-instructions), then [stablecoin sends](/customers/stablecoin-sends) when you have balance
+  </Step>
+</Steps>
+
+## 1. Poll customer
+
+```bash
+export CUSTOMER_ID="pcus_06a83150db3c"   # staging smoke — Aly
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '{
+    id: .data.id,
+    status: .data.status,
+    deposit_account: .data.products.deposit_account
+  }'
+```
+
+## 2. Open an account
+
+Idempotent on the rail tuple (`asset_type` + `currency` + `network` for stablecoin). Opening an existing rail returns **200** with the existing account; a new rail returns **201**.
+
+### Fiat
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asset_type": "fiat",
+    "currency": "EUR"
+  }' | jq '.data'
+```
+
+### Stablecoin
+
+`network` is required: `Base`, `Polygon`, or `Stellar`. Currency: `USDC` or `USDT` (USDT is not available on Stellar).
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asset_type": "stablecoin",
+    "currency": "USDC",
+    "network": "Base"
+  }' | jq '.data'
+```
+
+Save `data.id` as `account_id`.
+
+## 3. List accounts
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+export ACCOUNT_ID="21"
+```
+
+Typical fields: `id`, `customer_id`, `asset_type`, `currency`, `network`, `status`, balances, and rail coordinates when ready (for example `account_number` / bank fields for fiat, `wallet_address` for stablecoin).
+
+## 4. Get one account
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` until `ready` |
+| Unknown / other-tenant customer | `404` | Use id from this API key |
+| Account not found | `404` | List accounts and pick a valid `account_id` |
+
+## Next
+
+- [Deposit instructions](/customers/deposit-instructions) — fund a fiat (or check stablecoin) rail
+- [Stablecoin sends](/customers/stablecoin-sends) — preview → confirm → poll
+- [Route cheat sheet](/customers/route-cheat-sheet)
