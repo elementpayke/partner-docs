@@ -4,6 +4,10 @@ Fetch **funding coordinates** for a customer account: fiat bank details (IBAN / 
 
 Prerequisite: open or list an account in [Accounts](/customers/accounts). Same banking gate: vault `approved`/`active` and `products.deposit_account.status=ready`.
 
+<Warning>
+**Sandbox:** returned coordinates may not credit usable balance for outbound testing. Contact Element Pay for a sandbox credit if you need to exercise [stablecoin sends](/customers/stablecoin-sends). **Live:** show these details to the end-customer and wait for real funding.
+</Warning>
+
 ## Auth and environments
 
 ```bash

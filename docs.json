@@ -46,6 +46,7 @@
               "customers/quickstart",
               "customers/accounts",
               "customers/deposit-instructions",
+              "customers/stablecoin-sends",
               "customers/route-cheat-sheet"
             ]
           },
