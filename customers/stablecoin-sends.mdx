@@ -24,7 +24,7 @@ Content-Type: application/json
 
 ## Gate
 
-Same banking gate as accounts. If send routes run before `ready`, expect **409** with partner-neutral `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+Same banking gate as accounts. If send routes run before `ready`, the API returns **409** with message `Deposit account is not ready`. Response `data` includes `deposit_account_status` or, in some cases, `reason: banking_profile_incomplete`.
 
 ## Happy path
 
@@ -105,7 +105,7 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/sends/$SEND_
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
+| Banking gate not ready | `409` — `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
 | Amount ≥ available | `422` insufficient balance | Lower amount below available |
 | Preview expired / wrong account | `4xx` | Re-preview on the same `account_id` |
 
