@@ -50,7 +50,15 @@ Note a **`providers[].id`** for M-PESA (mobile money) from **catalog** — you w
 
 ## 3. Create a quote
 
+**Preferred:** pass an approved vault `customer_id` (`pcus_*`) from the [Customers quickstart](/customers/quickstart). That is the main identity path for new integrations.
+
+**Still accepted:** an inline `customer` object on quote (shown below) for existing integrations and a first sandbox spike. Prefer migrating to `customer_id` once the vault case is `approved`.
+
 ```bash
+# Preferred once you have an approved vault customer:
+#   "customer_id": "pcus_…"
+# and omit the inline "customer" object.
+
 curl -sS -X POST "$BASE/partner/orders/quote" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
