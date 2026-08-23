@@ -4549,7 +4549,7 @@
           },
           "network": {
             "type": "string",
-            "description": "Required for stablecoin: Base, Polygon, or Stellar",
+            "description": "Required for stablecoin: Base or Polygon",
             "example": "Base"
           },
           "display_name": {

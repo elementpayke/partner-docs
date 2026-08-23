@@ -1,6 +1,11 @@
 # Customer accounts
 
-Open and read customer-owned account rails (`pcus_*` → `account_id`). Use the `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), and later book transfers / payouts / cards.
+Give each vault customer **bankable and on-chain balances** under one `customer_id` (`pcus_*`):
+
+- **Fiat accounts** — e.g. **EUR** and **USD** rails with **IBAN** (and related bank coordinates) for receiving transfers
+- **Stablecoin accounts** — e.g. **USDC** / **USDT** wallets on **Base** or **Polygon**
+
+Open or list rails, then use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), and later book transfers / payouts / cards.
 
 Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status` is `approved` (or `active`).
 
@@ -66,7 +71,9 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
 
 Idempotent on the rail tuple (`asset_type` + `currency` + `network` for stablecoin). Opening an existing rail returns **200** with the existing account; a new rail returns **201**.
 
-### Fiat
+### Fiat (IBAN / bank rail)
+
+Example: **EUR** (same pattern for **USD** where enabled for your key).
 
 ```bash
 curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
@@ -78,9 +85,11 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
   }' | jq '.data'
 ```
 
+After open, [deposit instructions](/customers/deposit-instructions) return the **IBAN** and bank fields to show the end-customer.
+
 ### Stablecoin
 
-`network` is required: `Base`, `Polygon`, or `Stellar`. Currency: `USDC` or `USDT` (USDT is not available on Stellar).
+`network` is required: **`Base`** or **`Polygon`**. Currency: `USDC` or `USDT`.
 
 ```bash
 curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
