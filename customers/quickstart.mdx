@@ -48,7 +48,7 @@ Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
     → typically `pending_review`
   </Step>
   <Step title="Wait for approved">
-    Poll `GET /partner/customers/{customer_id}` until `status=approved`
+    Prefer webhooks (`customer.approved`); poll `GET /partner/customers/{customer_id}` as backup until `status=approved`
   </Step>
   <Step title="Quote (optional)">
     Pass `customer_id` on `POST /partner/orders/quote` instead of a full inline `customer`
@@ -69,7 +69,9 @@ Collect exactly the returned `required_fields` and `required_documents`.
 
 ## 2. Create customer
 
-Idempotent on `partner_customer_ref` per tenant.
+Idempotent on `partner_customer_ref` per tenant. Call requirements first for the exact `required_fields` / `required_documents` for `type=individual` or `type=business` (and `country` when relevant).
+
+### Individual
 
 ```bash
 curl -sS -X POST "$BASE/partner/customers" \
@@ -95,6 +97,55 @@ curl -sS -X POST "$BASE/partner/customers" \
     }
   }' | jq '.data | {id, status, partner_customer_ref, missing}'
 ```
+
+### Business
+
+Illustrative shape — treat requirements as source of truth. US-incorporated businesses also need `tax_id` (EIN). Officers and KYB documents are required before submit.
+
+```bash
+curl -sS -X POST "$BASE/partner/customers" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partner_customer_ref": "partner-biz-001",
+    "type": "business",
+    "profile": {
+      "legal_name": "Acme Payments Ltd",
+      "email": "ops@acme.example",
+      "phone": "+14155550100",
+      "website": "https://acme.example",
+      "business_type": "llc",
+      "country_of_incorporation": "US",
+      "tax_id": "123456789",
+      "registration_number": "REG-001",
+      "industry": "fintech",
+      "description": "B2B payments for SMEs",
+      "registered_address": {
+        "line_1": "100 Market Street",
+        "city": "San Francisco",
+        "state": "CA",
+        "country": "US",
+        "postal_code": "94105"
+      },
+      "incorporation_meta": {"year": 2020},
+      "monthly_payments_count": 100,
+      "monthly_transaction_value": 250000,
+      "max_transfer_amount": 50000,
+      "annual_turnover": 2000000,
+      "customer_types": ["b2b"],
+      "funding_source": "equity",
+      "officers": [
+        {
+          "role": "director",
+          "first_name": "Ada",
+          "last_name": "Lovelace",
+          "email": "ada@acme.example"
+        }
+      ]
+    }
+  }' | jq '.data | {id, status, partner_customer_ref, missing}'
+```
+
 
 Save `data.id` (`pcus_*`). While incomplete: `PATCH /partner/customers/{customer_id}` with `{"profile": { … }}`. List: `GET /partner/customers?status=incomplete&limit=50`.
 
@@ -137,7 +188,19 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/submit" \
 
 Incomplete package → **422** with `missing[]`.
 
-## 5. Poll until approved
+## 5. Wait until approved (webhooks + poll)
+
+We send signed partner webhooks for vault lifecycle events (same key `webhook_url` / `webhook_secret` as orders). Typical events:
+
+| Event | When |
+|-------|------|
+| `customer.submitted` | After a successful submit |
+| `customer.approved` | Element Pay approves the case |
+| `customer.rejected` | Review declines the case |
+| `customer.updated` | Material status / product update |
+| `customer.deposit_account.updated` | Deposit-account product status changes (e.g. `ready` for [Accounts](/customers/accounts)) |
+
+Treat webhooks as the primary signal for review outcomes and banking readiness. Poll `GET /partner/customers/{customer_id}` as a backup if a webhook is delayed or missed. Full payload shapes: [Webhooks](/webhooks).
 
 ```bash
 curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
@@ -148,13 +211,13 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
   }'
 ```
 
-Example (staging smoke, PII redacted):
+Example:
 
 ```json
 {
-  "id": "pcus_06a83150db3c",
+  "id": "pcus_…",
   "status": "approved",
-  "partner_customer_ref": "aly-live"
+  "partner_customer_ref": "partner-cust-001"
 }
 ```
 
@@ -175,7 +238,7 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
     "currency": "KES",
     "country": "KE",
     "local_amount": 100,
-    "customer_id": "pcus_06a83150db3c",
+    "customer_id": "pcus_…",
     "asset": {
       "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
       "currency": "USDT",
@@ -189,7 +252,7 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
   }' | jq '{quote_id: .data.quote_id, status: .data.status}'
 ```
 
-Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
+Successful response includes a `quote_id` like `ep_bank_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
 
 ## Errors
 
@@ -200,15 +263,9 @@ Smoke outcome: success with `quote_id` like `ep_bank_…`. Use `asset: { token, 
 | Unknown / other-tenant id | `404` | Use id from this API key |
 | Bad key | `401` | Fix `X-API-Key` |
 
-## FAQ
-
-**Inline `customer` still OK?** Yes. Prefer `customer_id` once the vault case is `approved`.
-
-**What about deposit accounts, sends, cards?** Coming in a later docs update under the same `customer_id`. This guide covers vault KYC and quote identity only.
-
-When `products.deposit_account.status=ready`, see [Stablecoin sends](/customers/stablecoin-sends).
-
 ## Next
 
+- [Accounts](/customers/accounts)
 - [Route cheat sheet](/customers/route-cheat-sheet)
+- [Webhooks](/webhooks)
 - [Corridors](/corridors/overview) · [Orders quickstart](/quickstart)

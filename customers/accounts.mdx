@@ -1,17 +1,143 @@
-# Customer accounts (draft)
+# Customer accounts
 
-> **Placeholder.** Full docs for open / list / get account rails land here after product sign-off.
->
-> Today: list/get appear in [Stablecoin sends](/customers/stablecoin-sends) so partners can resolve `account_id`. `POST …/accounts` Try-it is deferred.
->
-> Stack position: **PR-C** — merge after PR-B, before deposit-instructions.
+Give each vault customer **bankable and on-chain balances** under one `customer_id` (`pcus_*`):
 
-## Planned routes
+- **Fiat accounts** — e.g. **EUR** and **USD** rails with **IBAN** (and related bank coordinates) for receiving transfers
+- **Stablecoin accounts** — e.g. **USDC** / **USDT** wallets on **Base** or **Polygon**
 
-| Method | Path | Notes |
-|--------|------|-------|
-| `POST` | `/partner/customers/{customer_id}/accounts` | Open one rail; idempotent |
-| `GET` | `/partner/customers/{customer_id}/accounts` | List (already in sends guide) |
-| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Get one |
+Open or list rails, then use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), and later book transfers / payouts / cards.
 
-Gate: `status` approved/active **and** `products.deposit_account.status=ready`.
+Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status` is `approved` (or `active`).
+
+<Note>
+**Sandbox funding:** usable balance for outbound [stablecoin sends](/customers/stablecoin-sends) may require an Element Pay sandbox credit. See [deposit instructions](/customers/deposit-instructions).
+</Note>
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
+export BASE_LIVE="$BASE_LIVE"         # live Partner API base
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"            # or is_live_… on live
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## Gate
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
+| **Banking** | `products.deposit_account.status` is `ready` | Account open / list / get |
+
+`approved` alone does **not** unlock accounts. Always read both fields from `GET /partner/customers/{customer_id}`.
+
+Prefer the `customer.deposit_account.updated` webhook (and `customer.approved`) over polling — see [Webhooks](/webhooks). Poll GET as a backup until `products.deposit_account.status` is `ready`.
+
+If account routes are called before `ready`, the API returns **409** with message `Deposit account is not ready`. Response `data` includes `deposit_account_status` (current status) or, in some cases, `reason: banking_profile_incomplete`.
+
+## Happy path
+
+<Steps>
+  <Step title="Confirm banking ready">
+    Prefer `customer.deposit_account.updated` ([Webhooks](/webhooks)); or poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+  </Step>
+  <Step title="Open a rail (optional)">
+    `POST /partner/customers/{customer_id}/accounts` when you need a new fiat or stablecoin rail
+  </Step>
+  <Step title="List accounts">
+    `GET /partner/customers/{customer_id}/accounts` → pick `account_id`
+  </Step>
+  <Step title="Get one (optional)">
+    `GET /partner/customers/{customer_id}/accounts/{account_id}`
+  </Step>
+  <Step title="Next">
+    Fund via [deposit instructions](/customers/deposit-instructions), then [stablecoin sends](/customers/stablecoin-sends) when you have balance
+  </Step>
+</Steps>
+
+## 1. Poll customer
+
+```bash
+export CUSTOMER_ID="pcus_…"
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '{
+    id: .data.id,
+    status: .data.status,
+    deposit_account: .data.products.deposit_account
+  }'
+```
+
+## 2. Open an account
+
+Idempotent on the rail tuple (`asset_type` + `currency` + `network` for stablecoin). Opening an existing rail returns **200** with the existing account; a new rail returns **201**.
+
+### Fiat (IBAN / bank rail)
+
+Example: **EUR** (same pattern for **USD** where enabled for your key).
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asset_type": "fiat",
+    "currency": "EUR"
+  }' | jq '.data'
+```
+
+After open, [deposit instructions](/customers/deposit-instructions) return the **IBAN** and bank fields to show the end-customer.
+
+### Stablecoin
+
+`network` is required: **`Base`** or **`Polygon`**. Currency: `USDC` or `USDT`.
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asset_type": "stablecoin",
+    "currency": "USDC",
+    "network": "Base"
+  }' | jq '.data'
+```
+
+Save `data.id` as `account_id`.
+
+## 3. List accounts
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+export ACCOUNT_ID="21"
+```
+
+Typical fields: `id`, `customer_id`, `asset_type`, `currency`, `network`, `status`, balances, and rail coordinates when ready (for example `account_number` / bank fields for fiat, `wallet_address` for stablecoin).
+
+## 4. Get one account
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` — `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
+| Unknown / other-tenant customer | `404` | Use id from this API key |
+| Account not found | `404` | List accounts and pick a valid `account_id` |
+
+## Next
+
+- [Deposit instructions](/customers/deposit-instructions) — fund a fiat (or check stablecoin) rail
+- [Stablecoin sends](/customers/stablecoin-sends) — preview → confirm → poll
+- [Route cheat sheet](/customers/route-cheat-sheet)
