@@ -47,6 +47,7 @@
               "customers/accounts",
               "customers/deposit-instructions",
               "customers/stablecoin-sends",
+              "customers/book-transfers",
               "customers/route-cheat-sheet"
             ]
           },
@@ -91,9 +92,6 @@
     },
     "playground": {
       "display": "interactive"
-    },
-    "examples": {
-      "prefill": true
     }
   },
   "footer": {
