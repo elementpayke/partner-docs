@@ -1,6 +1,6 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart) and [Accounts](/customers/accounts). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customers/accounts), and [Deposit instructions](/customers/deposit-instructions). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
 
 ## Vault KYC
 
@@ -28,6 +28,18 @@ Requires `status` approved/active **and** `products.deposit_account.status=ready
 Guide: [Accounts](/customers/accounts).
 
 
+
+## Deposit instructions
+
+Same banking gate as accounts. Coordinates may be **422** until the rail finishes provisioning.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/deposit-instructions` | Fiat bank details or stablecoin wallet |
+
+Guide: [Deposit instructions](/customers/deposit-instructions).
+
+
 ## Orders
 
 | Method | Path | Notes |
@@ -41,3 +53,4 @@ Guide: [Accounts](/customers/accounts).
 |--------|----------|
 | Quote / accept with `customer_id` | `status=approved` |
 | Account open / list / get | `approved`/`active` **and** `deposit_account.status=ready` |
+| Deposit instructions | Same banking gate; **422** if coords not ready |

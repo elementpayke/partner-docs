@@ -1,0 +1,102 @@
+# Deposit instructions
+
+Fetch **funding coordinates** for a customer account: fiat bank details (IBAN / bank transfer) or a stablecoin wallet + network.
+
+Prerequisite: open or list an account in [Accounts](/customers/accounts). Same banking gate: vault `approved`/`active` and `products.deposit_account.status=ready`.
+
+## Auth and environments
+
+```bash
+export BASE_SANDBOX="$BASE_SANDBOX"
+export BASE_LIVE="$BASE_LIVE"
+export BASE="$BASE_SANDBOX"
+export API_KEY="is_test_…"
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## When to call
+
+| Goal | Use |
+|------|-----|
+| Fund a **fiat** rail | Show returned bank fields to the end-customer |
+| Fund a **stablecoin** rail | Show `wallet_address` + `network` (and any chain disclaimer) |
+| Outbound send / payout | Not this route. Use balance on the account, then [stablecoin sends](/customers/stablecoin-sends) or later payout guides |
+
+## Happy path
+
+<Steps>
+  <Step title="Resolve account_id">
+    [Accounts](/customers/accounts): open or list until you have an `account_id`
+  </Step>
+  <Step title="Get deposit instructions">
+    `GET …/accounts/{account_id}/deposit-instructions`
+  </Step>
+  <Step title="Show coords to the customer">
+    Use `instructions` / disclaimer fields as display copy; do not invent bank or chain details
+  </Step>
+</Steps>
+
+## Request
+
+```bash
+export CUSTOMER_ID="pcus_…"
+export ACCOUNT_ID="18"   # fiat example; use a stablecoin account_id for wallet rails
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/deposit-instructions" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+### Fiat example (`data`)
+
+```json
+{
+  "account_id": 18,
+  "customer_id": "pcus_…",
+  "asset_type": "fiat",
+  "currency": "EUR",
+  "network": null,
+  "status": "ready",
+  "account_holder_name": "Jane Doe",
+  "account_number": "DE89370400440532013000",
+  "bank_code": "COBADEFF",
+  "bank_name": "Example Bank",
+  "swift_bic": "COBADEFFXXX",
+  "instructions": "Show the account holder name and these bank details to the customer. They should send a bank transfer in the account currency to this account."
+}
+```
+
+### Stablecoin example (`data`)
+
+```json
+{
+  "account_id": 21,
+  "customer_id": "pcus_…",
+  "asset_type": "stablecoin",
+  "currency": "USDC",
+  "network": "Base",
+  "status": "ready",
+  "account_holder_name": "Jane Doe",
+  "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+  "chain_disclaimer": "Send only USDC on Base to this address. Funds sent on the wrong network may be lost.",
+  "instructions": "Show the wallet address and network to the customer. They must send the matching stablecoin on that network only."
+}
+```
+
+Field sets differ by rail. Use the keys returned for that `account_id`; do not assume every account includes both bank and wallet fields.
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` with message `Deposit account is not ready` | Poll `products.deposit_account` until `status=ready` |
+| Account still provisioning coords | `422` (coords not ready yet) | Poll `GET …/accounts/{account_id}` until coordinates exist, then retry |
+| Unknown account / customer | `404` | Use ids from this API key |
+
+## Next
+
+- [Stablecoin sends](/customers/stablecoin-sends) once the account has balance
+- [Accounts](/customers/accounts) · [Route cheat sheet](/customers/route-cheat-sheet)
