@@ -1,14 +1,18 @@
 # External bank payouts
 
-Send **same-currency fiat** from a customer account to an **outside** bank (SEPA / ACH / CAD EFT / SWIFT). Source is always a customer-owned fiat `account_id` (`pcus_*`). Destination is beneficiary + bank details — not another ledger `account_id`.
+Send **same-currency fiat** from a customer account to an **outside** bank (SEPA / ACH / CAD EFT / SWIFT). Source is always a customer-owned fiat `account_id` (`pcus_*`). Destination is beneficiary + bank details, not another ledger `account_id`.
 
 | Flow | Destination |
 |------|-------------|
-| [Book transfer](/customers/book-transfers) | Another account under the same API key |
+| [Book transfers](/customers/book-transfers) | Another account under the same API key |
 | **Payout** | External beneficiary bank |
-| [Stablecoin send](/customers/stablecoin-sends) | Crypto wallet |
+| [Stablecoin sends](/customers/stablecoin-sends) | Crypto wallet |
 
 Prerequisite: [Customers quickstart](/customers/quickstart). Banking gate: `products.deposit_account.status=ready`.
+
+<Warning>
+**Sandbox:** full payout preview → confirm is often **not** exercisable end-to-end. Deposit rails may not credit usable fiat balance, and there may be no partner-safe sandbox beneficiary for a real bank push. Prefer validating **preview validation** (for example amount above `available` → **422**) and field shapes. Contact Element Pay if you need a sandbox credit or a known-good test beneficiary. **Live:** fund the source account (deposit instructions or corridor quote → accept where applicable), then run preview → confirm only when you intend to send funds.
+</Warning>
 
 ## Auth and environments
 
@@ -29,7 +33,7 @@ Content-Type: application/json
 | Gate | Field | Unlocks |
 |------|-------|---------|
 | **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
-| **Banking** | `products.deposit_account.status` is `ready` | Fiat payouts from that customer’s accounts |
+| **Banking** | `products.deposit_account.status` is `ready` | Fiat payouts from that customer's accounts |
 
 Source `account_id` must belong to `{customer_id}`.
 
@@ -48,7 +52,7 @@ If banking routes are called before `ready`, expect **409** with partner-neutral
     `POST …/payouts/preview` with `amount`, `beneficiary`, `bank` → `preview_token`
   </Step>
   <Step title="Confirm">
-    `POST …/payouts` with `preview_token` + `idempotency_key` (tokens expire quickly — use a fresh preview)
+    `POST …/payouts` with `preview_token` + `idempotency_key` (tokens expire quickly; use a fresh preview)
   </Step>
   <Step title="Poll">
     `GET …/payouts/{payout_id}` until terminal status
@@ -99,13 +103,13 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/pa
 Typical success includes `preview_token`, amounts, fee fields (often `fee_status=pending_confirm` until confirm), and `customer_id`. Save `preview_token`.
 
 <Note>
-Until you have a known-good sandbox beneficiary, prefer **insufficient-balance** preview checks (below) over confirm. Confirm can push real fiat on live.
+In sandbox, until Element Pay has credited balance and shared a known-good beneficiary, prefer **insufficient-balance** preview checks (below) over confirm.
 </Note>
 
 ## 3. Confirm
 
 <Warning>
-On **live**, confirm initiates an **external bank payout**. Prefer sandbox for full loops unless you intend to send funds.
+On **live**, confirm initiates an **external bank payout**. Do not confirm on live unless you intend to send funds. On sandbox, confirm may still fail or be unavailable without funded balance and an approved test beneficiary.
 </Warning>
 
 ```bash
@@ -114,7 +118,7 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/pa
   -H "Content-Type: application/json" \
   -d '{
     "preview_token": "<from preview response>",
-    "idempotency_key": "payout-ada-2026-08-23-001"
+    "idempotency_key": "payout-2026-08-23-001"
   }' | jq '.'
 ```
 
@@ -131,13 +135,11 @@ curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/payouts/$P
 
 1. **Same currency fiat → external bank** only (no FX on this rail).
 2. **Preview → confirm** on the same source `account_id`; use a fresh preview if the token expired.
-3. **Partner-neutral JSON** — error `message` / `data` do not expose upstream PSP names.
+3. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
 4. **Balance:** like [book transfers](/customers/book-transfers), require `available >= amount` (exact balance is allowed). This differs from [stablecoin sends](/customers/stablecoin-sends), which need amount **strictly below** `available` (1 minor-unit headroom). Insufficient balance returns **422** with partner-neutral `data.available`, `data.amount`, and `data.currency` when known.
 5. Fees may be `pending_confirm` on preview and final on confirm/GET.
 
-Practical smoke (insufficient only): preview with `amount` above `available` → **422** + balance fields. Do **not** confirm unless you intend a real bank push.
-
-Staging smoke (insufficient): Aly EUR **1** available `0.20` — preview `1.20` → **422** with `available` / `amount` / `currency` (preview only; not confirmed).
+Practical sandbox check (insufficient only): preview with `amount` above `available` → **422** + balance fields. Do **not** confirm unless you have usable balance and intend a bank push.
 
 ## Legacy routes
 
@@ -148,13 +150,13 @@ The same operations exist under `/partner/entities/{entity_id}/accounts/.../payo
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
-| Insufficient balance (`amount` > `available`) | `422` + `available` / `amount` / `currency` | Lower amount or fund source account |
+| Insufficient balance (`amount` > `available`) | `422` + `available` / `amount` / `currency` | Lower amount or fund source account (may require Element Pay sandbox credit) |
 | Invalid bank / beneficiary fields | `422` | Fix scheme-required fields for the currency |
 | Preview token expired / wrong account | `4xx` | Re-preview on the same source `account_id` |
 
 ## Next
 
 - [Book transfers](/customers/book-transfers)
+- [Deposit instructions](/customers/deposit-instructions)
 - [Stablecoin sends](/customers/stablecoin-sends)
-- [Customers quickstart](/customers/quickstart)
 - [Route cheat sheet](/customers/route-cheat-sheet)

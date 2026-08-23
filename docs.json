@@ -44,9 +44,9 @@
             "group": "Customers",
             "pages": [
               "customers/quickstart",
-              "customers/stablecoin-sends",
               "customers/accounts",
               "customers/deposit-instructions",
+              "customers/stablecoin-sends",
               "customers/book-transfers",
               "customers/payouts",
               "customers/route-cheat-sheet"
