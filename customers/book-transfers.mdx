@@ -130,7 +130,9 @@ Staging smoke: Aly EUR **1** → Khamisi EUR **7**, €0.50 — balances moved (
 2. **Same partner API key** — destination must be reachable under this key (another `pcus_*` or legacy entity account).
 3. **Preview → confirm** on the same source `account_id`; use a fresh preview if the token expired.
 4. **Partner-neutral JSON** — error `message` / `data` do not expose upstream PSP names.
-5. Insufficient funds / headroom failures use the same partner-neutral error style as stablecoin sends.
+5. **Balance:** book transfers require `available >= amount` (exact balance is allowed). This differs from [stablecoin sends](/customers/stablecoin-sends), which need amount **strictly below** `available` (1 minor-unit headroom). Insufficient balance still returns **422** with partner-neutral `data.available`, `data.amount`, and `data.currency` when known.
+
+Staging smoke (insufficient): Aly EUR **1** available `0.20` — preview `1.20` → **422**; preview `0.20` → **201** (preview only; not confirmed).
 
 ## Legacy routes
 
@@ -141,7 +143,7 @@ The same operations exist under `/partner/entities/{entity_id}/accounts/.../book
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
-| Insufficient balance | `422` | Lower amount or fund source account |
+| Insufficient balance (`amount` > `available`) | `422` + `available` / `amount` / `currency` | Lower amount or fund source account |
 | Preview token expired / wrong account | `4xx` | Re-preview on the same source `account_id` |
 | Unknown / other-tenant destination | `404` / `4xx` | Use `to_account_id` returned to this API key |
 
