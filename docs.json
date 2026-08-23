@@ -48,6 +48,7 @@
               "customers/accounts",
               "customers/deposit-instructions",
               "customers/book-transfers",
+              "customers/payouts",
               "customers/route-cheat-sheet"
             ]
           },

@@ -40,6 +40,18 @@ Same banking gate as sends (`deposit_account=ready`). Same-currency fiat → fia
 
 Guide: [Book transfers](/customers/book-transfers). Legacy: `/partner/entities/…/book-transfers` — do not adopt.
 
+## External bank payouts (4C-c)
+
+Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another ledger account). Same-currency only.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts/preview` | `amount`, `beneficiary`, `bank` → `preview_token` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts` | Confirm + `idempotency_key` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}` | Poll status |
+
+Guide: [External bank payouts](/customers/payouts). Legacy: `/partner/entities/…/payouts` — do not adopt.
+
 ## Orders
 
 | Method | Path | Notes |
