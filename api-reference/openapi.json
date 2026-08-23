@@ -2806,10 +2806,10 @@
                 "$ref": "#/components/schemas/PartnerCustomerCreateRequest"
               },
               "examples": {
-                "individual": {
-                  "summary": "Individual create",
+                "default": {
+                  "summary": "Example",
                   "value": {
-                    "partner_customer_ref": "partner-cust-001",
+                    "partner_customer_ref": "cust-ke-001",
                     "type": "individual",
                     "profile": {
                       "first_name": "Jane",
@@ -2830,7 +2830,7 @@
                 }
               },
               "example": {
-                "partner_customer_ref": "partner-cust-001",
+                "partner_customer_ref": "cust-ke-001",
                 "type": "individual",
                 "profile": {
                   "first_name": "Jane",
@@ -3018,7 +3018,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3096,7 +3097,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3110,13 +3112,19 @@
                 "$ref": "#/components/schemas/PartnerCustomerProfilePatchRequest"
               },
               "examples": {
-                "profile_patch": {
-                  "summary": "Partial profile merge",
+                "default": {
+                  "summary": "Example",
                   "value": {
                     "profile": {
-                      "phone": "+447700900999",
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
                       "address": {
-                        "line_1": "2 Example Street",
+                        "line_1": "1 Example Street",
                         "city": "London",
                         "country": "GB",
                         "postal_code": "E1 6AN"
@@ -3127,9 +3135,15 @@
               },
               "example": {
                 "profile": {
-                  "phone": "+447700900999",
+                  "first_name": "Jane",
+                  "last_name": "Doe",
+                  "email": "jane@example.com",
+                  "date_of_birth": "1990-01-15",
+                  "country_of_residence": "GB",
+                  "phone": "+447700900123",
+                  "gender": "f",
                   "address": {
-                    "line_1": "2 Example Street",
+                    "line_1": "1 Example Street",
                     "city": "London",
                     "country": "GB",
                     "postal_code": "E1 6AN"
@@ -3213,7 +3227,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3227,21 +3242,21 @@
                 "$ref": "#/components/schemas/PartnerCustomerDocumentUploadRequest"
               },
               "examples": {
-                "identity_pdf": {
-                  "summary": "Identity document (illustrative Base64)",
+                "default": {
+                  "summary": "Identity document",
                   "value": {
                     "category": "identity",
-                    "file_name": "passport.pdf",
+                    "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
                     "content_type": "application/pdf",
-                    "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+                    "file_name": "passport.pdf"
                   }
                 }
               },
               "example": {
                 "category": "identity",
-                "file_name": "passport.pdf",
+                "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
                 "content_type": "application/pdf",
-                "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+                "file_name": "passport.pdf"
               }
             }
           }
@@ -3320,7 +3335,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3400,7 +3416,8 @@
               "examples": [
                 "pcus_a1b2c3d4e5f6"
               ],
-              "title": "Customer Id"
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
             },
             "description": "Public customer id returned on create",
             "example": "pcus_a1b2c3d4e5f6"
@@ -3995,7 +4012,8 @@
             "description": "Document key from requirements (e.g. identity, address).",
             "examples": [
               "identity"
-            ]
+            ],
+            "example": "identity"
           },
           "content_base64": {
             "type": "string",
@@ -4019,7 +4037,8 @@
             "examples": [
               "image/jpeg",
               "application/pdf"
-            ]
+            ],
+            "example": "application/pdf"
           },
           "file_name": {
             "anyOf": [
@@ -4032,7 +4051,8 @@
               }
             ],
             "title": "File Name",
-            "description": "Optional original filename for the partner only; not stored in object keys."
+            "description": "Optional original filename for the partner only; not stored in object keys.",
+            "example": "passport.pdf"
           }
         },
         "type": "object",
@@ -4043,9 +4063,9 @@
         "title": "PartnerCustomerDocumentUploadRequest",
         "example": {
           "category": "identity",
-          "file_name": "passport.pdf",
+          "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
           "content_type": "application/pdf",
-          "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+          "file_name": "passport.pdf"
         }
       },
       "PartnerCustomerProfilePatchRequest": {
@@ -4053,7 +4073,22 @@
           "profile": {
             "type": "object",
             "title": "Profile",
-            "description": "Partial profile merge into the customer vault."
+            "description": "Partial profile merge into the customer vault.",
+            "example": {
+              "first_name": "Jane",
+              "last_name": "Doe",
+              "email": "jane@example.com",
+              "date_of_birth": "1990-01-15",
+              "country_of_residence": "GB",
+              "phone": "+447700900123",
+              "gender": "f",
+              "address": {
+                "line_1": "1 Example Street",
+                "city": "London",
+                "country": "GB",
+                "postal_code": "E1 6AN"
+              }
+            }
           }
         },
         "type": "object",
@@ -4063,9 +4098,15 @@
         "title": "PartnerCustomerProfilePatchRequest",
         "example": {
           "profile": {
-            "phone": "+447700900999",
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane@example.com",
+            "date_of_birth": "1990-01-15",
+            "country_of_residence": "GB",
+            "phone": "+447700900123",
+            "gender": "f",
             "address": {
-              "line_1": "2 Example Street",
+              "line_1": "1 Example Street",
               "city": "London",
               "country": "GB",
               "postal_code": "E1 6AN"
@@ -4083,7 +4124,8 @@
             "description": "Partner's stable customer reference (unique per tenant).",
             "examples": [
               "cust-ke-001"
-            ]
+            ],
+            "example": "cust-ke-001"
           },
           "type": {
             "type": "string",
@@ -4091,7 +4133,8 @@
             "description": "individual or business",
             "examples": [
               "individual"
-            ]
+            ],
+            "example": "individual"
           },
           "profile": {
             "anyOf": [
@@ -4103,7 +4146,22 @@
               }
             ],
             "title": "Profile",
-            "description": "Identity / KYB fields (see GET /customers/requirements)."
+            "description": "Identity / KYB fields (see GET /customers/requirements).",
+            "example": {
+              "first_name": "Jane",
+              "last_name": "Doe",
+              "email": "jane@example.com",
+              "date_of_birth": "1990-01-15",
+              "country_of_residence": "GB",
+              "phone": "+447700900123",
+              "gender": "f",
+              "address": {
+                "line_1": "1 Example Street",
+                "city": "London",
+                "country": "GB",
+                "postal_code": "E1 6AN"
+              }
+            }
           }
         },
         "type": "object",
@@ -4113,7 +4171,7 @@
         ],
         "title": "PartnerCustomerCreateRequest",
         "example": {
-          "partner_customer_ref": "partner-cust-001",
+          "partner_customer_ref": "cust-ke-001",
           "type": "individual",
           "profile": {
             "first_name": "Jane",
@@ -4157,6 +4215,17 @@
     {
       "name": "partner-customers",
       "description": "Customer vault KYC (pcus_*), deposit accounts, deposit instructions, and stablecoin sends from customer-scoped account paths."
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://sandbox.elementpay.net/api/v1",
+      "description": "Sandbox"
+    }
+  ],
+  "security": [
+    {
+      "APIKeyHeader": []
     }
   ]
 }

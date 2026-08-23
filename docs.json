@@ -88,6 +88,9 @@
     },
     "playground": {
       "display": "interactive"
+    },
+    "examples": {
+      "prefill": true
     }
   },
   "footer": {
