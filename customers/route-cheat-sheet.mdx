@@ -13,6 +13,7 @@ Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customer
 | `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while incomplete |
 | `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
+| `POST` | `/partner/customers/{customer_id}/revoke` | Partner offboard → `suspended`; optional `reason` (audit-only) |
 
 ## Accounts
 
