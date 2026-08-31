@@ -3459,6 +3459,12 @@
                     },
                     "data": {
                       "type": "object",
+                      "required": [
+                        "id",
+                        "status",
+                        "partner_customer_ref",
+                        "updated_at"
+                      ],
                       "properties": {
                         "id": {
                           "type": "string",
@@ -3496,7 +3502,7 @@
             }
           },
           "409": {
-            "description": "Customer cannot be revoked from current status",
+            "description": "Concurrent status change during revoke — retry the request",
             "content": {
               "application/json": {
                 "schema": {
@@ -3527,7 +3533,7 @@
                   "status": "error",
                   "message": "Customer cannot be revoked",
                   "data": {
-                    "status": "pending_review"
+                    "status": "approved"
                   }
                 }
               }
