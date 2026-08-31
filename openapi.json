@@ -3392,6 +3392,188 @@
         }
       }
     },
+    "/partner/customers/{customer_id}/revoke": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Revoke a customer (partner offboarding)",
+        "description": "Partner offboard: transition customer to `suspended`. Idempotent when already `suspended` or `rejected`. Optional `reason` is audit-only and not returned in responses. Emits `customer.revoked` webhook on transition.",
+        "operationId": "partner_customer_revoke_partner_customers__customer_id__revoke_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerRevokeRequest"
+              },
+              "example": {
+                "reason": "account_closed"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer revoked or already offboarded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message",
+                    "data"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "pcus_a1b2c3d4e5f6"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "suspended",
+                            "rejected"
+                          ]
+                        },
+                        "partner_customer_ref": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Customer revoked",
+                  "data": {
+                    "id": "pcus_a1b2c3d4e5f6",
+                    "status": "suspended",
+                    "partner_customer_ref": "partner-cust-001",
+                    "updated_at": "2026-08-31T08:00:00+00:00"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Customer cannot be revoked from current status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Customer cannot be revoked",
+                  "data": {
+                    "status": "pending_review"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "reason"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/partner/customers/{customer_id}/deposit-account/retry": {
       "post": {
         "tags": [
@@ -5760,6 +5942,29 @@
               "postal_code": "E1 6AN"
             }
           }
+        }
+      },
+      "PartnerCustomerRevokeRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Optional partner audit note (not returned in API responses).",
+            "example": "account_closed"
+          }
+        },
+        "type": "object",
+        "title": "PartnerCustomerRevokeRequest",
+        "example": {
+          "reason": "account_closed"
         }
       },
       "PartnerCustomerAccountOpenRequest": {

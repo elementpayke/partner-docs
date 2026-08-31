@@ -30,7 +30,7 @@ Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
 | `pending_review` | Submitted; waiting for Element Pay review |
 | `approved` | May quote / accept with `customer_id` |
 | `rejected` | Review declined |
-| `suspended` | Blocked |
+| `suspended` | Partner offboarded or blocked — cannot quote, patch, or open new banking activity |
 
 ## Happy path
 
@@ -197,6 +197,7 @@ We send signed partner webhooks for vault lifecycle events (same key `webhook_ur
 | `customer.submitted` | After a successful submit |
 | `customer.approved` | Element Pay approves the case |
 | `customer.rejected` | Review declines the case |
+| `customer.revoked` | Partner offboarded the customer → `suspended` |
 | `customer.updated` | Material status / product update |
 | `customer.deposit_account.updated` | Deposit-account product status changes (e.g. `ready` for [Accounts](/customers/accounts)) |
 
@@ -223,7 +224,27 @@ Example:
 
 Use `customer_id` on quote only when `status == "approved"`.
 
-## 6. Quote with `customer_id` (optional)
+## 6. Revoke (partner offboarding)
+
+When an end-customer should no longer use Element Pay under your integration, call revoke. The vault case moves to **`suspended`**. There is no partner **reinstate** endpoint in v1 — create a new customer if the person returns later.
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/revoke" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "account_closed"}' | jq '.data | {id, status, updated_at}'
+```
+
+| Behavior | Detail |
+|----------|--------|
+| Allowed from | `incomplete`, `pending_review`, `approved`, `active` |
+| Result | `status: suspended` |
+| Idempotent | Already `suspended` or `rejected` → **200** with current customer (no duplicate webhook) |
+| Optional body | `reason` (max 512 chars) — audit-only; **not** echoed in API JSON |
+| After revoke | `PATCH` → **409**; `POST /partner/orders/quote` with this `customer_id` → **422** (`Customer is not approved for orders`) |
+| Webhook | `customer.revoked` when status transitions to `suspended` |
+
+## 7. Quote with `customer_id` (optional)
 
 `payment_method` and `asset` remain required. Omit the full inline `customer` object when using `customer_id`. Accept is unchanged (`POST /partner/orders/{quote_id}/accept` with `{}`).
 
@@ -259,7 +280,8 @@ Successful response includes a `quote_id` like `ep_bank_…`. Use `asset: { toke
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Missing profile/docs on submit | `422` + `missing[]` | PATCH / upload, resubmit |
-| Quote with unapproved `customer_id` | `4xx` | Wait for `approved` |
+| Quote with unapproved / suspended `customer_id` | `422` | Wait for `approved` or use another customer |
+| Revoke after offboard | `409` on PATCH | Expected — customer is terminal for edits |
 | Unknown / other-tenant id | `404` | Use id from this API key |
 | Bad key | `401` | Fix `X-API-Key` |
 

@@ -26,6 +26,7 @@ Same signing headers and secret as orders. Backup poll: `GET /partner/customers/
 | `customer.submitted` | After a successful submit |
 | `customer.approved` | Element Pay approves the vault case |
 | `customer.rejected` | Review declines the case |
+| `customer.revoked` | Partner called revoke; case is now `suspended` |
 | `customer.updated` | Material status / product update |
 | `customer.deposit_account.updated` | Deposit-account product status changes (e.g. becomes `ready` so you may open accounts) |
 
