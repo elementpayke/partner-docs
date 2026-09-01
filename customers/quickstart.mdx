@@ -65,13 +65,21 @@ curl -sS "$BASE/partner/customers/requirements?type=business&country=US" \
   -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-Collect exactly the returned `required_fields` and `required_documents`.
+Collect exactly the returned `required_fields`, `required_documents`, and any `conditional_fields` for the customer's country.
+
+**Individual (always required before submit):** besides name, contact, DOB, and gender, the vault package includes **`profile.address`** (`line1`, `city`, `country`), **`profile.id_number`** (government ID number), and **`profile.id_type`** (e.g. `passport`, `national_id`, `drivers_license`). Upload **`identity`** and **`address`** documents matching requirements.
+
+**Nigeria (`country_of_residence: NG`):** also requires **`profile.additional_id_type`** (`bvn`) and **`profile.additional_id_number`** (11-digit BVN).
+
+Same rules apply on sandbox and live — call requirements on each environment; do not rely on copy-paste examples alone.
 
 ## 2. Create customer
 
 Idempotent on `partner_customer_ref` per tenant. Call requirements first for the exact `required_fields` / `required_documents` for `type=individual` or `type=business` (and `country` when relevant).
 
 ### Individual
+
+Illustrative shape — **`GET /partner/customers/requirements?type=individual`** is source of truth. Include **`id_number`** and **`id_type`** before submit (omitting either returns **422** with `profile.id_type` or `profile.id_number` in `missing[]`).
 
 ```bash
 curl -sS -X POST "$BASE/partner/customers" \
@@ -88,8 +96,10 @@ curl -sS -X POST "$BASE/partner/customers" \
       "country_of_residence": "GB",
       "phone": "+447700900123",
       "gender": "f",
+      "id_number": "A1234567",
+      "id_type": "passport",
       "address": {
-        "line_1": "1 Example Street",
+        "line1": "1 Example Street",
         "city": "London",
         "country": "GB",
         "postal_code": "E1 6AN"
@@ -279,7 +289,7 @@ Successful response includes a `quote_id` like `ep_bank_…`. Use `asset: { toke
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Missing profile/docs on submit | `422` + `missing[]` | PATCH / upload, resubmit |
+| Missing profile/docs on submit | `422` + `missing[]` (e.g. `profile.id_type`, `profile.id_number`, `document.identity`) | PATCH / upload all requirements fields, resubmit |
 | Quote with unapproved / suspended `customer_id` | `422` | Wait for `approved` or use another customer |
 | Revoke after offboard | `409` on PATCH | Expected — customer is terminal for edits |
 | Unknown / other-tenant id | `404` | Use id from this API key |
