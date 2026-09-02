@@ -190,11 +190,19 @@ Return the **full KYC package** for a customer type before create/submit.
 - **`type`** — `individual` (default) or `business`
 - **`country`** — optional ISO code; sharpens corridor-specific conditional fields (e.g. NG BVN, US EIN)
 
-Response `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.
+Response `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. For **business**, nested officer fields are under **`field_shapes.officers`** (not top-level `required_fields`). Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.
 
 <Note>
 This is **not** the same as [`GET /partner/order-requirements`](/partner/order-requirements) (quote field hints per corridor).
 </Note>
+""",
+    ("post", "/partner/customers"): """\
+Create an **incomplete** vault case (`status: incomplete`). Idempotent on `partner_customer_ref`.
+
+### Try it
+Pick **Individual** or **Business** in the request body picker — each tab shows the expected `profile` shape. While incomplete, **`GET /partner/customers/{customer_id}`** returns **`missing[]`** with indexed paths (e.g. `profile.officers[0].identity_document.number`).
+
+Full walkthrough: [Customer KYC quickstart](/customers/quickstart).
 """,
 }
 
@@ -422,6 +430,172 @@ QUOTE_TRY_IT_EXAMPLES: dict[str, Any] = {
             },
             "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
         },
+    },
+}
+
+CUSTOMER_CREATE_INDIVIDUAL_VALUE: dict[str, Any] = {
+    "partner_customer_ref": "partner-cust-001",
+    "type": "individual",
+    "profile": {
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "email": "jane@example.com",
+        "date_of_birth": "1990-01-15",
+        "country_of_residence": "GB",
+        "phone": "+447700900123",
+        "gender": "f",
+        "id_number": "A1234567",
+        "id_type": "passport",
+        "address": {
+            "line1": "1 Example Street",
+            "city": "London",
+            "country": "GB",
+            "postal_code": "E1 6AN",
+        },
+    },
+}
+
+CUSTOMER_CREATE_BUSINESS_VALUE: dict[str, Any] = {
+    "partner_customer_ref": "partner-biz-001",
+    "type": "business",
+    "profile": {
+        "legal_name": "Acme Payments Ltd",
+        "email": "ops@acme.example",
+        "phone": "+14155550100",
+        "website": "https://acme.example",
+        "business_type": "llc",
+        "country_of_incorporation": "US",
+        "tax_id": "123456789",
+        "registration_number": "REG-001",
+        "industry": "Payment services",
+        "description": "B2B payments for SMEs",
+        "registered_address": {
+            "line1": "100 Market Street",
+            "city": "San Francisco",
+            "state": "CA",
+            "country": "US",
+            "postal_code": "94105",
+        },
+        "incorporation_meta": {
+            "year": 2020,
+            "month": 6,
+            "country": "US",
+            "state": "CA",
+        },
+        "monthly_payments_count": 100,
+        "monthly_transaction_value": 250000,
+        "max_transfer_amount": 50000,
+        "annual_turnover": 2000000,
+        "customer_types": ["b2b"],
+        "funding_source": "equity",
+        "officers": [
+            {
+                "role": "director",
+                "first_name": "Ada",
+                "last_name": "Lovelace",
+                "date_of_birth": "1990-01-15",
+                "email": "ada@acme.example",
+                "nationality": "US",
+                "identity_document": {
+                    "type": "passport",
+                    "number": "A1234567",
+                    "issuing_country": "US",
+                },
+                "address": {
+                    "line1": "200 Officer Lane",
+                    "city": "San Francisco",
+                    "state": "CA",
+                    "country": "US",
+                    "postal_code": "94105",
+                },
+            }
+        ],
+    },
+}
+
+PARTNER_CUSTOMER_CREATE_TRY_IT_SCHEMA: dict[str, Any] = {
+    "title": "PartnerCustomerCreateRequestTryIt",
+    "description": (
+        "Create body for Mintlify Try it. Pick **Individual** or **Business** — "
+        "`type` and `profile` update together. Live API accepts the same shapes; "
+        "see GET /partner/customers/requirements for the full package."
+    ),
+    "oneOf": [
+        {
+            "title": "Individual",
+            "type": "object",
+            "required": ["partner_customer_ref", "type"],
+            "properties": {
+                "partner_customer_ref": {
+                    "type": "string",
+                    "description": "Your stable id (unique per tenant).",
+                    "example": "partner-cust-001",
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["individual"],
+                    "description": "Individual retail KYC package.",
+                    "example": "individual",
+                },
+                "profile": {
+                    "type": "object",
+                    "description": (
+                        "Individual profile. Requires id_number, id_type, address, "
+                        "and documents before submit."
+                    ),
+                    "example": CUSTOMER_CREATE_INDIVIDUAL_VALUE["profile"],
+                    "additionalProperties": True,
+                },
+            },
+            "example": CUSTOMER_CREATE_INDIVIDUAL_VALUE,
+        },
+        {
+            "title": "Business",
+            "type": "object",
+            "required": ["partner_customer_ref", "type"],
+            "properties": {
+                "partner_customer_ref": {
+                    "type": "string",
+                    "description": "Your stable id (unique per tenant).",
+                    "example": "partner-biz-001",
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["business"],
+                    "description": "Business KYB package.",
+                    "example": "business",
+                },
+                "profile": {
+                    "type": "object",
+                    "description": (
+                        "Business profile including complete profile.officers[] "
+                        "(person + identity_document + address per officer)."
+                    ),
+                    "example": CUSTOMER_CREATE_BUSINESS_VALUE["profile"],
+                    "additionalProperties": True,
+                },
+            },
+            "example": CUSTOMER_CREATE_BUSINESS_VALUE,
+        },
+    ],
+}
+
+CUSTOMER_CREATE_TRY_IT_EXAMPLES: dict[str, Any] = {
+    "individual": {
+        "summary": "Individual — retail KYC",
+        "description": (
+            "Includes id_number and id_type. Upload identity + address documents, "
+            "then submit when GET missing[] is empty."
+        ),
+        "value": CUSTOMER_CREATE_INDIVIDUAL_VALUE,
+    },
+    "business": {
+        "summary": "Business — KYB with officer",
+        "description": (
+            "Each profile.officers[] entry needs person fields, identity_document "
+            "(type, number, issuing_country), and address. US: include tax_id."
+        ),
+        "value": CUSTOMER_CREATE_BUSINESS_VALUE,
     },
 }
 
@@ -1160,6 +1334,59 @@ def simplify_quote_try_it(doc: dict[str, Any]) -> int:
     return 1
 
 
+def simplify_customer_create_try_it(doc: dict[str, Any]) -> int:
+    """Individual / Business tabs + enum type for POST /partner/customers Try it."""
+
+    paths = doc.setdefault("paths", {})
+    create_op = paths.get("/partner/customers", {}).get("post")
+    if not isinstance(create_op, dict):
+        return 0
+
+    components = doc.setdefault("components", {})
+    schemas = components.setdefault("schemas", {})
+    schemas["PartnerCustomerCreateRequestTryIt"] = deepcopy(
+        PARTNER_CUSTOMER_CREATE_TRY_IT_SCHEMA
+    )
+
+    request_body = create_op.setdefault("requestBody", {})
+    content = request_body.setdefault("content", {})
+    media = content.setdefault("application/json", {})
+    media["schema"] = {"$ref": "#/components/schemas/PartnerCustomerCreateRequestTryIt"}
+    media["example"] = deepcopy(CUSTOMER_CREATE_INDIVIDUAL_VALUE)
+    media["examples"] = deepcopy(CUSTOMER_CREATE_TRY_IT_EXAMPLES)
+
+    create_schema = schemas.get("PartnerCustomerCreateRequest")
+    if isinstance(create_schema, dict):
+        type_prop = create_schema.setdefault("properties", {}).get("type")
+        if isinstance(type_prop, dict):
+            type_prop["enum"] = ["individual", "business"]
+            type_prop["description"] = "Customer vault package type."
+
+    mint = create_op.setdefault("x-mint", {})
+    mint["playground"] = {"expand": False}
+
+    return 1
+
+
+def patch_customer_requirements_type_enum(doc: dict[str, Any]) -> int:
+    """Add individual | business enum on GET /partner/customers/requirements type query."""
+
+    paths = doc.get("paths") or {}
+    req_op = paths.get("/partner/customers/requirements", {}).get("get")
+    if not isinstance(req_op, dict):
+        return 0
+    params = req_op.get("parameters") or []
+    for param in params:
+        if not isinstance(param, dict) or param.get("name") != "type":
+            continue
+        schema = param.setdefault("schema", {})
+        if isinstance(schema, dict):
+            schema["enum"] = ["individual", "business"]
+            schema["default"] = "individual"
+            return 1
+    return 0
+
+
 def _first_example_value(media: dict[str, Any]) -> Any | None:
     if "example" in media:
         return media["example"]
@@ -1324,6 +1551,8 @@ def enrich(doc: dict[str, Any]) -> dict[str, int]:
         "validation_stubs_patched": patch_empty_validation_stubs(working),
         "guides_applied": apply_x_mint_guides(working),
         "quote_try_it_simplified": simplify_quote_try_it(working),
+        "customer_create_try_it": simplify_customer_create_try_it(working),
+        "requirements_type_enum": patch_customer_requirements_type_enum(working),
         "partner_responses_patched": patch_partner_integrator_responses(working),
         "_doc": working,  # type: ignore[typeddict-item]
     }
@@ -1354,6 +1583,8 @@ def main() -> None:
             f"~{result['validation_stubs_patched']} validation stubs, "
             f"+{result['guides_applied']} x-mint guides, "
             f"quote_try_it={result['quote_try_it_simplified']}, "
+            f"customer_create_try_it={result['customer_create_try_it']}, "
+            f"requirements_type_enum={result['requirements_type_enum']}, "
             f"partner_responses={result['partner_responses_patched']}"
         )
 

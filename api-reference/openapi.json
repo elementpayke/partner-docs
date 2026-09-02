@@ -2609,7 +2609,11 @@
               "type": "string",
               "description": "individual or business",
               "default": "individual",
-              "title": "Type"
+              "title": "Type",
+              "enum": [
+                "individual",
+                "business"
+              ]
             },
             "description": "individual or business",
             "example": "individual"
@@ -2958,7 +2962,7 @@
           }
         },
         "x-mint": {
-          "content": "Return the **full KYC package** for a customer type before create/submit.\n\n### Query\n- **`type`** \u2014 `individual` (default) or `business`\n- **`country`** \u2014 optional ISO code; sharpens corridor-specific conditional fields (e.g. NG BVN, US EIN)\n\nResponse `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.\n\n<Note>\nThis is **not** the same as [`GET /partner/order-requirements`](/partner/order-requirements) (quote field hints per corridor).\n</Note>"
+          "content": "Return the **full KYC package** for a customer type before create/submit.\n\n### Query\n- **`type`** \u2014 `individual` (default) or `business`\n- **`country`** \u2014 optional ISO code; sharpens corridor-specific conditional fields (e.g. NG BVN, US EIN)\n\nResponse `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. For **business**, nested officer fields are under **`field_shapes.officers`** (not top-level `required_fields`). Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.\n\n<Note>\nThis is **not** the same as [`GET /partner/order-requirements`](/partner/order-requirements) (quote field hints per corridor).\n</Note>"
         }
       }
     },
@@ -2968,7 +2972,7 @@
           "partner-customers"
         ],
         "summary": "Create a customer vault case",
-        "description": "Create an incomplete customer case (idempotent on partner_customer_ref).",
+        "description": "Create an **incomplete** vault case (`status: incomplete`). Idempotent on `partner_customer_ref`.",
         "operationId": "partner_customer_create_partner_customers_post",
         "security": [
           {
@@ -2980,13 +2984,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PartnerCustomerCreateRequest"
+                "$ref": "#/components/schemas/PartnerCustomerCreateRequestTryIt"
               },
               "examples": {
-                "default": {
-                  "summary": "Example",
+                "individual": {
+                  "summary": "Individual \u2014 retail KYC",
+                  "description": "Includes id_number and id_type. Upload identity + address documents, then submit when GET missing[] is empty.",
                   "value": {
-                    "partner_customer_ref": "cust-ke-001",
+                    "partner_customer_ref": "partner-cust-001",
                     "type": "individual",
                     "profile": {
                       "first_name": "Jane",
@@ -2996,6 +3001,8 @@
                       "country_of_residence": "GB",
                       "phone": "+447700900123",
                       "gender": "f",
+                      "id_number": "A1234567",
+                      "id_type": "passport",
                       "address": {
                         "line1": "1 Example Street",
                         "city": "London",
@@ -3004,10 +3011,73 @@
                       }
                     }
                   }
+                },
+                "business": {
+                  "summary": "Business \u2014 KYB with officer",
+                  "description": "Each profile.officers[] entry needs person fields, identity_document (type, number, issuing_country), and address. US: include tax_id.",
+                  "value": {
+                    "partner_customer_ref": "partner-biz-001",
+                    "type": "business",
+                    "profile": {
+                      "legal_name": "Acme Payments Ltd",
+                      "email": "ops@acme.example",
+                      "phone": "+14155550100",
+                      "website": "https://acme.example",
+                      "business_type": "llc",
+                      "country_of_incorporation": "US",
+                      "tax_id": "123456789",
+                      "registration_number": "REG-001",
+                      "industry": "Payment services",
+                      "description": "B2B payments for SMEs",
+                      "registered_address": {
+                        "line1": "100 Market Street",
+                        "city": "San Francisco",
+                        "state": "CA",
+                        "country": "US",
+                        "postal_code": "94105"
+                      },
+                      "incorporation_meta": {
+                        "year": 2020,
+                        "month": 6,
+                        "country": "US",
+                        "state": "CA"
+                      },
+                      "monthly_payments_count": 100,
+                      "monthly_transaction_value": 250000,
+                      "max_transfer_amount": 50000,
+                      "annual_turnover": 2000000,
+                      "customer_types": [
+                        "b2b"
+                      ],
+                      "funding_source": "equity",
+                      "officers": [
+                        {
+                          "role": "director",
+                          "first_name": "Ada",
+                          "last_name": "Lovelace",
+                          "date_of_birth": "1990-01-15",
+                          "email": "ada@acme.example",
+                          "nationality": "US",
+                          "identity_document": {
+                            "type": "passport",
+                            "number": "A1234567",
+                            "issuing_country": "US"
+                          },
+                          "address": {
+                            "line1": "200 Officer Lane",
+                            "city": "San Francisco",
+                            "state": "CA",
+                            "country": "US",
+                            "postal_code": "94105"
+                          }
+                        }
+                      ]
+                    }
+                  }
                 }
               },
               "example": {
-                "partner_customer_ref": "cust-ke-001",
+                "partner_customer_ref": "partner-cust-001",
                 "type": "individual",
                 "profile": {
                   "first_name": "Jane",
@@ -3017,6 +3087,8 @@
                   "country_of_residence": "GB",
                   "phone": "+447700900123",
                   "gender": "f",
+                  "id_number": "A1234567",
+                  "id_type": "passport",
                   "address": {
                     "line1": "1 Example Street",
                     "city": "London",
@@ -3152,6 +3224,12 @@
                 }
               }
             }
+          }
+        },
+        "x-mint": {
+          "content": "Create an **incomplete** vault case (`status: incomplete`). Idempotent on `partner_customer_ref`.\n\n### Try it\nPick **Individual** or **Business** in the request body picker \u2014 each tab shows the expected `profile` shape. While incomplete, **`GET /partner/customers/{customer_id}`** returns **`missing[]`** with indexed paths (e.g. `profile.officers[0].identity_document.number`).\n\nFull walkthrough: [Customer KYC quickstart](/customers/quickstart).",
+          "playground": {
+            "expand": false
           }
         }
       },
@@ -7110,11 +7188,15 @@
           "type": {
             "type": "string",
             "title": "Type",
-            "description": "individual or business",
+            "description": "Customer vault package type.",
             "examples": [
               "individual"
             ],
-            "example": "individual"
+            "example": "individual",
+            "enum": [
+              "individual",
+              "business"
+            ]
           },
           "profile": {
             "anyOf": [
@@ -7667,6 +7749,220 @@
           }
         },
         "title": "PartnerCustomerDocumentUploadSuccessResponse"
+      },
+      "PartnerCustomerCreateRequestTryIt": {
+        "title": "PartnerCustomerCreateRequestTryIt",
+        "description": "Create body for Mintlify Try it. Pick **Individual** or **Business** \u2014 `type` and `profile` update together. Live API accepts the same shapes; see GET /partner/customers/requirements for the full package.",
+        "oneOf": [
+          {
+            "title": "Individual",
+            "type": "object",
+            "required": [
+              "partner_customer_ref",
+              "type"
+            ],
+            "properties": {
+              "partner_customer_ref": {
+                "type": "string",
+                "description": "Your stable id (unique per tenant).",
+                "example": "partner-cust-001"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "individual"
+                ],
+                "description": "Individual retail KYC package.",
+                "example": "individual"
+              },
+              "profile": {
+                "type": "object",
+                "description": "Individual profile. Requires id_number, id_type, address, and documents before submit.",
+                "example": {
+                  "first_name": "Jane",
+                  "last_name": "Doe",
+                  "email": "jane@example.com",
+                  "date_of_birth": "1990-01-15",
+                  "country_of_residence": "GB",
+                  "phone": "+447700900123",
+                  "gender": "f",
+                  "id_number": "A1234567",
+                  "id_type": "passport",
+                  "address": {
+                    "line1": "1 Example Street",
+                    "city": "London",
+                    "country": "GB",
+                    "postal_code": "E1 6AN"
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "example": {
+              "partner_customer_ref": "partner-cust-001",
+              "type": "individual",
+              "profile": {
+                "first_name": "Jane",
+                "last_name": "Doe",
+                "email": "jane@example.com",
+                "date_of_birth": "1990-01-15",
+                "country_of_residence": "GB",
+                "phone": "+447700900123",
+                "gender": "f",
+                "id_number": "A1234567",
+                "id_type": "passport",
+                "address": {
+                  "line1": "1 Example Street",
+                  "city": "London",
+                  "country": "GB",
+                  "postal_code": "E1 6AN"
+                }
+              }
+            }
+          },
+          {
+            "title": "Business",
+            "type": "object",
+            "required": [
+              "partner_customer_ref",
+              "type"
+            ],
+            "properties": {
+              "partner_customer_ref": {
+                "type": "string",
+                "description": "Your stable id (unique per tenant).",
+                "example": "partner-biz-001"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "business"
+                ],
+                "description": "Business KYB package.",
+                "example": "business"
+              },
+              "profile": {
+                "type": "object",
+                "description": "Business profile including complete profile.officers[] (person + identity_document + address per officer).",
+                "example": {
+                  "legal_name": "Acme Payments Ltd",
+                  "email": "ops@acme.example",
+                  "phone": "+14155550100",
+                  "website": "https://acme.example",
+                  "business_type": "llc",
+                  "country_of_incorporation": "US",
+                  "tax_id": "123456789",
+                  "registration_number": "REG-001",
+                  "industry": "Payment services",
+                  "description": "B2B payments for SMEs",
+                  "registered_address": {
+                    "line1": "100 Market Street",
+                    "city": "San Francisco",
+                    "state": "CA",
+                    "country": "US",
+                    "postal_code": "94105"
+                  },
+                  "incorporation_meta": {
+                    "year": 2020,
+                    "month": 6,
+                    "country": "US",
+                    "state": "CA"
+                  },
+                  "monthly_payments_count": 100,
+                  "monthly_transaction_value": 250000,
+                  "max_transfer_amount": 50000,
+                  "annual_turnover": 2000000,
+                  "customer_types": [
+                    "b2b"
+                  ],
+                  "funding_source": "equity",
+                  "officers": [
+                    {
+                      "role": "director",
+                      "first_name": "Ada",
+                      "last_name": "Lovelace",
+                      "date_of_birth": "1990-01-15",
+                      "email": "ada@acme.example",
+                      "nationality": "US",
+                      "identity_document": {
+                        "type": "passport",
+                        "number": "A1234567",
+                        "issuing_country": "US"
+                      },
+                      "address": {
+                        "line1": "200 Officer Lane",
+                        "city": "San Francisco",
+                        "state": "CA",
+                        "country": "US",
+                        "postal_code": "94105"
+                      }
+                    }
+                  ]
+                },
+                "additionalProperties": true
+              }
+            },
+            "example": {
+              "partner_customer_ref": "partner-biz-001",
+              "type": "business",
+              "profile": {
+                "legal_name": "Acme Payments Ltd",
+                "email": "ops@acme.example",
+                "phone": "+14155550100",
+                "website": "https://acme.example",
+                "business_type": "llc",
+                "country_of_incorporation": "US",
+                "tax_id": "123456789",
+                "registration_number": "REG-001",
+                "industry": "Payment services",
+                "description": "B2B payments for SMEs",
+                "registered_address": {
+                  "line1": "100 Market Street",
+                  "city": "San Francisco",
+                  "state": "CA",
+                  "country": "US",
+                  "postal_code": "94105"
+                },
+                "incorporation_meta": {
+                  "year": 2020,
+                  "month": 6,
+                  "country": "US",
+                  "state": "CA"
+                },
+                "monthly_payments_count": 100,
+                "monthly_transaction_value": 250000,
+                "max_transfer_amount": 50000,
+                "annual_turnover": 2000000,
+                "customer_types": [
+                  "b2b"
+                ],
+                "funding_source": "equity",
+                "officers": [
+                  {
+                    "role": "director",
+                    "first_name": "Ada",
+                    "last_name": "Lovelace",
+                    "date_of_birth": "1990-01-15",
+                    "email": "ada@acme.example",
+                    "nationality": "US",
+                    "identity_document": {
+                      "type": "passport",
+                      "number": "A1234567",
+                      "issuing_country": "US"
+                    },
+                    "address": {
+                      "line1": "200 Officer Lane",
+                      "city": "San Francisco",
+                      "state": "CA",
+                      "country": "US",
+                      "postal_code": "94105"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
       }
     },
     "securitySchemes": {
