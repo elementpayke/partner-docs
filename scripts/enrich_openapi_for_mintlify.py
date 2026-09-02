@@ -183,6 +183,19 @@ Send the same customer and payment method payload shape used at quote time (see 
 
 OnRamp: final payment instructions are returned after accept when applicable.
 """,
+    ("get", "/partner/customers/requirements"): """\
+Return the **full KYC package** for a customer type before create/submit.
+
+### Query
+- **`type`** — `individual` (default) or `business`
+- **`country`** — optional ISO code; sharpens corridor-specific conditional fields (e.g. NG BVN, US EIN)
+
+Response `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.
+
+<Note>
+This is **not** the same as [`GET /partner/order-requirements`](/partner/order-requirements) (quote field hints per corridor).
+</Note>
+""",
 }
 
 QUOTE_TRY_IT_DEFAULT = {
@@ -412,6 +425,715 @@ QUOTE_TRY_IT_EXAMPLES: dict[str, Any] = {
     },
 }
 
+PARTNER_ERROR_ENVELOPE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["status", "message"],
+    "properties": {
+        "status": {"type": "string", "enum": ["error"]},
+        "message": {"type": "string"},
+        "data": {"type": ["object", "null"]},
+    },
+}
+
+PARTNER_SUCCESS_ENVELOPE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["status", "message", "data"],
+    "properties": {
+        "status": {"type": "string", "enum": ["success"]},
+        "message": {"type": "string"},
+        "data": {"type": "object"},
+    },
+}
+
+PARTNER_UNAUTHORIZED_RESPONSE: dict[str, Any] = {
+    "description": "Missing or invalid API key",
+    "content": {
+        "application/json": {
+            "schema": deepcopy(PARTNER_ERROR_ENVELOPE_SCHEMA),
+            "example": {"status": "error", "message": "Unauthorized", "data": None},
+        }
+    },
+}
+
+CUSTOMER_VAULT_APPROVED_ROW: dict[str, Any] = {
+    "id": "pcus_a1b2c3d4e5f6",
+    "partner_customer_ref": "partner-cust-001",
+    "type": "individual",
+    "status": "approved",
+    "profile": {
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "email": "jane@example.com",
+        "date_of_birth": "1990-01-15",
+        "country_of_residence": "GB",
+        "phone": "+447700900123",
+        "gender": "f",
+        "id_type": "passport",
+        "id_number": "A1234567",
+        "address": {
+            "line1": "1 Example Street",
+            "city": "London",
+            "country": "GB",
+            "postal_code": "E1 6AN",
+        },
+    },
+    "documents": [
+        {
+            "id": "pdoc_a1b2c3d4e5f6",
+            "category": "identity",
+            "content_type": "application/pdf",
+            "created_at": "2026-08-01T12:00:00+00:00",
+        },
+        {
+            "id": "pdoc_b2c3d4e5f6a7",
+            "category": "address",
+            "content_type": "application/pdf",
+            "created_at": "2026-08-01T12:01:00+00:00",
+        },
+    ],
+    "products": {"deposit_account": {"status": "ready"}},
+    "created_at": "2026-08-01T11:55:00+00:00",
+    "updated_at": "2026-08-01T12:05:00+00:00",
+    "submitted_at": "2026-08-01T12:02:00+00:00",
+}
+
+CUSTOMER_VAULT_INCOMPLETE_ROW: dict[str, Any] = {
+    "id": "pcus_a1b2c3d4e5f6",
+    "partner_customer_ref": "cust-ke-001",
+    "type": "individual",
+    "status": "incomplete",
+    "profile": {
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "email": "jane@example.com",
+        "date_of_birth": "1990-01-15",
+        "country_of_residence": "GB",
+        "phone": "+447700900123",
+        "gender": "f",
+        "address": {
+            "line1": "1 Example Street",
+            "city": "London",
+            "country": "GB",
+            "postal_code": "E1 6AN",
+        },
+    },
+    "documents": [],
+    "products": {"deposit_account": {"status": "none"}},
+    "missing": [
+        "profile.id_number",
+        "profile.id_type",
+        "document.identity",
+        "document.address",
+    ],
+    "created_at": "2026-08-01T11:55:00+00:00",
+    "updated_at": "2026-08-01T11:55:00+00:00",
+    "submitted_at": None,
+}
+
+CUSTOMER_VAULT_PENDING_ROW: dict[str, Any] = {
+    **deepcopy(CUSTOMER_VAULT_APPROVED_ROW),
+    "status": "pending_review",
+    "products": {"deposit_account": {"status": "none"}},
+    "updated_at": "2026-08-01T12:02:00+00:00",
+    "submitted_at": "2026-08-01T12:02:00+00:00",
+}
+CUSTOMER_VAULT_PENDING_ROW.pop("missing", None)
+
+CUSTOMER_REQUIREMENTS_INDIVIDUAL: dict[str, Any] = {
+    "type": "individual",
+    "required_fields": [
+        "first_name",
+        "last_name",
+        "email",
+        "date_of_birth",
+        "country_of_residence",
+        "gender",
+        "phone",
+        "address",
+        "id_number",
+        "id_type",
+    ],
+    "required_documents": [
+        {
+            "key": "identity",
+            "description": "Government photo ID (passport, license, national ID)",
+        },
+        {
+            "key": "address",
+            "description": "Proof of address (last 3 months)",
+        },
+    ],
+    "optional_fields": [
+        "middle_name",
+        "liveness_check_id",
+        "proof_of_address_type",
+        "additional_id_number",
+        "additional_id_type",
+    ],
+    "conditional_fields": [
+        {
+            "field": "additional_id_type",
+            "when": "country_of_residence == NG",
+            "required": True,
+            "description": "Nigeria BVN type (use bvn)",
+            "example": "bvn",
+        },
+        {
+            "field": "additional_id_number",
+            "when": "country_of_residence == NG",
+            "required": True,
+            "description": "Nigeria BVN number (11 digits)",
+            "example": "12345678901",
+        },
+    ],
+    "products": {
+        "deposit_account": {
+            "notes": (
+                "deposit_account.status ready means KYC approved and partner may "
+                "open deposit accounts — no automatic account open."
+            ),
+        },
+    },
+    "notes": (
+        "Full individual package is required before submit. profile.address must "
+        "include line1, city, and country. profile.id_number and profile.id_type "
+        "are required. Nigeria residents must also include profile.additional_id_type "
+        "(bvn) and profile.additional_id_number."
+    ),
+}
+
+CUSTOMER_REQUIREMENTS_BUSINESS_US: dict[str, Any] = {
+    "type": "business",
+    "required_fields": [
+        "legal_name",
+        "email",
+        "phone",
+        "website",
+        "business_type",
+        "country_of_incorporation",
+        "registered_address",
+        "industry",
+        "registration_number",
+        "description",
+        "incorporation_meta",
+        "monthly_payments_count",
+        "monthly_transaction_value",
+        "max_transfer_amount",
+        "annual_turnover",
+        "customer_types",
+        "funding_source",
+        "officers",
+        "tax_id",
+    ],
+    "required_documents": [
+        {
+            "key": "certificate_of_incorporation",
+            "description": "Business registration document",
+        },
+        {
+            "key": "memorandum_of_association",
+            "description": "Memorandum / articles document",
+        },
+        {
+            "key": "proof_of_address",
+            "description": "Business proof of address (last 3 months)",
+        },
+        {"key": "identity", "description": "Officer government photo ID"},
+        {
+            "key": "address",
+            "description": "Officer proof of address (last 3 months)",
+        },
+    ],
+    "optional_fields": [
+        "liveness_check_id",
+        "sales_channel",
+        "operating_address",
+    ],
+    "conditional_fields": [
+        {
+            "field": "tax_id",
+            "when": "country_of_incorporation == US",
+            "required": True,
+            "description": "US EIN (9 digits)",
+            "example": "123456789",
+        },
+    ],
+    "products": {
+        "deposit_account": {
+            "notes": (
+                "After status approved and deposit_account becomes ready, partner "
+                "may open deposit accounts via account APIs."
+            ),
+        },
+    },
+    "notes": (
+        "Full business package is required before submit. US-incorporated "
+        "businesses must include profile.tax_id (EIN)."
+    ),
+}
+
+SEND_PREVIEW_DATA: dict[str, Any] = {
+    "preview_token": "nvsend.eyJhbGciOiJIUzI1NiJ9.preview",
+    "currency": "USDC",
+    "network": "Base",
+    "amount": "5.00",
+    "fee": "0.05",
+    "receive_amount": "4.95",
+    "fee_status": "estimated",
+    "chain_disclaimer": "Send only USDC on Base to the destination address.",
+    "expires_at": "2026-07-30T12:10:00+00:00",
+}
+
+SEND_CONFIRMED_DATA: dict[str, Any] = {
+    "id": 55,
+    "entity_id": 12,
+    "account_id": 21,
+    "status": "submitted",
+    "currency": "USDC",
+    "network": "Base",
+    "to_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+    "amount": "5.00",
+    "fee": "0.05",
+    "receive_amount": "4.95",
+    "fee_status": "final",
+    "chain_disclaimer": "Send only USDC on Base to the destination address.",
+    "created_at": "2026-08-01T12:05:00+00:00",
+}
+
+
+def _json_success(message: str, data: Any) -> dict[str, Any]:
+    return {"status": "success", "message": message, "data": data}
+
+
+def _ensure_unauthorized(responses: dict[str, Any]) -> None:
+    if "401" not in responses:
+        responses["401"] = deepcopy(PARTNER_UNAUTHORIZED_RESPONSE)
+
+
+def _patch_success_response(
+    responses: dict[str, Any],
+    code: str,
+    *,
+    message: str,
+    data: Any,
+    schema_ref: str,
+    description: str | None = None,
+    examples: dict[str, Any] | None = None,
+) -> None:
+    response = responses.setdefault(code, {})
+    if description:
+        response["description"] = description
+    content = response.setdefault("content", {})
+    media = content.setdefault("application/json", {})
+    media["schema"] = {"$ref": schema_ref}
+    media["example"] = _json_success(message, data)
+    if examples:
+        media["examples"] = examples
+
+
+def _patch_error_response(
+    responses: dict[str, Any],
+    code: str,
+    *,
+    description: str,
+    example: dict[str, Any],
+) -> None:
+    responses[code] = {
+        "description": description,
+        "content": {
+            "application/json": {
+                "schema": deepcopy(PARTNER_ERROR_ENVELOPE_SCHEMA),
+                "example": example,
+            }
+        },
+    }
+
+
+def _register_partner_response_schemas(schemas: dict[str, Any]) -> None:
+    schemas["PartnerErrorEnvelope"] = deepcopy(PARTNER_ERROR_ENVELOPE_SCHEMA)
+    schemas["PartnerSuccessEnvelope"] = deepcopy(PARTNER_SUCCESS_ENVELOPE_SCHEMA)
+    schemas["PartnerCustomerRequirementsData"] = {
+        "type": "object",
+        "required": [
+            "type",
+            "required_fields",
+            "required_documents",
+            "optional_fields",
+            "conditional_fields",
+            "products",
+            "notes",
+        ],
+        "properties": {
+            "type": {"type": "string", "enum": ["individual", "business"]},
+            "required_fields": {"type": "array", "items": {"type": "string"}},
+            "required_documents": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["key", "description"],
+                    "properties": {
+                        "key": {"type": "string"},
+                        "description": {"type": "string"},
+                    },
+                },
+            },
+            "optional_fields": {"type": "array", "items": {"type": "string"}},
+            "conditional_fields": {
+                "type": "array",
+                "items": {"type": "object", "additionalProperties": True},
+            },
+            "products": {"type": "object"},
+            "notes": {"type": "string"},
+        },
+        "title": "PartnerCustomerRequirementsData",
+    }
+    schemas["PartnerCustomerRequirementsSuccessResponse"] = {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+            "status": {"type": "string", "enum": ["success"]},
+            "message": {"type": "string", "example": "Customer requirements"},
+            "data": {"$ref": "#/components/schemas/PartnerCustomerRequirementsData"},
+        },
+        "title": "PartnerCustomerRequirementsSuccessResponse",
+    }
+    if "PartnerCustomerVaultRow" in schemas:
+        schemas["PartnerCustomerVaultSuccessResponse"] = {
+            "type": "object",
+            "required": ["status", "message", "data"],
+            "properties": {
+                "status": {"type": "string", "enum": ["success"]},
+                "message": {"type": "string"},
+                "data": {"$ref": "#/components/schemas/PartnerCustomerVaultRow"},
+            },
+            "title": "PartnerCustomerVaultSuccessResponse",
+        }
+    schemas["PartnerCustomerDocumentUploadData"] = {
+        "type": "object",
+        "required": ["document", "customer"],
+        "properties": {
+            "document": {"$ref": "#/components/schemas/PartnerCustomerDocumentMeta"},
+            "customer": {"$ref": "#/components/schemas/PartnerCustomerVaultRow"},
+        },
+        "title": "PartnerCustomerDocumentUploadData",
+    }
+    schemas["PartnerCustomerDocumentUploadSuccessResponse"] = {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+            "status": {"type": "string", "enum": ["success"]},
+            "message": {"type": "string", "example": "Document uploaded"},
+            "data": {"$ref": "#/components/schemas/PartnerCustomerDocumentUploadData"},
+        },
+        "title": "PartnerCustomerDocumentUploadSuccessResponse",
+    }
+
+
+def patch_partner_integrator_responses(doc: dict[str, Any]) -> int:
+    """Fill success/error response examples missing from FastAPI export."""
+
+    paths = doc.setdefault("paths", {})
+    components = doc.setdefault("components", {})
+    schemas = components.setdefault("schemas", {})
+    _register_partner_response_schemas(schemas)
+
+    vault_schema = "#/components/schemas/PartnerCustomerVaultSuccessResponse"
+    req_schema = "#/components/schemas/PartnerCustomerRequirementsSuccessResponse"
+    doc_upload_schema = (
+        "#/components/schemas/PartnerCustomerDocumentUploadSuccessResponse"
+    )
+    envelope_schema = "#/components/schemas/PartnerSuccessEnvelope"
+
+    patched = 0
+
+    req_op = paths.get("/partner/customers/requirements", {}).get("get")
+    if isinstance(req_op, dict):
+        responses = req_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Customer requirements",
+            data=deepcopy(CUSTOMER_REQUIREMENTS_INDIVIDUAL),
+            schema_ref=req_schema,
+            description=(
+                "Required profile fields and document categories for the "
+                "requested customer type."
+            ),
+            examples={
+                "individual": {
+                    "summary": "Individual package",
+                    "value": _json_success(
+                        "Customer requirements",
+                        deepcopy(CUSTOMER_REQUIREMENTS_INDIVIDUAL),
+                    ),
+                },
+                "business_us": {
+                    "summary": "Business package (US)",
+                    "description": "Pass `type=business&country=US` to hard-require tax_id.",
+                    "value": _json_success(
+                        "Customer requirements",
+                        deepcopy(CUSTOMER_REQUIREMENTS_BUSINESS_US),
+                    ),
+                },
+            },
+        )
+        _patch_error_response(
+            responses,
+            "400",
+            description="Invalid customer type query parameter",
+            example={
+                "status": "error",
+                "message": "Invalid customer type",
+                "data": {
+                    "field": "type",
+                    "allowed": ["business", "individual"],
+                },
+            },
+        )
+        _ensure_unauthorized(responses)
+        if "422" in responses:
+            responses["422"]["description"] = "Query validation error"
+            media = responses["422"].get("content", {}).get("application/json", {})
+            if isinstance(media, dict):
+                media["example"] = {
+                    "status": "error",
+                    "message": "Validation error",
+                    "data": {"field": "type"},
+                }
+        patched += 1
+
+    create_op = paths.get("/partner/customers", {}).get("post")
+    if isinstance(create_op, dict):
+        responses = create_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "201",
+            message="Customer created",
+            data=deepcopy(CUSTOMER_VAULT_INCOMPLETE_ROW),
+            schema_ref=vault_schema,
+            description="New incomplete vault case (or existing row on idempotent ref hit).",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    get_op = paths.get("/partner/customers/{customer_id}", {}).get("get")
+    if isinstance(get_op, dict):
+        responses = get_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Customer",
+            data=deepcopy(CUSTOMER_VAULT_APPROVED_ROW),
+            schema_ref=vault_schema,
+            description="One tenant-owned customer including document metadata and missing[].",
+        )
+        _patch_error_response(
+            responses,
+            "404",
+            description="Customer not found for this API key",
+            example={
+                "status": "error",
+                "message": "Customer not found",
+                "data": None,
+            },
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    patch_op = paths.get("/partner/customers/{customer_id}", {}).get("patch")
+    if isinstance(patch_op, dict):
+        responses = patch_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Customer updated",
+            data=deepcopy(CUSTOMER_VAULT_INCOMPLETE_ROW),
+            schema_ref=vault_schema,
+            description="Updated draft customer (may include missing[] while incomplete).",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    upload_op = paths.get("/partner/customers/{customer_id}/documents", {}).get("post")
+    if isinstance(upload_op, dict):
+        responses = upload_op.setdefault("responses", {})
+        uploaded_customer = deepcopy(CUSTOMER_VAULT_INCOMPLETE_ROW)
+        uploaded_customer["documents"] = [
+            {
+                "id": "pdoc_a1b2c3d4e5f6",
+                "category": "identity",
+                "content_type": "application/pdf",
+                "created_at": "2026-08-01T12:00:00+00:00",
+            }
+        ]
+        uploaded_customer["missing"] = [
+            "profile.id_number",
+            "profile.id_type",
+            "document.address",
+        ]
+        _patch_success_response(
+            responses,
+            "201",
+            message="Document uploaded",
+            data={
+                "document": uploaded_customer["documents"][0],
+                "customer": uploaded_customer,
+            },
+            schema_ref=doc_upload_schema,
+            description="Document stored; returns metadata and updated customer row.",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    submit_op = paths.get("/partner/customers/{customer_id}/submit", {}).get("post")
+    if isinstance(submit_op, dict):
+        responses = submit_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Customer submitted",
+            data=deepcopy(CUSTOMER_VAULT_PENDING_ROW),
+            schema_ref=vault_schema,
+            description="Package submitted for review (or current row if already submitted).",
+        )
+        responses["422"] = {
+            "description": "Package incomplete — missing profile fields or documents",
+            "content": {
+                "application/json": {
+                    "schema": deepcopy(PARTNER_ERROR_ENVELOPE_SCHEMA),
+                    "example": {
+                        "status": "error",
+                        "message": "Customer package is incomplete",
+                        "data": {
+                            "code": "package_incomplete",
+                            "missing": [
+                                "profile.id_number",
+                                "profile.id_type",
+                                "document.identity",
+                                "document.address",
+                            ],
+                        },
+                    },
+                }
+            },
+        }
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    retry_op = paths.get(
+        "/partner/customers/{customer_id}/deposit-account/retry", {}
+    ).get("post")
+    if isinstance(retry_op, dict):
+        responses = retry_op.setdefault("responses", {})
+        retry_customer = deepcopy(CUSTOMER_VAULT_APPROVED_ROW)
+        retry_customer["products"] = {"deposit_account": {"status": "provisioning"}}
+        _patch_success_response(
+            responses,
+            "200",
+            message="Deposit account provisioning retried",
+            data=retry_customer,
+            schema_ref=vault_schema,
+            description="Failed deposit-account attempt re-queued (unchanged KYC/KYB only).",
+        )
+        _patch_error_response(
+            responses,
+            "409",
+            description="Customer not approved or deposit account not in failed state",
+            example={
+                "status": "error",
+                "message": "Deposit account provisioning is not in a failed state",
+                "data": {"deposit_account_status": "ready"},
+            },
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    send_preview_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/sends/preview", {}
+    ).get("post")
+    if isinstance(send_preview_op, dict):
+        responses = send_preview_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "201",
+            message="Send preview",
+            data=deepcopy(SEND_PREVIEW_DATA),
+            schema_ref=envelope_schema,
+            description="Estimated fees and preview token for confirm step.",
+        )
+        _patch_error_response(
+            responses,
+            "409",
+            description="Deposit account is not ready",
+            example={
+                "status": "error",
+                "message": "Deposit account is not ready",
+                "data": {"deposit_account_status": "pending"},
+            },
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    send_confirm_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/sends", {}
+    ).get("post")
+    if isinstance(send_confirm_op, dict):
+        responses = send_confirm_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "201",
+            message="Send submitted",
+            data=deepcopy(SEND_CONFIRMED_DATA),
+            schema_ref=envelope_schema,
+            description="Stablecoin send accepted for processing.",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    send_get_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}", {}
+    ).get("get")
+    if isinstance(send_get_op, dict):
+        responses = send_get_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Send",
+            data=deepcopy(SEND_CONFIRMED_DATA),
+            schema_ref=envelope_schema,
+            description="Stablecoin send status for polling.",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    for path_key, method in (
+        ("/partner/orders/quote", "post"),
+        ("/partner/orders/{quote_id}/accept", "post"),
+        ("/partner/orders/{order_id}", "get"),
+    ):
+        op = paths.get(path_key, {}).get(method)
+        if not isinstance(op, dict):
+            continue
+        responses = op.get("responses") or {}
+        for code in ("200", "201"):
+            response = responses.get(code)
+            if not isinstance(response, dict):
+                continue
+            media = (response.get("content") or {}).get("application/json")
+            if not isinstance(media, dict):
+                continue
+            if media.get("example") and (
+                not media.get("schema") or media.get("schema") == {}
+            ):
+                media["schema"] = {"$ref": envelope_schema}
+                patched += 1
+
+    list_op = paths.get("/partner/customers", {}).get("get")
+    if isinstance(list_op, dict):
+        _ensure_unauthorized(list_op.setdefault("responses", {}))
+
+    return patched
+
 
 def simplify_quote_try_it(doc: dict[str, Any]) -> int:
     """Replace bloated auto-generated quote schema with a Try-it-friendly surface."""
@@ -602,6 +1324,7 @@ def enrich(doc: dict[str, Any]) -> dict[str, int]:
         "validation_stubs_patched": patch_empty_validation_stubs(working),
         "guides_applied": apply_x_mint_guides(working),
         "quote_try_it_simplified": simplify_quote_try_it(working),
+        "partner_responses_patched": patch_partner_integrator_responses(working),
         "_doc": working,  # type: ignore[typeddict-item]
     }
 
@@ -630,7 +1353,8 @@ def main() -> None:
             f"~{result['examples_collapsed']} collapsed, "
             f"~{result['validation_stubs_patched']} validation stubs, "
             f"+{result['guides_applied']} x-mint guides, "
-            f"quote_try_it={result['quote_try_it_simplified']}"
+            f"quote_try_it={result['quote_try_it_simplified']}, "
+            f"partner_responses={result['partner_responses_patched']}"
         )
 
 
