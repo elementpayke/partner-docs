@@ -7,6 +7,7 @@ Run after sync-openapi-responses (or sync_partner_openapi_to_docs):
 - Injects singular ``example`` on each response (Mintlify Try-it panels use this).
 - Adds ``x-mint.content`` blocks with formatted endpoint guides.
 - Drops empty FastAPI-only 422 stubs when a documented partner error exists.
+- Replaces ``POST /partner/orders/quote`` request schema with a Try-it-friendly surface.
 """
 
 from __future__ import annotations
@@ -140,6 +141,11 @@ Create a binding quote for a fiat ↔ crypto order.
   </Step>
 </Steps>
 
+### Customer identity
+**Preferred:** `customer_id` (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) — omit the inline `customer` object.
+
+**Legacy:** inline `customer` on quote still works; see [Sandbox test payloads](/sandbox/test-payloads) for corridor-specific shapes.
+
 ### Discovery before quote
 - [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) → rails for the corridor
 - [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` → `providers[].id` for momo/bank
@@ -173,6 +179,226 @@ Send the same customer and payment method payload shape used at quote time (see 
 OnRamp: final payment instructions are returned after accept when applicable.
 """,
 }
+
+QUOTE_TRY_IT_DEFAULT = {
+    "order_type": "OnRamp",
+    "currency": "KES",
+    "country": "KE",
+    "local_amount": 800,
+    "customer_id": "pcus_a1b2c3d4e5f6",
+    "asset": {
+        "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+        "currency": "USDC",
+        "network": "BASE",
+    },
+    "payment_method": {
+        "type": "mobile_money",
+        "phone_number": "+2541111111111",
+        "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+    },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+}
+
+PARTNER_ORDER_QUOTE_TRY_IT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["order_type"],
+    "properties": {
+        "order_type": {
+            "type": "string",
+            "enum": ["OnRamp", "OffRamp"],
+            "description": "OnRamp = fiat to crypto. OffRamp = crypto to fiat.",
+            "example": "OnRamp",
+        },
+        "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "ISO country (African corridors). Omit for EUR/USD international bank payin.",
+            "example": "KE",
+        },
+        "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "example": "KES",
+        },
+        "local_amount": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "OnRamp: fiat amount the customer pays.",
+            "example": 800,
+        },
+        "crypto_amount": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "OffRamp: stablecoin amount the customer sends.",
+            "example": 20,
+        },
+        "customer_id": {
+            "type": "string",
+            "description": (
+                "Preferred: approved vault customer id (pcus_*). "
+                "Omit inline customer when set."
+            ),
+            "example": "pcus_a1b2c3d4e5f6",
+        },
+        "customer": {
+            "type": "object",
+            "description": (
+                "Legacy inline KYC. Omit when customer_id is set. "
+                "Corridor-specific examples: /sandbox/test-payloads."
+            ),
+            "additionalProperties": True,
+        },
+        "asset": {
+            "type": "object",
+            "description": "Stablecoin asset block (sandbox default: Base USDC).",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                },
+                "currency": {"type": "string", "example": "USDC"},
+                "network": {"type": "string", "example": "BASE"},
+            },
+        },
+        "payment_method": {
+            "type": "object",
+            "description": (
+                "Fiat rail. mobile_money: phone_number + network_id. "
+                "bank: account_number, account_name, network_id."
+            ),
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": ["mobile_money", "bank"],
+                    "example": "mobile_money",
+                },
+                "phone_number": {
+                    "type": "string",
+                    "description": "E.164 MSISDN (mobile_money).",
+                    "example": "+2541111111111",
+                },
+                "account_number": {"type": "string"},
+                "account_name": {"type": "string"},
+                "network_id": {
+                    "type": "string",
+                    "description": "Institution UUID from GET /partner/catalog.",
+                    "example": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+                },
+            },
+        },
+        "wallet_address": {
+            "type": "string",
+            "description": "OnRamp: destination wallet for stablecoin delivery.",
+            "example": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+        },
+        "refund_address": {
+            "type": "string",
+            "description": "OffRamp: refund wallet if payout fails.",
+            "example": "0x3333333333333333333333333333333333333333",
+        },
+    },
+    "title": "PartnerOrderQuoteRequestTryIt",
+    "description": (
+        "Canonical quote body for Mintlify Try it. The live API also accepts "
+        "legacy top-level fields (provider, channel_id, destination, …) — "
+        "see Quickstart and /sandbox/test-payloads."
+    ),
+    "example": QUOTE_TRY_IT_DEFAULT,
+}
+
+QUOTE_TRY_IT_EXAMPLES: dict[str, Any] = {
+    "ke_onramp_vault_customer_id": {
+        "summary": "KE OnRamp — vault customer_id (recommended)",
+        "description": (
+            "Use an approved pcus_* from the customer vault. "
+            "Discover network_id from GET /partner/catalog?country=KE&order_type=OnRamp."
+        ),
+        "value": QUOTE_TRY_IT_DEFAULT,
+    },
+    "ke_offramp_vault_customer_id": {
+        "summary": "KE OffRamp — vault customer_id",
+        "description": "Customer sends USDC; receives KES by mobile money.",
+        "value": {
+            "order_type": "OffRamp",
+            "currency": "KES",
+            "country": "KE",
+            "crypto_amount": 20,
+            "customer_id": "pcus_a1b2c3d4e5f6",
+            "asset": {
+                "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+                "currency": "USDT",
+                "network": "POLYGON",
+            },
+            "payment_method": {
+                "type": "mobile_money",
+                "phone_number": "+2541111111111",
+                "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+            },
+            "refund_address": "0x3333333333333333333333333333333333333333",
+        },
+    },
+    "ke_onramp_inline_sandbox": {
+        "summary": "KE OnRamp — inline customer (legacy)",
+        "description": (
+            "Sandbox success MSISDN +2541111111111. "
+            "Prefer customer_id for new integrations."
+        ),
+        "value": {
+            "order_type": "OnRamp",
+            "currency": "KES",
+            "country": "KE",
+            "local_amount": 800,
+            "asset": {
+                "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                "currency": "USDC",
+                "network": "BASE",
+            },
+            "customer": {
+                "uid": "sandbox-ke-onramp-success-001",
+                "type": "user",
+                "name": "Successful Jane Customer",
+                "country": "KE",
+                "phone": "+2541111111111",
+                "email": "jane@example.com",
+                "id_number": "A1234567",
+                "id_type": "passport",
+            },
+            "payment_method": {
+                "type": "mobile_money",
+                "phone_number": "+2541111111111",
+                "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+            },
+            "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+        },
+    },
+}
+
+
+def simplify_quote_try_it(doc: dict[str, Any]) -> int:
+    """Replace bloated auto-generated quote schema with a Try-it-friendly surface."""
+
+    paths = doc.setdefault("paths", {})
+    quote_op = paths.get("/partner/orders/quote", {}).get("post")
+    if not isinstance(quote_op, dict):
+        return 0
+
+    components = doc.setdefault("components", {})
+    schemas = components.setdefault("schemas", {})
+    schemas["PartnerOrderQuoteRequestTryIt"] = deepcopy(PARTNER_ORDER_QUOTE_TRY_IT_SCHEMA)
+
+    request_body = quote_op.setdefault("requestBody", {})
+    content = request_body.setdefault("content", {})
+    media = content.setdefault("application/json", {})
+    media["schema"] = {"$ref": "#/components/schemas/PartnerOrderQuoteRequestTryIt"}
+    media["example"] = deepcopy(QUOTE_TRY_IT_DEFAULT)
+    media["examples"] = deepcopy(QUOTE_TRY_IT_EXAMPLES)
+
+    mint = quote_op.setdefault("x-mint", {})
+    mint["playground"] = {"expand": False}
+
+    return 1
 
 
 def _first_example_value(media: dict[str, Any]) -> Any | None:
@@ -320,8 +546,13 @@ def apply_x_mint_guides(doc: dict[str, Any]) -> int:
             guide = ENDPOINT_GUIDES.get((method, path))
             if not guide:
                 continue
+            guide_text = guide.strip()
             mint = operation.setdefault("x-mint", {})
-            mint["content"] = guide.strip()
+            mint["content"] = guide_text
+            # Mintlify renders `description` and x-mint.content — keep description
+            # to one short line so the formatted guide is not duplicated as a wall
+            # of text (synced OpenAPI uses inline markdown without line breaks).
+            operation["description"] = guide_text.split("\n\n", 1)[0].replace("\n", " ")
             applied += 1
     return applied
 
@@ -333,6 +564,7 @@ def enrich(doc: dict[str, Any]) -> dict[str, int]:
         "examples_collapsed": collapse_plural_examples(working),
         "validation_stubs_patched": patch_empty_validation_stubs(working),
         "guides_applied": apply_x_mint_guides(working),
+        "quote_try_it_simplified": simplify_quote_try_it(working),
         "_doc": working,  # type: ignore[typeddict-item]
     }
 
@@ -360,7 +592,8 @@ def main() -> None:
             f"{target}: +{result['examples_injected']} examples, "
             f"~{result['examples_collapsed']} collapsed, "
             f"~{result['validation_stubs_patched']} validation stubs, "
-            f"+{result['guides_applied']} x-mint guides"
+            f"+{result['guides_applied']} x-mint guides, "
+            f"quote_try_it={result['quote_try_it_simplified']}"
         )
 
 

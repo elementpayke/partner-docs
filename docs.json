@@ -94,6 +94,10 @@
     },
     "playground": {
       "display": "interactive"
+    },
+    "examples": {
+      "defaults": "required",
+      "prefill": true
     }
   },
   "footer": {
