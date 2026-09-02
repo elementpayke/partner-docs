@@ -2965,10 +2965,82 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Customer list or ref lookup result. With ``partner_customer_ref``: zero or one full vault row. Without it: up to ``limit`` summary rows (newest first). ``limit`` is ignored when ``partner_customer_ref`` is set.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerListSuccessResponse"
+                },
+                "examples": {
+                  "matched_by_ref": {
+                    "summary": "Known partner_customer_ref",
+                    "description": "Full vault row for the matching ref (same shape as GET /partner/customers/{customer_id}).",
+                    "value": {
+                      "status": "success",
+                      "message": "Customers",
+                      "data": {
+                        "customers": [
+                          {
+                            "id": "pcus_a1b2c3d4e5f6",
+                            "partner_customer_ref": "partner-cust-001",
+                            "type": "individual",
+                            "status": "approved",
+                            "profile": {
+                              "first_name": "Jane",
+                              "last_name": "Doe",
+                              "email": "jane@example.com",
+                              "date_of_birth": "1990-01-15",
+                              "country_of_residence": "GB",
+                              "phone": "+447700900123",
+                              "gender": "f",
+                              "id_type": "passport",
+                              "id_number": "A1234567",
+                              "address": {
+                                "line1": "1 Example Street",
+                                "city": "London",
+                                "country": "GB",
+                                "postal_code": "E1 6AN"
+                              }
+                            },
+                            "documents": [
+                              {
+                                "id": "pdoc_a1b2c3d4e5f6",
+                                "category": "identity",
+                                "content_type": "application/pdf",
+                                "created_at": "2026-08-01T12:00:00+00:00"
+                              },
+                              {
+                                "id": "pdoc_b2c3d4e5f6a7",
+                                "category": "address",
+                                "content_type": "application/pdf",
+                                "created_at": "2026-08-01T12:01:00+00:00"
+                              }
+                            ],
+                            "products": {
+                              "deposit_account": {
+                                "status": "ready"
+                              }
+                            },
+                            "created_at": "2026-08-01T11:55:00+00:00",
+                            "updated_at": "2026-08-01T12:05:00+00:00",
+                            "submitted_at": "2026-08-01T12:02:00+00:00"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "unknown_ref": {
+                    "summary": "Unknown partner_customer_ref",
+                    "description": "No customer with that ref exists for this API key tenant.",
+                    "value": {
+                      "status": "success",
+                      "message": "Customers",
+                      "data": {
+                        "customers": []
+                      }
+                    }
+                  }
+                }
               }
             }
           },
@@ -5780,6 +5852,187 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "PartnerCustomerDocumentMeta": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "content_type",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Public document id (pdoc_*).",
+            "example": "pdoc_a1b2c3d4e5f6"
+          },
+          "category": {
+            "type": "string",
+            "description": "Document key from requirements (e.g. identity, address).",
+            "example": "identity"
+          },
+          "content_type": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "title": "PartnerCustomerDocumentMeta",
+        "description": "Uploaded document metadata (no file bytes)."
+      },
+      "PartnerCustomerVaultRow": {
+        "type": "object",
+        "required": [
+          "id",
+          "partner_customer_ref",
+          "type",
+          "status",
+          "profile",
+          "documents",
+          "products",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Public customer id (pcus_*).",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          "partner_customer_ref": {
+            "type": "string",
+            "description": "Partner-stable customer reference.",
+            "example": "partner-cust-001"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "individual",
+              "business"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "incomplete",
+              "pending_review",
+              "approved",
+              "active",
+              "rejected",
+              "suspended"
+            ]
+          },
+          "profile": {
+            "type": "object",
+            "description": "Collected identity / KYB fields.",
+            "additionalProperties": true
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerCustomerDocumentMeta"
+            },
+            "description": "Document metadata. Populated on ref lookup and GET by id; often empty on unpaginated list rows."
+          },
+          "products": {
+            "type": "object",
+            "required": [
+              "deposit_account"
+            ],
+            "properties": {
+              "deposit_account": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "provisioning",
+                      "ready",
+                      "failed",
+                      "unavailable"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Present when status is incomplete — fields/docs still required before submit."
+          },
+          "review_note": {
+            "type": "string",
+            "description": "Partner-safe rejection summary when status is rejected."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "submitted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "title": "PartnerCustomerVaultRow",
+        "description": "One customer vault case returned to partners."
+      },
+      "PartnerCustomerListData": {
+        "type": "object",
+        "required": [
+          "customers"
+        ],
+        "properties": {
+          "customers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerCustomerVaultRow"
+            },
+            "description": "Tenant-scoped customers. With partner_customer_ref: zero or one full row. Without: up to limit summary rows."
+          }
+        },
+        "title": "PartnerCustomerListData"
+      },
+      "PartnerCustomerListSuccessResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "example": "Customers"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PartnerCustomerListData"
+          }
+        },
+        "title": "PartnerCustomerListSuccessResponse"
       },
       "PartnerCustomerDocumentUploadRequest": {
         "properties": {
