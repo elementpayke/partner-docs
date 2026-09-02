@@ -1,8 +1,12 @@
 # Customers route cheat sheet
 
-Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customers/accounts), [Deposit instructions](/customers/deposit-instructions), [Stablecoin sends](/customers/stablecoin-sends), [Book transfers](/customers/book-transfers), [External bank payouts](/customers/payouts), and [Cards](/customers/cards). Auth: `X-API-Key`. Bases: `$BASE_SANDBOX` / `$BASE_LIVE`.
+**Customer KYC is required for every end-customer.** Banking routes below are **optional** — only after `products.deposit_account.status=ready`.
 
-## Vault KYC
+Companion guides: [Customer KYC quickstart](/customers/quickstart) · [Quote and accept](/orders/quote-and-accept) · [Banking accounts](/customers/accounts).
+
+Auth: `X-API-Key`. Sandbox base: `https://sandbox.elementpay.net/api/v1`.
+
+## Vault KYC (required)
 
 | Method | Path | Notes |
 |--------|------|-------|
@@ -15,9 +19,9 @@ Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customer
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
 | `POST` | `/partner/customers/{customer_id}/revoke` | Partner offboard → `suspended`; optional `reason` (audit-only) |
 
-## Accounts
+## Accounts (banking — optional)
 
-Requires `status` approved/active **and** `products.deposit_account.status=ready`. Otherwise **409**.
+Requires vault **`status` approved/active** **and** `products.deposit_account.status=ready`. Otherwise **409**.
 
 | Method | Path | Notes |
 |--------|------|-------|
@@ -89,14 +93,18 @@ Same banking gate (`deposit_account=ready`). Acquiring charges a card into fiat;
 
 Guide: [Cards](/customers/cards). Legacy: `/partner/entities/…/card-charges` and `/cards` (do not adopt).
 
-## Orders
+## Orders (ramps)
+
+Requires vault **`status=approved`**. Use **`customer_id`** — inline `customer` is deprecated but still supported.
 
 | Method | Path | Notes |
 |--------|------|-------|
-| `POST` | `/partner/orders/quote` | Prefer `customer_id` when `approved` |
-| `POST` | `/partner/orders/{quote_id}/accept` | Unchanged |
+| `POST` | `/partner/orders/quote` | `customer_id` + `payment_method` + `asset` |
+| `POST` | `/partner/orders/{quote_id}/accept` | `{}` body in most cases |
 
-## Gate
+Guide: [Quote and accept](/orders/quote-and-accept).
+
+## Gate summary
 
 | Action | Required |
 |--------|----------|

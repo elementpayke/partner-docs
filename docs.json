@@ -35,22 +35,28 @@
             "pages": [
               "introduction",
               "quickstart",
+              "orders/quote-and-accept",
               "authentication",
               "webhooks",
               "errors"
             ]
           },
           {
-            "group": "Customers",
+            "group": "Customer KYC",
             "pages": [
               "customers/quickstart",
+              "customers/route-cheat-sheet"
+            ]
+          },
+          {
+            "group": "Banking",
+            "pages": [
               "customers/accounts",
               "customers/deposit-instructions",
               "customers/stablecoin-sends",
               "customers/book-transfers",
               "customers/payouts",
-              "customers/cards",
-              "customers/route-cheat-sheet"
+              "customers/cards"
             ]
           },
           {

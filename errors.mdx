@@ -24,6 +24,27 @@ HTTP status codes follow REST conventions. **`message`** is safe to show integra
 | `502` | Payment rail temporarily unavailable | Retry with backoff |
 | `503` | Corridor not configured on this environment | Contact support |
 
+## Customer KYC errors (422)
+
+Submit with an incomplete package:
+
+```json
+{
+  "status": "error",
+  "message": "Customer package is incomplete",
+  "data": {
+    "code": "package_incomplete",
+    "missing": ["profile.id_number", "document.identity", "document.address"]
+  }
+}
+```
+
+| Situation | Action |
+|-----------|--------|
+| `missing[]` on submit | `PATCH` profile / upload documents per [Customer KYC](/customers/quickstart) |
+| Quote with `customer_id` not approved | Wait for `customer.approved` or poll GET customer |
+| `deposit_account` not ready on account APIs | **409** — banking gate; KYC may already be done |
+
 ## Validation errors (422)
 
 Quote validation often returns:

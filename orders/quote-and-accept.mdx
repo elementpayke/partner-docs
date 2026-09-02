@@ -1,0 +1,220 @@
+# Quote and accept
+
+Binding **fiat ↔ crypto** orders for approved vault customers.
+
+**Prerequisite:** [Customer KYC](/customers/quickstart) complete — `status=approved`. Quote with **`customer_id`** (`pcus_*`), not inline `customer`.
+
+## Auth and environment
+
+```bash
+export BASE="https://sandbox.elementpay.net/api/v1"
+export API_KEY="is_test_YOUR_KEY"
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## Flow
+
+<Steps>
+  <Step title="Discover">
+    `GET /partner/catalog?country=KE&order_type=OnRamp` → copy momo/bank `providers[].id`
+  </Step>
+  <Step title="Quote">
+    `POST /partner/orders/quote` with `customer_id`, `payment_method`, `asset`, amounts
+  </Step>
+  <Step title="Accept">
+    Wait ~2s, then `POST /partner/orders/{quote_id}/accept` with `{}`
+  </Step>
+  <Step title="Settle">
+    Webhooks `order.processing` → `order.settled` or `order.failed`
+  </Step>
+</Steps>
+
+## 1. Discover `network_id`
+
+```bash
+curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" \
+  | jq '.data.onramp.countries.KE.payment_methods.mobile_money.providers[] | {id, name}'
+```
+
+Use **`providers[].id`** as `payment_method.network_id` on quote. Always fetch from **your** sandbox — do not hardcode UUIDs across environments.
+
+## 2. Quote (KE OnRamp, momo)
+
+```bash
+export CUSTOMER_ID="pcus_…"   # approved vault customer
+
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "currency": "KES",
+    "country": "KE",
+    "local_amount": 800,
+    "customer_id": "'"$CUSTOMER_ID"'",
+    "asset": {
+      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+      "currency": "USDC",
+      "network": "BASE"
+    },
+    "payment_method": {
+      "type": "mobile_money",
+      "phone_number": "+2541111111111",
+      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+    },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }' | tee /tmp/quote.json | jq '.'
+```
+
+### Quote success — what to expect
+
+```json
+{
+  "status": "success",
+  "message": "Partner order quote created",
+  "data": {
+    "quote_id": "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c",
+    "status": "process",
+    "order_type": "OnRamp",
+    "expires_at": "2026-05-16T08:13:40.322Z",
+    "amounts": {
+      "rate": 131.69,
+      "user_pays": { "amount": 800, "currency": "KES" },
+      "user_receives": { "amount": 5.95, "currency": "USDC", "network": "BASE" },
+      "fees": { "service_fee_local": 16, "service_fee_usd": 0.12 }
+    },
+    "instructions": {
+      "available_after_accept": true,
+      "note": "Accept this quote to create the local order and receive final payment instructions."
+    }
+  }
+}
+```
+
+| Field | Use |
+|-------|-----|
+| `data.quote_id` | Pass to accept (save before TTL) |
+| `data.expires_at` | Show countdown; re-quote if expired (**410** on accept) |
+| `data.amounts` | Display pricing to the end-user |
+| `data.instructions.available_after_accept` | OnRamp momo: STK / pay instructions come **after** accept |
+
+Save the quote id:
+
+```bash
+export QUOTE_ID=$(jq -r '.data.quote_id' /tmp/quote.json)
+```
+
+## 3. Accept
+
+```bash
+sleep 2
+
+curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq '.'
+```
+
+### Accept success — what to expect
+
+```json
+{
+  "status": "success",
+  "message": "Partner order quote accepted",
+  "data": {
+    "quote_id": "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c",
+    "status": "processing",
+    "order": {
+      "order_id": "YC-580e04c2-a136-5cca-be54-b49fcf80970c",
+      "status": "processing",
+      "order_type": "OnRamp",
+      "amount_fiat": 800,
+      "amount_crypto": 5.94999,
+      "currency": "KES"
+    }
+  }
+}
+```
+
+OnRamp: read **`data.payment_instructions`** (when present) for what the customer must do on the fiat rail. OffRamp live: **`crypto_deposit`** tells the customer where to send stablecoin.
+
+## Request checklist
+
+| Field | OnRamp momo | OffRamp momo |
+|-------|-------------|--------------|
+| `order_type` | `OnRamp` | `OffRamp` |
+| `country`, `currency` | e.g. `KE`, `KES` | same |
+| Amount | `local_amount` | `crypto_amount` |
+| Customer | **`customer_id`** (approved) | same |
+| `asset` | `{ token, currency, network }` | often Polygon USDT for KE sandbox OffRamp |
+| `payment_method.type` | `mobile_money` | `mobile_money` |
+| `payment_method.phone_number` | E.164 MSISDN | payout MSISDN |
+| `payment_method.network_id` | from catalog | from catalog (same `order_type`) |
+| `wallet_address` | **required** (receive crypto) | omit |
+| `refund_address` | omit | **required** (OffRamp) |
+
+Field hints per corridor: `GET /partner/order-requirements`. Copy-paste payloads: [Sandbox test payloads](/sandbox/test-payloads).
+
+## Common quote errors
+
+| Situation | Status | Fix |
+|-----------|--------|-----|
+| Customer not `approved` | `422` `customer_status: incomplete` | Finish [KYC](/customers/quickstart) |
+| Missing `network_id` | `422` | Catalog lookup for same country + `order_type` |
+| Quote expired | `410` on accept | New quote |
+| Wrong sandbox phone | order fails later | [Sandbox success & failure](/sandbox/success-failure) |
+
+## Deprecated: inline `customer`
+
+**Deprecated — migrate to vault `customer_id`.** Still **supported** for existing integrations and sandbox spikes.
+
+Do **not** start new production integrations on inline `customer`. The API accepts a full `customer` object on quote instead of `customer_id` until you migrate.
+
+Sandbox-only example (inline, no vault):
+
+```bash
+# Deprecated path — use customer_id in production
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d @- <<'EOF'
+{
+  "order_type": "OnRamp",
+  "currency": "KES",
+  "country": "KE",
+  "local_amount": 800,
+  "customer": {
+    "uid": "sandbox-ke-001",
+    "type": "user",
+    "name": "Jane Doe",
+    "country": "KE",
+    "phone": "+2541111111111",
+    "address": "Nairobi",
+    "dob": "02/01/1997",
+    "email": "jane@example.com",
+    "id_number": "A1234567",
+    "id_type": "passport"
+  },
+  "asset": {
+    "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+    "currency": "USDC",
+    "network": "BASE"
+  },
+  "payment_method": {
+    "type": "mobile_money",
+    "phone_number": "+2541111111111",
+    "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+  },
+  "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+}
+EOF
+```
+
+## Next
+
+- [Quickstart](/quickstart) — end-to-end first integration
+- [Kenya corridor](/corridors/kenya) · [Webhooks](/webhooks) · [API reference](/api-reference/partner/orders/quote)

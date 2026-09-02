@@ -1,38 +1,63 @@
 # Element Pay Partner API
 
-Provider-neutral **fiat ↔ crypto** ramps for B2B partners.
+Provider-neutral **fiat ↔ crypto** ramps and optional **banking** for B2B partners.
 
 Integrate once against Element Pay — we route local African fiat (mobile money and bank) by corridor, return binding quotes, and notify your backend via webhooks when orders settle.
+
+## Every customer must KYC
+
+**All end-customers** must complete KYC in the **customer vault** before you quote with `customer_id` (`pcus_*`).
+
+| Layer | Required? | Unlocks |
+|-------|-----------|---------|
+| **Customer KYC (vault)** | **Yes — every customer** | Stable `pcus_*`, EP review, `customer_id` on quote/accept |
+| **Banking (accounts)** | No — product add-on | EUR/USD IBAN, stablecoin ledger, sends, book transfers, payouts |
+
+KYC and banking are **different products**:
+
+- **`status=approved`** → corridor **quotes and accepts** with `customer_id`
+- **`products.deposit_account.status=ready`** → **account open**, deposit instructions, sends, etc.
+
+You do **not** need banking to run African fiat ↔ crypto ramps. See [Customer KYC quickstart](/customers/quickstart) then [Quickstart](/quickstart).
+
+<Warning>
+An inline `customer` object on quote is **deprecated** — still accepted for existing integrations while you migrate. New work should use the vault. See [Quote and accept](/orders/quote-and-accept#deprecated-inline-customer).
+</Warning>
 
 ## What you can do today
 
 | Product | Markets | Flow |
 |---------|---------|------|
-| **OnRamp** | African local fiat — **see catalog** (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin on your chosen network |
+| **OnRamp** | African local fiat — **see catalog** (KE, NG, UG, TZ, ZA, RW, MW, BW, …) | Customer pays local fiat → receives stablecoin |
 | **OffRamp** | Same corridors when enabled for your key | Customer sends stablecoin → receives fiat to momo or bank |
+| **Banking** | EUR / USD / stablecoin rails per customer eligibility | IBAN, on-platform balances, sends — after KYC **and** deposit account ready |
 
-Supported **countries and payment methods** (momo vs bank, provider lists, min/max) are returned by discovery — start with `GET /partner/catalog`. Details: [Corridors overview](/corridors/overview). Extra markets: contact compliance.
+Supported **countries and payment methods** come from `GET /partner/catalog`. Details: [Corridors overview](/corridors/overview).
 
-## Customer vault
+## Core pattern (ramps)
 
-Onboard end-customers once into the **customer vault** to get a stable `customer_id` (`pcus_*`) for quotes — then open **EUR/USD bank** and **stablecoin** accounts under that same customer. See [Customers quickstart](/customers/quickstart) and [Accounts](/customers/accounts).
+Every corridor order follows the same steps **after KYC is approved**:
 
-## Core pattern
-
-Every order follows the same three steps:
-
-1. **Discover** — `GET /partner/catalog` (countries, methods, providers)
-2. **Quote** — `POST /partner/orders/quote`
+1. **Discover** — `GET /partner/catalog` (copy `providers[].id` → `network_id`)
+2. **Quote** — `POST /partner/orders/quote` with `customer_id`
 3. **Accept** — `POST /partner/orders/{quote_id}/accept`
 
-Settlement status is delivered on your API key **`webhook_url`** (`order.processing`, `order.settled`, `order.failed`).
+Settlement: webhooks `order.processing`, `order.settled`, `order.failed`. See [Webhooks](/webhooks) and [Quote and accept](/orders/quote-and-accept).
+
+## Where to start
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Sandbox setup and first KE OnRamp in under 10 minutes.
+    KYC → approved → first KE OnRamp quote → accept.
   </Card>
-  <Card title="API reference" icon="code" href="/api-reference/introduction">
-    OpenAPI-generated endpoint reference.
+  <Card title="Customer KYC" icon="user-check" href="/customers/quickstart">
+    Requirements, documents, submit, and approval.
+  </Card>
+  <Card title="Quote and accept" icon="receipt" href="/orders/quote-and-accept">
+    Request checklist and response examples.
+  </Card>
+  <Card title="Banking" icon="building-columns" href="/customers/accounts">
+    Optional — accounts after deposit account is ready.
   </Card>
 </CardGroup>
 
@@ -43,7 +68,7 @@ Settlement status is delivered on your API key **`webhook_url`** (`order.process
 | **Sandbox** | `https://sandbox.elementpay.net/api/v1` |
 | **Production** | `https://api.elementpay.net/api/v1` |
 
-All partner API routes are under **`/partner/*`**.
+All partner routes are under **`/partner/*`**. Auth: `X-API-Key` header — [Authentication](/authentication).
 
 ## Support
 

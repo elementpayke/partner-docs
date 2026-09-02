@@ -1,13 +1,19 @@
 # Customer accounts
 
+**Optional banking product** — EUR/USD IBAN, stablecoin ledger, sends, book transfers, payouts, and cards.
+
+<Warning>
+**Prerequisite — KYC (required for everyone):** complete [Customer KYC quickstart](/customers/quickstart) until `status` is `approved`. Banking does **not** replace KYC.
+
+**Prerequisite — banking gate:** `products.deposit_account.status` must be **`ready`** before account open / list / sends. KYC approval alone is **not** enough for this section.
+</Warning>
+
 Give each vault customer **bankable and on-chain balances** under one `customer_id` (`pcus_*`):
 
-- **Fiat accounts** — e.g. **EUR** (IBAN) and **USD** (account / routing or SWIFT when returned) bank rails for receiving transfers
-- **Stablecoin accounts** — e.g. **USDC** / **USDT** wallets on **Base** or **Polygon**
+- **Fiat accounts** — e.g. **EUR** (IBAN) and **USD** (account / routing or SWIFT when returned)
+- **Stablecoin accounts** — e.g. **USDC** / **USDT** on **Base** or **Polygon**
 
-Open or list rails, then use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), book transfers / payouts / cards, or corridor [quote → accept](/quickstart) where that funds the same customer.
-
-Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status` is `approved` (or `active`).
+Use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), book transfers / payouts / cards. Corridor [quote → accept](/orders/quote-and-accept) uses **`customer_id` only** — no account open required.
 
 <Note>
 **Sandbox funding:** usable balance for outbound [stablecoin sends](/customers/stablecoin-sends) may require an Element Pay sandbox credit. See [deposit instructions](/customers/deposit-instructions).
@@ -19,11 +25,11 @@ Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status`
 
 ## Auth and environments
 
+Production: `https://api.elementpay.net/api/v1` with `is_live_…` keys.
+
 ```bash
-export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
-export BASE_LIVE="$BASE_LIVE"         # live Partner API base
-export BASE="$BASE_SANDBOX"
-export API_KEY="is_test_…"            # or is_live_… on live
+export BASE="https://sandbox.elementpay.net/api/v1"
+export API_KEY="is_test_…"
 ```
 
 ```http
@@ -35,7 +41,7 @@ Content-Type: application/json
 
 | Gate | Field | Unlocks |
 |------|-------|---------|
-| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
+| **Quote identity** | `status` is `approved` | `customer_id` on quote |
 | **Banking** | `products.deposit_account.status` is `ready` | Account open / list / get |
 
 `approved` alone does **not** unlock accounts. Always read both fields from `GET /partner/customers/{customer_id}`.
@@ -48,7 +54,7 @@ If account routes are called before `ready`, the API returns **409** with messag
 
 <Steps>
   <Step title="Confirm banking ready">
-    Prefer `customer.deposit_account.updated` ([Webhooks](/webhooks)); or poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+    Prefer `customer.deposit_account.updated` ([Webhooks](/webhooks)); or poll `GET /partner/customers/{customer_id}` until `data.products.deposit_account.status` is `ready`
   </Step>
   <Step title="Open a rail (optional)">
     `POST /partner/customers/{customer_id}/accounts` when you need a new fiat or stablecoin rail
