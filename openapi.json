@@ -2905,7 +2905,7 @@
           "partner-customers"
         ],
         "summary": "List customers for this partner tenant",
-        "description": "List tenant-scoped customers (metadata only).",
+        "description": "List tenant-scoped customers. Pass ``partner_customer_ref`` to resolve your stable ref to at most one customer (full row, same shape as GET by ``pcus_*``). Unknown ref returns an empty ``customers`` array.",
         "operationId": "partner_customer_list_partner_customers_get",
         "security": [
           {
@@ -2930,6 +2930,25 @@
               "title": "Status"
             },
             "description": "Optional status filter (e.g. incomplete, pending_review)"
+          },
+          {
+            "name": "partner_customer_ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to a single customer by your partner_customer_ref",
+              "title": "Partner Customer Ref",
+              "example": "partner-cust-001"
+            },
+            "description": "Filter to a single customer by your partner_customer_ref"
           },
           {
             "name": "limit",
