@@ -12,7 +12,7 @@
           "partner"
         ],
         "summary": "Indicative fiat vs USD rates",
-        "description": "Returns **indicative** ``buy`` / ``sell`` rates for the requested ISO fiat codes \u2014 **not** a binding quote (use ``POST /partner/orders/quote`` for checkout pricing). Response body: ``requested``, ``rates``, ``fetched_at``. **Auth:** ``X-API-Key``.",
+        "description": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes.",
         "operationId": "partner_indicative_rates_partner_rates_indicative_get",
         "security": [
           {
@@ -321,7 +321,7 @@
           "partner"
         ],
         "summary": "Supported partner corridors (African markets and international bank)",
-        "description": "Indicative catalog for partner checkout UI. **african_markets** \u2014 local fiat corridors (country + currency, onramp/offramp flags). **international_bank** \u2014 EUR/USD bank transfer payin; currency only, no ISO country. Binding eligibility: ``POST /partner/orders/quote``.",
+        "description": "Indicative catalog for partner checkout UI.",
         "operationId": "partner_corridors_partner_corridors_get",
         "security": [
           {
@@ -657,7 +657,7 @@
           "partner"
         ],
         "summary": "Checkout catalog (corridors, methods, and providers)",
-        "description": "Single indicative catalog for partner checkout UI: per-country onramp/offramp, ``mobile_money`` and ``bank`` buckets with live provider lists, optional ``rails`` for international payout markets, and ``international_bank`` for EUR/USD payin. Composed from cached upstream discovery APIs (refreshed periodically). ``providers[].id`` is the opaque institution UUID to send as ``payment_method.network_id`` on quote (bank rows may also use ``GET /banks``). Each provider includes ``min_amount``, ``max_amount``, and ``currency`` for checkout validation. **OnRamp and OffRamp provider lists can differ** for the same country (filter with ``order_type``). Optional filters: ``country``, ``currency``, ``order_type`` (``OnRamp`` | ``OffRamp``). Omit filters for the full tree. Binding eligibility: ``POST /partner/orders/quote``.",
+        "description": "Single indicative catalog for partner checkout: per-country onramp/offramp, `mobile_money` and `bank` buckets with live provider lists, optional `rails` for international payout markets, and `international_bank` for EUR/USD payin.",
         "operationId": "partner_catalog_partner_catalog_get",
         "security": [
           {
@@ -1029,7 +1029,7 @@
           "partner"
         ],
         "summary": "Payment method types for a corridor",
-        "description": "Indicative payment methods for one corridor. **African:** ``country`` (required). ``currency`` is optional and must match the catalog when sent; response ``context`` always includes both. Optional ``order_type`` (``OnRamp`` or ``OffRamp``); omit to get both ``onramp`` and ``offramp`` buckets. **International bank:** ``currency`` = EUR or USD (required). Do not pass ``country``. EUR/USD onramp returns ``bank``; offramp uses international bank when configured. **international bank payout markets** (e.g. FR + EUR offramp): ``country`` + ``currency``; returns rails such as ``BankSepa`` and ``BankSwift`` with ``type`` set to international bank ``PaymentMethodType``. local fiat rail African ``mobile_money`` and ``bank`` rows include a ``networks[]`` list (``id``, ``name``, ``min_amount``, ``max_amount``, ``currency``) for client-side amount gating. Binding check: quote endpoint.",
+        "description": "Indicative payment methods for one corridor.",
         "operationId": "partner_payment_methods_partner_payment_methods_get",
         "security": [
           {
@@ -1346,7 +1346,7 @@
           "partner"
         ],
         "summary": "Indicative order field requirements for a corridor",
-        "description": "Returns partner-neutral **field name** hints before ``POST /partner/orders/quote``. Call after ``GET /corridors`` and ``GET /payment-methods``. Query: ``country``, ``currency``, ``order_type`` (OnRamp or OffRamp). List payout rails with ``GET /payment-methods`` first when several exist; pass ``payment_method_type`` (e.g. ``BankSepa``) on this call. Single-rail international bank corridors (e.g. GH) may omit it. rail: ``mobile_money`` or ``bank`` \u2014 both require ``network_id`` on quote (from catalog ``providers[].id`` or ``GET /banks`` for bank). Optional ``customer_type`` (``retail`` or ``institution``) on local fiat rail corridors. No JSON Schema, bank lists, fees, or provider labels. Bank lists and dynamic form schemas are separate partner endpoints (see partner quickstart). Binding check: quote endpoint.",
+        "description": "Returns partner-neutral **field name** hints before [`POST /partner/orders/quote`](/partner/orders/quote).",
         "operationId": "partner_order_requirements_partner_order_requirements_get",
         "security": [
           {
@@ -1696,7 +1696,7 @@
           "partner"
         ],
         "summary": "Indicative bank/network options for a rail",
-        "description": "Lists partner-neutral bank/network options for a rail chosen via ``GET /partner/payment-methods``. Query: ``country``, ``currency``, ``order_type`` (OnRamp or OffRamp), and ``payment_method_type``. local fiat rail rails support ``payment_method_type=bank`` (active networks only). ``payment_method_type=mobile_money`` returns 422 \u2014 use ``GET /catalog`` ``providers[].id`` for momo ``payment_method.network_id``. international bank rails (e.g. ``BankSepa``, ``BankSwift``) return best-effort enum options extracted from international bank ``FormSchema``.",
+        "description": "Lists bank/network institution options for a rail chosen via [`GET /partner/payment-methods`](/partner/payment-methods).",
         "operationId": "partner_banks_partner_banks_get",
         "security": [
           {
@@ -2011,18 +2011,62 @@
           "partner"
         ],
         "summary": "Create a partner order quote",
-        "description": "Create a binding quote for a fiat \u2194 crypto order. **Flow:** create a quote \u2192 show the returned amounts and payment instructions to the user \u2192 accept the `quote_id` with `POST /partner/orders/{quote_id}/accept`. **Discovery before quote:** - `GET /partner/catalog` or `GET /partner/payment-methods` \u2192 rails for the corridor. - `GET /partner/catalog?order_type=OnRamp|OffRamp` \u2192 `providers[].id` for momo/bank. - `GET /partner/order-requirements` \u2192 exact field names (`network_id` required for momo/bank). - `GET /partner/banks` \u2192 bank institution UUIDs where applicable. **Payment method by rail:** - **`mobile_money`**: `payment_method.type=mobile_money`, `payment_method.phone_number` (E.164), and `payment_method.network_id` (UUID from catalog `providers[].id`). - **`bank`**: `payment_method.type=bank`, `account_number`, `account_name`, and `payment_method.network_id` (from `GET /partner/banks` or catalog). **OnRamp response** includes `payment_instructions` \u2014 show these to the user before accept. `provider` is optional. When omitted, ElementPay auto-routes by corridor. **Quote id formats:** `yc_receive_<id>` (OnRamp), `yc_send_<id>` (OffRamp). The quote expires at `data.expires_at`.",
+        "description": "Create a binding quote for a fiat \u2194 crypto order.",
         "operationId": "partner_order_quote_partner_orders_quote_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PartnerOrderQuoteRequest"
+                "$ref": "#/components/schemas/PartnerOrderQuoteRequestTryIt"
               },
               "examples": {
-                "ke_onramp_local_fiat_success": {
-                  "summary": "KE OnRamp via local fiat rail",
-                  "description": "Customer pays KES by M-PESA and receives the requested stablecoin/network.",
+                "ke_onramp_vault_customer_id": {
+                  "summary": "KE OnRamp \u2014 vault customer_id (recommended)",
+                  "description": "Use an approved pcus_* from the customer vault. Discover network_id from GET /partner/catalog?country=KE&order_type=OnRamp.",
+                  "value": {
+                    "order_type": "OnRamp",
+                    "currency": "KES",
+                    "country": "KE",
+                    "local_amount": 800,
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "asset": {
+                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                      "currency": "USDC",
+                      "network": "BASE"
+                    },
+                    "payment_method": {
+                      "type": "mobile_money",
+                      "phone_number": "+2541111111111",
+                      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+                    },
+                    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+                  }
+                },
+                "ke_offramp_vault_customer_id": {
+                  "summary": "KE OffRamp \u2014 vault customer_id",
+                  "description": "Customer sends USDC; receives KES by mobile money.",
+                  "value": {
+                    "order_type": "OffRamp",
+                    "currency": "KES",
+                    "country": "KE",
+                    "crypto_amount": 20,
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "asset": {
+                      "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+                      "currency": "USDT",
+                      "network": "POLYGON"
+                    },
+                    "payment_method": {
+                      "type": "mobile_money",
+                      "phone_number": "+2541111111111",
+                      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+                    },
+                    "refund_address": "0x3333333333333333333333333333333333333333"
+                  }
+                },
+                "ke_onramp_inline_sandbox": {
+                  "summary": "KE OnRamp \u2014 inline customer",
+                  "description": "Inline customer object (no customer_id). Sandbox success MSISDN +2541111111111.",
                   "value": {
                     "order_type": "OnRamp",
                     "currency": "KES",
@@ -2039,8 +2083,6 @@
                       "name": "Successful Jane Customer",
                       "country": "KE",
                       "phone": "+2541111111111",
-                      "address": "Nairobi",
-                      "dob": "02/01/1997",
                       "email": "jane@example.com",
                       "id_number": "A1234567",
                       "id_type": "passport"
@@ -2052,179 +2094,25 @@
                     },
                     "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
                   }
-                },
-                "ke_onramp_local_fiat_failure": {
-                  "summary": "KE OnRamp sandbox failure",
-                  "description": "Sandbox failure case using failure test identity/phone.",
-                  "value": {
-                    "rail": "local_fiat",
-                    "order_type": "OnRamp",
-                    "currency": "KES",
-                    "country": "KE",
-                    "local_amount": 800,
-                    "asset": {
-                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
-                      "currency": "USDC",
-                      "network": "BASE"
-                    },
-                    "customer": {
-                      "uid": "sandbox-ke-onramp-failure-001",
-                      "type": "user",
-                      "name": "Failure Jane Customer",
-                      "country": "KE",
-                      "phone": "+2540000000000",
-                      "address": "Nairobi",
-                      "dob": "02/01/1997",
-                      "email": "jane@example.com",
-                      "id_number": "A1234567",
-                      "id_type": "passport"
-                    },
-                    "payment_method": {
-                      "type": "mobile_money",
-                      "phone_number": "+2540000000000",
-                      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
-                      "account_name": "Failure Jane Customer"
-                    },
-                    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
-                  }
-                },
-                "ke_offramp_local_fiat": {
-                  "summary": "KE OffRamp via local fiat rail (mobile money)",
-                  "description": "Customer sends Polygon USDT and receives KES by M-PESA.",
-                  "value": {
-                    "rail": "local_fiat",
-                    "order_type": "OffRamp",
-                    "currency": "KES",
-                    "country": "KE",
-                    "crypto_amount": 20,
-                    "asset": {
-                      "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
-                      "currency": "USDT",
-                      "network": "POLYGON"
-                    },
-                    "refund_address": "0x3333333333333333333333333333333333333333",
-                    "customer": {
-                      "uid": "sandbox-ke-offramp-success-001",
-                      "type": "user",
-                      "name": "Successful Jane Customer",
-                      "country": "KE",
-                      "phone": "+254712345678",
-                      "address": "Nairobi",
-                      "dob": "02/01/1997",
-                      "email": "jane@example.com",
-                      "idNumber": "A1234567",
-                      "idType": "passport"
-                    },
-                    "payment_method": {
-                      "type": "mobile_money",
-                      "phone_number": "+2541111111111",
-                      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
-                      "account_name": "Successful Jane Customer"
-                    }
-                  }
-                },
-                "ng_onramp_bank": {
-                  "summary": "NG OnRamp \u2014 bank transfer (network_id required)",
-                  "description": "Customer pays NGN by bank transfer and receives USDC. `payment_method.network_id` is the UUID from `GET /partner/banks` or catalog (e.g. Access Bank). The quote response includes `payment_instructions` with the account the customer must transfer to.",
-                  "value": {
-                    "order_type": "OnRamp",
-                    "currency": "NGN",
-                    "country": "NG",
-                    "local_amount": 5000,
-                    "asset": {
-                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
-                      "currency": "USDC",
-                      "network": "BASE"
-                    },
-                    "customer": {
-                      "uid": "sandbox-ng-bank-onramp-001",
-                      "type": "user",
-                      "name": "John Doe",
-                      "country": "NG",
-                      "phone": "+2348012345678",
-                      "address": "Lagos",
-                      "dob": "01/01/1990",
-                      "email": "john@example.com",
-                      "id_number": "A1234567",
-                      "id_type": "passport",
-                      "additional_id_number": "12345678901",
-                      "additional_id_type": "bvn"
-                    },
-                    "payment_method": {
-                      "type": "bank",
-                      "account_number": "0123456789",
-                      "account_name": "John Doe",
-                      "network_id": "5f1af11b-305f-4420-8fce-65ed2725a409"
-                    },
-                    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
-                  }
-                },
-                "ng_offramp_bank": {
-                  "summary": "NG OffRamp \u2014 bank payout (network_id required)",
-                  "description": "Customer sends USDC and receives NGN to their bank account. `payment_method.network_id` is the UUID from `GET /partner/banks` or catalog for the destination bank (e.g. Access Bank = `5f1af11b-305f-4420-8fce-65ed2725a409`).",
-                  "value": {
-                    "order_type": "OffRamp",
-                    "currency": "NGN",
-                    "country": "NG",
-                    "crypto_amount": 20,
-                    "asset": {
-                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
-                      "currency": "USDC",
-                      "network": "BASE"
-                    },
-                    "refund_address": "0x3333333333333333333333333333333333333333",
-                    "customer": {
-                      "uid": "sandbox-ng-bank-offramp-001",
-                      "type": "user",
-                      "name": "John Doe",
-                      "country": "NG",
-                      "phone": "+2348012345678",
-                      "address": "Lagos",
-                      "dob": "01/01/1990",
-                      "email": "john@example.com",
-                      "id_number": "A1234567",
-                      "id_type": "passport",
-                      "additional_id_number": "12345678901",
-                      "additional_id_type": "bvn"
-                    },
-                    "payment_method": {
-                      "type": "bank",
-                      "account_number": "0123456789",
-                      "account_name": "John Doe",
-                      "network_id": "5f1af11b-305f-4420-8fce-65ed2725a409"
-                    }
-                  }
-                },
-                "ke_offramp_institution_bank": {
-                  "summary": "KE OffRamp \u2014 institution (B2B) bank payout",
-                  "description": "Institution OffRamp: same quote shape as retail; required customer fields are uid, business_name, business_id, and email (no DOB / national ID / personal name). business_id is the legal registration or tax id of the paying business \u2014 not an Element Pay console id. Bank payee is payment_method.account_name + account_number + network_id (payee may be a different company). Sandbox: include Successful in customer.business_name for auto-credit (do not send on-chain). network_id example is National Bank of Kenya from sandbox catalog.",
-                  "value": {
-                    "order_type": "OffRamp",
-                    "customer_type": "institution",
-                    "currency": "KES",
-                    "country": "KE",
-                    "crypto_amount": 20,
-                    "asset": {
-                      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
-                      "currency": "USDC",
-                      "network": "BASE"
-                    },
-                    "refund_address": "0xE1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4E1E4",
-                    "customer": {
-                      "uid": "sandbox-ke-inst-offramp-001",
-                      "type": "institution",
-                      "business_name": "Successful Acme Trading Ltd",
-                      "business_id": "PVT-1234567A",
-                      "email": "treasury@acme-trading.example"
-                    },
-                    "payment_method": {
-                      "type": "bank",
-                      "account_number": "1111111111",
-                      "account_name": "Acme Payee Holdings Ltd",
-                      "network_id": "30f11b2e-0905-4c09-ba5f-d05aa4e4a11c"
-                    }
-                  }
                 }
+              },
+              "example": {
+                "order_type": "OnRamp",
+                "currency": "KES",
+                "country": "KE",
+                "local_amount": 800,
+                "customer_id": "pcus_a1b2c3d4e5f6",
+                "asset": {
+                  "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                  "currency": "USDC",
+                  "network": "BASE"
+                },
+                "payment_method": {
+                  "type": "mobile_money",
+                  "phone_number": "+2541111111111",
+                  "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+                },
+                "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
               }
             }
           },
@@ -2364,7 +2252,10 @@
           }
         ],
         "x-mint": {
-          "content": "Create a binding quote for a fiat \u2194 crypto order.\n\n<Steps>\n  <Step title=\"Create quote\">\n    `POST` with corridor, customer, and payment method details.\n  </Step>\n  <Step title=\"Show pricing\">\n    Display returned amounts and **payment instructions** to the user (OnRamp).\n  </Step>\n  <Step title=\"Accept\">\n    [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.\n  </Step>\n</Steps>\n\n### Discovery before quote\n- [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) \u2192 rails for the corridor\n- [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` \u2192 `providers[].id` for momo/bank\n- [`GET /partner/order-requirements`](/partner/order-requirements) \u2192 exact field names (`network_id` required for momo/bank)\n- [`GET /partner/banks`](/partner/banks) \u2192 bank institution UUIDs where applicable\n\n### Payment method by rail\n**`mobile_money`**\n- `payment_method.type=mobile_money`\n- `payment_method.phone_number` (E.164)\n- `payment_method.network_id` (UUID from catalog `providers[].id`)\n\n**`bank`**\n- `payment_method.type=bank`\n- `account_number`, `account_name`\n- `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)\n\n`provider` is optional \u2014 when omitted, ElementPay auto-routes by corridor.\n\n### Quote IDs\n- OnRamp: `yc_receive_<id>`\n- OffRamp: `yc_send_<id>`\n\nThe quote expires at `data.expires_at`."
+          "content": "Create a binding quote for a fiat \u2194 crypto order.\n\n<Steps>\n  <Step title=\"Create quote\">\n    `POST` with corridor, customer, and payment method details.\n  </Step>\n  <Step title=\"Show pricing\">\n    Display returned amounts and **payment instructions** to the user (OnRamp).\n  </Step>\n  <Step title=\"Accept\">\n    [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.\n  </Step>\n</Steps>\n\n### Customer identity\nUse **one** of:\n\n- **`customer_id`** (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) \u2014 recommended for new integrations\n- **Inline `customer`** \u2014 still supported; pick **KE OnRamp \u2014 inline customer** in Try it or fill the `customer` object\n\nDo not send both. Corridor-specific inline shapes: [Sandbox test payloads](/sandbox/test-payloads).\n\n<Note>\nTry it omits legacy top-level fields (`provider`, `channel_id`, `destination`, `rail`, \u2026). Omit `provider` on live calls too \u2014 Element Pay auto-routes by corridor.\n</Note>\n\n### Discovery before quote\n- [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) \u2192 rails for the corridor\n- [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` \u2192 `providers[].id` for momo/bank\n- [`GET /partner/order-requirements`](/partner/order-requirements) \u2192 exact field names (`network_id` required for momo/bank)\n- [`GET /partner/banks`](/partner/banks) \u2192 bank institution UUIDs where applicable\n\n### Payment method by rail\n**`mobile_money`**\n- `payment_method.type=mobile_money`\n- `payment_method.phone_number` (E.164)\n- `payment_method.network_id` (UUID from catalog `providers[].id`)\n\n**`bank`**\n- `payment_method.type=bank`\n- `account_number`, `account_name`\n- `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)\n\n### Quote IDs\n- OnRamp: `yc_receive_<id>`\n- OffRamp: `yc_send_<id>`\n\nThe quote expires at `data.expires_at`.",
+          "playground": {
+            "expand": false
+          }
         }
       }
     },
@@ -2491,7 +2382,7 @@
           "partner"
         ],
         "summary": "Accept a partner order quote",
-        "description": "Accepts a quote returned by `/partner/orders/quote`. For local fiat rail, the `quote_id` already contains the provider and direction, so the request body can be `{}`. international bank quote ids work the same way. Accepting creates or returns the local ElementPay order, copies the API key webhook URL, and triggers partner webhook notifications as the order moves through `order.processing`, `order.settled`, `order.failed`, or `order.refunded`. This route is idempotent for already accepted local fiat rail previews: retries return the existing local order.",
+        "description": "Accept a previously created quote and create the local order.",
         "operationId": "partner_order_accept_partner_orders__quote_id__accept_post",
         "security": [
           {
@@ -2971,74 +2862,57 @@
                 "schema": {
                   "$ref": "#/components/schemas/PartnerCustomerListSuccessResponse"
                 },
-                "examples": {
-                  "matched_by_ref": {
-                    "summary": "Known partner_customer_ref",
-                    "description": "Full vault row for the matching ref (same shape as GET /partner/customers/{customer_id}).",
-                    "value": {
-                      "status": "success",
-                      "message": "Customers",
-                      "data": {
-                        "customers": [
-                          {
-                            "id": "pcus_a1b2c3d4e5f6",
-                            "partner_customer_ref": "partner-cust-001",
-                            "type": "individual",
-                            "status": "approved",
-                            "profile": {
-                              "first_name": "Jane",
-                              "last_name": "Doe",
-                              "email": "jane@example.com",
-                              "date_of_birth": "1990-01-15",
-                              "country_of_residence": "GB",
-                              "phone": "+447700900123",
-                              "gender": "f",
-                              "id_type": "passport",
-                              "id_number": "A1234567",
-                              "address": {
-                                "line1": "1 Example Street",
-                                "city": "London",
-                                "country": "GB",
-                                "postal_code": "E1 6AN"
-                              }
-                            },
-                            "documents": [
-                              {
-                                "id": "pdoc_a1b2c3d4e5f6",
-                                "category": "identity",
-                                "content_type": "application/pdf",
-                                "created_at": "2026-08-01T12:00:00+00:00"
-                              },
-                              {
-                                "id": "pdoc_b2c3d4e5f6a7",
-                                "category": "address",
-                                "content_type": "application/pdf",
-                                "created_at": "2026-08-01T12:01:00+00:00"
-                              }
-                            ],
-                            "products": {
-                              "deposit_account": {
-                                "status": "ready"
-                              }
-                            },
-                            "created_at": "2026-08-01T11:55:00+00:00",
-                            "updated_at": "2026-08-01T12:05:00+00:00",
-                            "submitted_at": "2026-08-01T12:02:00+00:00"
+                "example": {
+                  "status": "success",
+                  "message": "Customers",
+                  "data": {
+                    "customers": [
+                      {
+                        "id": "pcus_a1b2c3d4e5f6",
+                        "partner_customer_ref": "partner-cust-001",
+                        "type": "individual",
+                        "status": "approved",
+                        "profile": {
+                          "first_name": "Jane",
+                          "last_name": "Doe",
+                          "email": "jane@example.com",
+                          "date_of_birth": "1990-01-15",
+                          "country_of_residence": "GB",
+                          "phone": "+447700900123",
+                          "gender": "f",
+                          "id_type": "passport",
+                          "id_number": "A1234567",
+                          "address": {
+                            "line1": "1 Example Street",
+                            "city": "London",
+                            "country": "GB",
+                            "postal_code": "E1 6AN"
                           }
-                        ]
+                        },
+                        "documents": [
+                          {
+                            "id": "pdoc_a1b2c3d4e5f6",
+                            "category": "identity",
+                            "content_type": "application/pdf",
+                            "created_at": "2026-08-01T12:00:00+00:00"
+                          },
+                          {
+                            "id": "pdoc_b2c3d4e5f6a7",
+                            "category": "address",
+                            "content_type": "application/pdf",
+                            "created_at": "2026-08-01T12:01:00+00:00"
+                          }
+                        ],
+                        "products": {
+                          "deposit_account": {
+                            "status": "ready"
+                          }
+                        },
+                        "created_at": "2026-08-01T11:55:00+00:00",
+                        "updated_at": "2026-08-01T12:05:00+00:00",
+                        "submitted_at": "2026-08-01T12:02:00+00:00"
                       }
-                    }
-                  },
-                  "unknown_ref": {
-                    "summary": "Unknown partner_customer_ref",
-                    "description": "No customer with that ref exists for this API key tenant.",
-                    "value": {
-                      "status": "success",
-                      "message": "Customers",
-                      "data": {
-                        "customers": []
-                      }
-                    }
+                    ]
                   }
                 }
               }
@@ -3593,7 +3467,7 @@
             }
           },
           "409": {
-            "description": "Concurrent status change during revoke — retry the request",
+            "description": "Concurrent status change during revoke \u2014 retry the request",
             "content": {
               "application/json": {
                 "schema": {
@@ -4152,48 +4026,6 @@
                     "bank_name": "Example Bank",
                     "swift_bic": "COBADEFFXXX",
                     "instructions": "Show the account holder name and these bank details to the customer. They should send a bank transfer in the account currency to this account."
-                  }
-                },
-                "examples": {
-                  "fiat": {
-                    "summary": "Fiat IBAN / bank transfer",
-                    "value": {
-                      "status": "success",
-                      "message": "Deposit instructions",
-                      "data": {
-                        "account_id": 18,
-                        "customer_id": "pcus_a1b2c3d4e5f6",
-                        "asset_type": "fiat",
-                        "currency": "EUR",
-                        "network": null,
-                        "status": "ready",
-                        "account_holder_name": "Jane Doe",
-                        "account_number": "DE89370400440532013000",
-                        "bank_code": "COBADEFF",
-                        "bank_name": "Example Bank",
-                        "swift_bic": "COBADEFFXXX",
-                        "instructions": "Show the account holder name and these bank details to the customer. They should send a bank transfer in the account currency to this account."
-                      }
-                    }
-                  },
-                  "stablecoin": {
-                    "summary": "Stablecoin wallet",
-                    "value": {
-                      "status": "success",
-                      "message": "Deposit instructions",
-                      "data": {
-                        "account_id": 21,
-                        "customer_id": "pcus_a1b2c3d4e5f6",
-                        "asset_type": "stablecoin",
-                        "currency": "USDC",
-                        "network": "Base",
-                        "status": "ready",
-                        "account_holder_name": "Jane Doe",
-                        "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
-                        "chain_disclaimer": "Send only USDC on Base to this address. Funds sent on the wrong network may be lost.",
-                        "instructions": "Show the wallet address and network to the customer. They must send the matching stablecoin on that network only."
-                      }
-                    }
                   }
                 }
               }
@@ -5969,7 +5801,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Present when status is incomplete — fields/docs still required before submit."
+            "description": "Present when status is incomplete \u2014 fields/docs still required before submit."
           },
           "review_note": {
             "type": "string",
@@ -6341,6 +6173,175 @@
         "example": {
           "idempotency_key": "send-2026-07-30-001",
           "preview_token": "preview_token_from_sends_preview_response"
+        }
+      },
+      "PartnerOrderQuoteRequestTryIt": {
+        "type": "object",
+        "required": [
+          "order_type"
+        ],
+        "properties": {
+          "order_type": {
+            "type": "string",
+            "enum": [
+              "OnRamp",
+              "OffRamp"
+            ],
+            "description": "OnRamp = fiat to crypto. OffRamp = crypto to fiat.",
+            "example": "OnRamp"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "ISO country (African corridors). Omit for EUR/USD international bank payin.",
+            "example": "KE"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "example": "KES"
+          },
+          "local_amount": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "OnRamp: fiat amount the customer pays.",
+            "example": 800
+          },
+          "crypto_amount": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "OffRamp: stablecoin amount the customer sends.",
+            "example": 20
+          },
+          "customer_id": {
+            "type": "string",
+            "description": "Approved vault customer id (pcus_*). Use this **or** inline `customer`, not both.",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          "customer": {
+            "type": "object",
+            "description": "Inline retail KYC when you do not use customer_id. Corridor extras (BVN, institution): /sandbox/test-payloads.",
+            "properties": {
+              "uid": {
+                "type": "string",
+                "description": "Partner-stable user id for this order.",
+                "example": "sandbox-ke-onramp-success-001"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "institution"
+                ],
+                "example": "user"
+              },
+              "name": {
+                "type": "string",
+                "example": "Successful Jane Customer"
+              },
+              "country": {
+                "type": "string",
+                "example": "KE"
+              },
+              "phone": {
+                "type": "string",
+                "example": "+2541111111111"
+              },
+              "email": {
+                "type": "string",
+                "example": "jane@example.com"
+              },
+              "id_number": {
+                "type": "string",
+                "example": "A1234567"
+              },
+              "id_type": {
+                "type": "string",
+                "example": "passport"
+              }
+            },
+            "additionalProperties": true
+          },
+          "asset": {
+            "type": "object",
+            "description": "Stablecoin asset block (sandbox default: Base USDC).",
+            "properties": {
+              "token": {
+                "type": "string",
+                "example": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913"
+              },
+              "currency": {
+                "type": "string",
+                "example": "USDC"
+              },
+              "network": {
+                "type": "string",
+                "example": "BASE"
+              }
+            }
+          },
+          "payment_method": {
+            "type": "object",
+            "description": "Fiat rail. mobile_money: phone_number + network_id. bank: account_number, account_name, network_id.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "mobile_money",
+                  "bank"
+                ],
+                "example": "mobile_money"
+              },
+              "phone_number": {
+                "type": "string",
+                "description": "E.164 MSISDN (mobile_money).",
+                "example": "+2541111111111"
+              },
+              "account_number": {
+                "type": "string"
+              },
+              "account_name": {
+                "type": "string"
+              },
+              "network_id": {
+                "type": "string",
+                "description": "Institution UUID from GET /partner/catalog.",
+                "example": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+              }
+            }
+          },
+          "wallet_address": {
+            "type": "string",
+            "description": "OnRamp: destination wallet for stablecoin delivery.",
+            "example": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+          },
+          "refund_address": {
+            "type": "string",
+            "description": "OffRamp: refund wallet if payout fails.",
+            "example": "0x3333333333333333333333333333333333333333"
+          }
+        },
+        "title": "PartnerOrderQuoteRequestTryIt",
+        "description": "Quote body for Mintlify Try it. Includes customer_id **or** inline customer, asset, and payment_method only. Not shown here (still accepted on live API if needed): provider, channel_id, channel_type, sequence_id, destination, source, sender, recipient, rail, token top-level alias, crypto_currency/crypto_network hints.",
+        "example": {
+          "order_type": "OnRamp",
+          "currency": "KES",
+          "country": "KE",
+          "local_amount": 800,
+          "customer_id": "pcus_a1b2c3d4e5f6",
+          "asset": {
+            "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+            "currency": "USDC",
+            "network": "BASE"
+          },
+          "payment_method": {
+            "type": "mobile_money",
+            "phone_number": "+2541111111111",
+            "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+          },
+          "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
         }
       }
     },
