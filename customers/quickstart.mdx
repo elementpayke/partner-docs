@@ -83,9 +83,23 @@ curl -sS "$BASE/partner/customers/requirements?type=business&country=US" \
   -H "X-API-Key: $API_KEY" | jq '.data'
 ```
 
-Collect exactly the returned `required_fields`, `required_documents`, and any `conditional_fields` for the customer's country.
+Collect the returned `required_fields`, `required_documents`, and any `conditional_fields` for the customer's country.
+
+<Tip>
+**Business nested fields:** top-level `required_fields` lists `"officers"` only. Per-officer fields live under **`data.field_shapes.officers.item_shape`**. While the customer is `incomplete`, **`GET /partner/customers/{customer_id}`** returns **`missing[]`** with indexed paths (e.g. `profile.officers[0].identity_document.number`) — use that to drive your form.
+</Tip>
 
 **Individual (always required before submit):** besides name, contact, DOB, and gender, the vault package includes **`profile.address`** (`line1`, `city`, `country`), **`profile.id_number`** (government ID number), and **`profile.id_type`** (e.g. `passport`, `national_id`, `drivers_license`). Upload **`identity`** and **`address`** documents matching requirements.
+
+**Business (required before submit):** top-level company fields from `required_fields`, plus **each** `profile.officers[]` entry must include:
+
+| Area | Fields |
+|------|--------|
+| Person | `first_name`, `last_name`, `date_of_birth`, `email`, `nationality`, `role` or `job_title` |
+| Identity | `identity_document.type`, `identity_document.number`, `identity_document.issuing_country` |
+| Address | `address.line1`, `address.city`, `address.country` |
+
+Uploading officer **`identity`** and **`address`** document files is required, but **does not replace** the ID number and address in profile JSON. **`profile.industry`** must be plain language (e.g. `Payment services`, `fintech`) — not a numeric category code like `7372`.
 
 **Nigeria (`country_of_residence: NG`):** also requires **`profile.additional_id_type`** (`bvn`) and **`profile.additional_id_number`** (11-digit BVN).
 
@@ -128,7 +142,9 @@ curl -sS -X POST "$BASE/partner/customers" \
 
 ### Business
 
-Illustrative shape — treat requirements as source of truth. US-incorporated businesses also need `tax_id` (EIN). Officers and KYB documents are required before submit.
+Illustrative shape — treat requirements and **`missing[]`** as source of truth. US-incorporated businesses also need `tax_id` (EIN). Each officer must be complete in profile JSON before submit (see table in [Requirements](#1-requirements)). This is **not** a full UBO/shareholder program — at least one complete officer is required; if you send multiple officers, validate each.
+
+**Quote / accept note:** when you pass `customer_id` on quote for a **business**, we hydrate **company** fields only (`legal_name` → `business_name`, `registration_number` → `business_id`, `email`, country). Officer details are for **vault KYC / deposit banking**, not corridor quote party building.
 
 ```bash
 curl -sS -X POST "$BASE/partner/customers" \
@@ -146,16 +162,21 @@ curl -sS -X POST "$BASE/partner/customers" \
       "country_of_incorporation": "US",
       "tax_id": "123456789",
       "registration_number": "REG-001",
-      "industry": "fintech",
+      "industry": "Payment services",
       "description": "B2B payments for SMEs",
       "registered_address": {
-        "line_1": "100 Market Street",
+        "line1": "100 Market Street",
         "city": "San Francisco",
         "state": "CA",
         "country": "US",
         "postal_code": "94105"
       },
-      "incorporation_meta": {"year": 2020},
+      "incorporation_meta": {
+        "year": 2020,
+        "month": 6,
+        "country": "US",
+        "state": "CA"
+      },
       "monthly_payments_count": 100,
       "monthly_transaction_value": 250000,
       "max_transfer_amount": 50000,
@@ -167,13 +188,35 @@ curl -sS -X POST "$BASE/partner/customers" \
           "role": "director",
           "first_name": "Ada",
           "last_name": "Lovelace",
-          "email": "ada@acme.example"
+          "date_of_birth": "1990-01-15",
+          "email": "ada@acme.example",
+          "nationality": "US",
+          "identity_document": {
+            "type": "passport",
+            "number": "A1234567",
+            "issuing_country": "US"
+          },
+          "address": {
+            "line1": "200 Officer Lane",
+            "city": "San Francisco",
+            "state": "CA",
+            "country": "US",
+            "postal_code": "94105"
+          }
         }
       ]
     }
   }' | jq '.data | {id, status, partner_customer_ref, missing}'
 ```
 
+Poll completeness while `status` is `incomplete`:
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data | {status, missing}'
+```
+
+Example incomplete officer → `missing` includes `profile.officers[0].identity_document.number` until PATCHed.
 
 Save `data.id` (`pcus_*`). While incomplete: `PATCH /partner/customers/{customer_id}` with `{"profile": { … }}`. List: `GET /partner/customers?status=incomplete&limit=50`. Lookup by your ref: `GET /partner/customers?partner_customer_ref=partner-cust-001`.
 
@@ -214,7 +257,7 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/submit" \
   -d '{}' | jq '.data | {id, status}'
 ```
 
-Incomplete package → **422** with `missing[]`.
+Incomplete package → **422** with `data.code: package_incomplete` and `missing[]` (e.g. `profile.officers[0].identity_document.number`, `document.identity`).
 
 ## 5. Wait until approved (webhooks + poll)
 
@@ -324,7 +367,7 @@ OnRamp quote ids are typically `yc_receive_…`. Use `asset: { token, currency, 
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Missing profile/docs on submit | `422` + `missing[]` (e.g. `profile.id_type`, `profile.id_number`, `document.identity`) | PATCH / upload all requirements fields, resubmit |
+| Missing profile/docs on submit | `422` + `missing[]` (e.g. `profile.id_type`, `profile.id_number`, `profile.officers[0].identity_document.number`, `document.identity`) | PATCH / upload until `GET` shows empty `missing[]`, then resubmit |
 | Quote with unapproved / suspended `customer_id` | `422` | Wait for `approved` or use another customer |
 | Revoke after offboard | `409` on PATCH | Expected — customer is terminal for edits |
 | Unknown / other-tenant id | `404` | Use id from this API key |

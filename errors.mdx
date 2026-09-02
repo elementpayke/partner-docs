@@ -34,14 +34,19 @@ Submit with an incomplete package:
   "message": "Customer package is incomplete",
   "data": {
     "code": "package_incomplete",
-    "missing": ["profile.id_number", "document.identity", "document.address"]
+    "missing": [
+      "profile.id_number",
+      "profile.officers[0].identity_document.number",
+      "document.identity",
+      "document.address"
+    ]
   }
 }
 ```
 
 | Situation | Action |
 |-----------|--------|
-| `missing[]` on submit | `PATCH` profile / upload documents per [Customer KYC](/customers/quickstart) |
+| `missing[]` on submit | `PATCH` profile / upload documents per [Customer KYC](/customers/quickstart). Business: check **`field_shapes.officers`** on requirements and indexed paths like `profile.officers[0].…` |
 | Quote with `customer_id` not approved | Wait for `customer.approved` or poll GET customer |
 | `deposit_account` not ready on account APIs | **409** — banking gate; KYC may already be done |
 
