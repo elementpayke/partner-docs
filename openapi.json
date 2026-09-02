@@ -2125,7 +2125,9 @@
             "description": "Partner order quote created",
             "content": {
               "application/json": {
-                "schema": {},
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
                 "example": {
                   "status": "success",
                   "message": "Partner order quote created",
@@ -2292,7 +2294,9 @@
             "description": "Partner order snapshot",
             "content": {
               "application/json": {
-                "schema": {},
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
                 "example": {
                   "status": "success",
                   "message": "Partner order",
@@ -2439,7 +2443,9 @@
             "description": "Partner order quote accepted",
             "content": {
               "application/json": {
-                "schema": {},
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
                 "example": {
                   "status": "success",
                   "message": "Partner order quote accepted",
@@ -2587,7 +2593,7 @@
           "partner-customers"
         ],
         "summary": "Customer KYC package requirements",
-        "description": "Return required profile fields and document categories for a customer type.",
+        "description": "Return the **full KYC package** for a customer type before create/submit.",
         "operationId": "partner_customer_requirements_partner_customers_requirements_get",
         "security": [
           {
@@ -2630,15 +2636,212 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Required profile fields and document categories for the requested customer type.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerRequirementsSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Customer requirements",
+                  "data": {
+                    "type": "individual",
+                    "required_fields": [
+                      "first_name",
+                      "last_name",
+                      "email",
+                      "date_of_birth",
+                      "country_of_residence",
+                      "gender",
+                      "phone",
+                      "address",
+                      "id_number",
+                      "id_type"
+                    ],
+                    "required_documents": [
+                      {
+                        "key": "identity",
+                        "description": "Government photo ID (passport, license, national ID)"
+                      },
+                      {
+                        "key": "address",
+                        "description": "Proof of address (last 3 months)"
+                      }
+                    ],
+                    "optional_fields": [
+                      "middle_name",
+                      "liveness_check_id",
+                      "proof_of_address_type",
+                      "additional_id_number",
+                      "additional_id_type"
+                    ],
+                    "conditional_fields": [
+                      {
+                        "field": "additional_id_type",
+                        "when": "country_of_residence == NG",
+                        "required": true,
+                        "description": "Nigeria BVN type (use bvn)",
+                        "example": "bvn"
+                      },
+                      {
+                        "field": "additional_id_number",
+                        "when": "country_of_residence == NG",
+                        "required": true,
+                        "description": "Nigeria BVN number (11 digits)",
+                        "example": "12345678901"
+                      }
+                    ],
+                    "products": {
+                      "deposit_account": {
+                        "notes": "deposit_account.status ready means KYC approved and partner may open deposit accounts \u2014 no automatic account open."
+                      }
+                    },
+                    "notes": "Full individual package is required before submit. profile.address must include line1, city, and country. profile.id_number and profile.id_type are required. Nigeria residents must also include profile.additional_id_type (bvn) and profile.additional_id_number."
+                  }
+                },
+                "examples": {
+                  "individual": {
+                    "summary": "Individual package",
+                    "value": {
+                      "status": "success",
+                      "message": "Customer requirements",
+                      "data": {
+                        "type": "individual",
+                        "required_fields": [
+                          "first_name",
+                          "last_name",
+                          "email",
+                          "date_of_birth",
+                          "country_of_residence",
+                          "gender",
+                          "phone",
+                          "address",
+                          "id_number",
+                          "id_type"
+                        ],
+                        "required_documents": [
+                          {
+                            "key": "identity",
+                            "description": "Government photo ID (passport, license, national ID)"
+                          },
+                          {
+                            "key": "address",
+                            "description": "Proof of address (last 3 months)"
+                          }
+                        ],
+                        "optional_fields": [
+                          "middle_name",
+                          "liveness_check_id",
+                          "proof_of_address_type",
+                          "additional_id_number",
+                          "additional_id_type"
+                        ],
+                        "conditional_fields": [
+                          {
+                            "field": "additional_id_type",
+                            "when": "country_of_residence == NG",
+                            "required": true,
+                            "description": "Nigeria BVN type (use bvn)",
+                            "example": "bvn"
+                          },
+                          {
+                            "field": "additional_id_number",
+                            "when": "country_of_residence == NG",
+                            "required": true,
+                            "description": "Nigeria BVN number (11 digits)",
+                            "example": "12345678901"
+                          }
+                        ],
+                        "products": {
+                          "deposit_account": {
+                            "notes": "deposit_account.status ready means KYC approved and partner may open deposit accounts \u2014 no automatic account open."
+                          }
+                        },
+                        "notes": "Full individual package is required before submit. profile.address must include line1, city, and country. profile.id_number and profile.id_type are required. Nigeria residents must also include profile.additional_id_type (bvn) and profile.additional_id_number."
+                      }
+                    }
+                  },
+                  "business_us": {
+                    "summary": "Business package (US)",
+                    "description": "Pass `type=business&country=US` to hard-require tax_id.",
+                    "value": {
+                      "status": "success",
+                      "message": "Customer requirements",
+                      "data": {
+                        "type": "business",
+                        "required_fields": [
+                          "legal_name",
+                          "email",
+                          "phone",
+                          "website",
+                          "business_type",
+                          "country_of_incorporation",
+                          "registered_address",
+                          "industry",
+                          "registration_number",
+                          "description",
+                          "incorporation_meta",
+                          "monthly_payments_count",
+                          "monthly_transaction_value",
+                          "max_transfer_amount",
+                          "annual_turnover",
+                          "customer_types",
+                          "funding_source",
+                          "officers",
+                          "tax_id"
+                        ],
+                        "required_documents": [
+                          {
+                            "key": "certificate_of_incorporation",
+                            "description": "Business registration document"
+                          },
+                          {
+                            "key": "memorandum_of_association",
+                            "description": "Memorandum / articles document"
+                          },
+                          {
+                            "key": "proof_of_address",
+                            "description": "Business proof of address (last 3 months)"
+                          },
+                          {
+                            "key": "identity",
+                            "description": "Officer government photo ID"
+                          },
+                          {
+                            "key": "address",
+                            "description": "Officer proof of address (last 3 months)"
+                          }
+                        ],
+                        "optional_fields": [
+                          "liveness_check_id",
+                          "sales_channel",
+                          "operating_address"
+                        ],
+                        "conditional_fields": [
+                          {
+                            "field": "tax_id",
+                            "when": "country_of_incorporation == US",
+                            "required": true,
+                            "description": "US EIN (9 digits)",
+                            "example": "123456789"
+                          }
+                        ],
+                        "products": {
+                          "deposit_account": {
+                            "notes": "After status approved and deposit_account becomes ready, partner may open deposit accounts via account APIs."
+                          }
+                        },
+                        "notes": "Full business package is required before submit. US-incorporated businesses must include profile.tax_id (EIN)."
+                      }
+                    }
+                  }
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Query validation error",
             "content": {
               "application/json": {
                 "schema": {
@@ -2669,12 +2872,93 @@
                   "status": "error",
                   "message": "Validation error",
                   "data": {
-                    "field": "country"
+                    "field": "type"
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid customer type query parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Invalid customer type",
+                  "data": {
+                    "field": "type",
+                    "allowed": [
+                      "business",
+                      "individual"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
           }
+        },
+        "x-mint": {
+          "content": "Return the **full KYC package** for a customer type before create/submit.\n\n### Query\n- **`type`** \u2014 `individual` (default) or `business`\n- **`country`** \u2014 optional ISO code; sharpens corridor-specific conditional fields (e.g. NG BVN, US EIN)\n\nResponse `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.\n\n<Note>\nThis is **not** the same as [`GET /partner/order-requirements`](/partner/order-requirements) (quote field hints per corridor).\n</Note>"
         }
       }
     },
@@ -2746,10 +3030,52 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "New incomplete vault case (or existing row on idempotent ref hit).",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerVaultSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Customer created",
+                  "data": {
+                    "id": "pcus_a1b2c3d4e5f6",
+                    "partner_customer_ref": "cust-ke-001",
+                    "type": "individual",
+                    "status": "incomplete",
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "address": {
+                        "line1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    },
+                    "documents": [],
+                    "products": {
+                      "deposit_account": {
+                        "status": "none"
+                      }
+                    },
+                    "missing": [
+                      "profile.id_number",
+                      "profile.id_type",
+                      "document.identity",
+                      "document.address"
+                    ],
+                    "created_at": "2026-08-01T11:55:00+00:00",
+                    "updated_at": "2026-08-01T11:55:00+00:00",
+                    "submitted_at": null
+                  }
+                }
               }
             }
           },
@@ -2787,6 +3113,42 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -2957,6 +3319,42 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
           }
         }
       }
@@ -2994,10 +3392,61 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "One tenant-owned customer including document metadata and missing[].",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerVaultSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Customer",
+                  "data": {
+                    "id": "pcus_a1b2c3d4e5f6",
+                    "partner_customer_ref": "partner-cust-001",
+                    "type": "individual",
+                    "status": "approved",
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "id_type": "passport",
+                      "id_number": "A1234567",
+                      "address": {
+                        "line1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    },
+                    "documents": [
+                      {
+                        "id": "pdoc_a1b2c3d4e5f6",
+                        "category": "identity",
+                        "content_type": "application/pdf",
+                        "created_at": "2026-08-01T12:00:00+00:00"
+                      },
+                      {
+                        "id": "pdoc_b2c3d4e5f6a7",
+                        "category": "address",
+                        "content_type": "application/pdf",
+                        "created_at": "2026-08-01T12:01:00+00:00"
+                      }
+                    ],
+                    "products": {
+                      "deposit_account": {
+                        "status": "ready"
+                      }
+                    },
+                    "created_at": "2026-08-01T11:55:00+00:00",
+                    "updated_at": "2026-08-01T12:05:00+00:00",
+                    "submitted_at": "2026-08-01T12:02:00+00:00"
+                  }
+                }
               }
             }
           },
@@ -3035,6 +3484,78 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found for this API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Customer not found",
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -3122,10 +3643,52 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Updated draft customer (may include missing[] while incomplete).",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerVaultSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Customer updated",
+                  "data": {
+                    "id": "pcus_a1b2c3d4e5f6",
+                    "partner_customer_ref": "cust-ke-001",
+                    "type": "individual",
+                    "status": "incomplete",
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "address": {
+                        "line1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    },
+                    "documents": [],
+                    "products": {
+                      "deposit_account": {
+                        "status": "none"
+                      }
+                    },
+                    "missing": [
+                      "profile.id_number",
+                      "profile.id_type",
+                      "document.identity",
+                      "document.address"
+                    ],
+                    "created_at": "2026-08-01T11:55:00+00:00",
+                    "updated_at": "2026-08-01T11:55:00+00:00",
+                    "submitted_at": null
+                  }
+                }
               }
             }
           },
@@ -3163,6 +3726,42 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -3230,10 +3829,66 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Document stored; returns metadata and updated customer row.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerDocumentUploadSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Document uploaded",
+                  "data": {
+                    "document": {
+                      "id": "pdoc_a1b2c3d4e5f6",
+                      "category": "identity",
+                      "content_type": "application/pdf",
+                      "created_at": "2026-08-01T12:00:00+00:00"
+                    },
+                    "customer": {
+                      "id": "pcus_a1b2c3d4e5f6",
+                      "partner_customer_ref": "cust-ke-001",
+                      "type": "individual",
+                      "status": "incomplete",
+                      "profile": {
+                        "first_name": "Jane",
+                        "last_name": "Doe",
+                        "email": "jane@example.com",
+                        "date_of_birth": "1990-01-15",
+                        "country_of_residence": "GB",
+                        "phone": "+447700900123",
+                        "gender": "f",
+                        "address": {
+                          "line1": "1 Example Street",
+                          "city": "London",
+                          "country": "GB",
+                          "postal_code": "E1 6AN"
+                        }
+                      },
+                      "documents": [
+                        {
+                          "id": "pdoc_a1b2c3d4e5f6",
+                          "category": "identity",
+                          "content_type": "application/pdf",
+                          "created_at": "2026-08-01T12:00:00+00:00"
+                        }
+                      ],
+                      "products": {
+                        "deposit_account": {
+                          "status": "none"
+                        }
+                      },
+                      "missing": [
+                        "profile.id_number",
+                        "profile.id_type",
+                        "document.address"
+                      ],
+                      "created_at": "2026-08-01T11:55:00+00:00",
+                      "updated_at": "2026-08-01T11:55:00+00:00",
+                      "submitted_at": null
+                    }
+                  }
+                }
               }
             }
           },
@@ -3274,6 +3929,42 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
           }
         }
       }
@@ -3311,15 +4002,66 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Package submitted for review (or current row if already submitted).",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerVaultSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Customer submitted",
+                  "data": {
+                    "id": "pcus_a1b2c3d4e5f6",
+                    "partner_customer_ref": "partner-cust-001",
+                    "type": "individual",
+                    "status": "pending_review",
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "id_type": "passport",
+                      "id_number": "A1234567",
+                      "address": {
+                        "line1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    },
+                    "documents": [
+                      {
+                        "id": "pdoc_a1b2c3d4e5f6",
+                        "category": "identity",
+                        "content_type": "application/pdf",
+                        "created_at": "2026-08-01T12:00:00+00:00"
+                      },
+                      {
+                        "id": "pdoc_b2c3d4e5f6a7",
+                        "category": "address",
+                        "content_type": "application/pdf",
+                        "created_at": "2026-08-01T12:01:00+00:00"
+                      }
+                    ],
+                    "products": {
+                      "deposit_account": {
+                        "status": "none"
+                      }
+                    },
+                    "created_at": "2026-08-01T11:55:00+00:00",
+                    "updated_at": "2026-08-01T12:02:00+00:00",
+                    "submitted_at": "2026-08-01T12:02:00+00:00"
+                  }
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Package incomplete \u2014 missing profile fields or documents",
             "content": {
               "application/json": {
                 "schema": {
@@ -3348,10 +4090,52 @@
                 },
                 "example": {
                   "status": "error",
-                  "message": "Validation error",
+                  "message": "Customer package is incomplete",
                   "data": {
-                    "field": "country"
+                    "code": "package_incomplete",
+                    "missing": [
+                      "profile.id_number",
+                      "profile.id_type",
+                      "document.identity",
+                      "document.address"
+                    ]
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -3580,10 +4364,61 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Failed deposit-account attempt re-queued (unchanged KYC/KYB only).",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerVaultSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Deposit account provisioning retried",
+                  "data": {
+                    "id": "pcus_a1b2c3d4e5f6",
+                    "partner_customer_ref": "partner-cust-001",
+                    "type": "individual",
+                    "status": "approved",
+                    "profile": {
+                      "first_name": "Jane",
+                      "last_name": "Doe",
+                      "email": "jane@example.com",
+                      "date_of_birth": "1990-01-15",
+                      "country_of_residence": "GB",
+                      "phone": "+447700900123",
+                      "gender": "f",
+                      "id_type": "passport",
+                      "id_number": "A1234567",
+                      "address": {
+                        "line1": "1 Example Street",
+                        "city": "London",
+                        "country": "GB",
+                        "postal_code": "E1 6AN"
+                      }
+                    },
+                    "documents": [
+                      {
+                        "id": "pdoc_a1b2c3d4e5f6",
+                        "category": "identity",
+                        "content_type": "application/pdf",
+                        "created_at": "2026-08-01T12:00:00+00:00"
+                      },
+                      {
+                        "id": "pdoc_b2c3d4e5f6a7",
+                        "category": "address",
+                        "content_type": "application/pdf",
+                        "created_at": "2026-08-01T12:01:00+00:00"
+                      }
+                    ],
+                    "products": {
+                      "deposit_account": {
+                        "status": "provisioning"
+                      }
+                    },
+                    "created_at": "2026-08-01T11:55:00+00:00",
+                    "updated_at": "2026-08-01T12:05:00+00:00",
+                    "submitted_at": "2026-08-01T12:02:00+00:00"
+                  }
+                }
               }
             }
           },
@@ -3621,6 +4456,80 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Customer not approved or deposit account not in failed state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Deposit account provisioning is not in a failed state",
+                  "data": {
+                    "deposit_account_status": "ready"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -4130,10 +5039,27 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Estimated fees and preview token for confirm step.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Send preview",
+                  "data": {
+                    "preview_token": "nvsend.eyJhbGciOiJIUzI1NiJ9.preview",
+                    "currency": "USDC",
+                    "network": "Base",
+                    "amount": "5.00",
+                    "fee": "0.05",
+                    "receive_amount": "4.95",
+                    "fee_status": "estimated",
+                    "chain_disclaimer": "Send only USDC on Base to the destination address.",
+                    "expires_at": "2026-07-30T12:10:00+00:00"
+                  }
+                }
               }
             }
           },
@@ -4171,6 +5097,80 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deposit account is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Deposit account is not ready",
+                  "data": {
+                    "deposit_account_status": "pending"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -4239,10 +5239,31 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Stablecoin send accepted for processing.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Send submitted",
+                  "data": {
+                    "id": 55,
+                    "entity_id": 12,
+                    "account_id": 21,
+                    "status": "submitted",
+                    "currency": "USDC",
+                    "network": "Base",
+                    "to_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                    "amount": "5.00",
+                    "fee": "0.05",
+                    "receive_amount": "4.95",
+                    "fee_status": "final",
+                    "chain_disclaimer": "Send only USDC on Base to the destination address.",
+                    "created_at": "2026-08-01T12:05:00+00:00"
+                  }
+                }
               }
             }
           },
@@ -4280,6 +5301,42 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -4348,10 +5405,31 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Stablecoin send status for polling.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Send",
+                  "data": {
+                    "id": 55,
+                    "entity_id": 12,
+                    "account_id": 21,
+                    "status": "submitted",
+                    "currency": "USDC",
+                    "network": "Base",
+                    "to_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
+                    "amount": "5.00",
+                    "fee": "0.05",
+                    "receive_amount": "4.95",
+                    "fee_status": "final",
+                    "chain_disclaimer": "Send only USDC on Base to the destination address.",
+                    "created_at": "2026-08-01T12:05:00+00:00"
+                  }
+                }
               }
             }
           },
@@ -4389,6 +5467,42 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -6355,6 +7469,204 @@
           },
           "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
         }
+      },
+      "PartnerErrorEnvelope": {
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        }
+      },
+      "PartnerSuccessEnvelope": {
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "PartnerCustomerRequirementsData": {
+        "type": "object",
+        "required": [
+          "type",
+          "required_fields",
+          "required_documents",
+          "optional_fields",
+          "conditional_fields",
+          "products",
+          "notes"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "individual",
+              "business"
+            ]
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "description"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "optional_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "conditional_fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "products": {
+            "type": "object"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "title": "PartnerCustomerRequirementsData"
+      },
+      "PartnerCustomerRequirementsSuccessResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "example": "Customer requirements"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PartnerCustomerRequirementsData"
+          }
+        },
+        "title": "PartnerCustomerRequirementsSuccessResponse"
+      },
+      "PartnerCustomerVaultSuccessResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PartnerCustomerVaultRow"
+          }
+        },
+        "title": "PartnerCustomerVaultSuccessResponse"
+      },
+      "PartnerCustomerDocumentUploadData": {
+        "type": "object",
+        "required": [
+          "document",
+          "customer"
+        ],
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/PartnerCustomerDocumentMeta"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/PartnerCustomerVaultRow"
+          }
+        },
+        "title": "PartnerCustomerDocumentUploadData"
+      },
+      "PartnerCustomerDocumentUploadSuccessResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "example": "Document uploaded"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PartnerCustomerDocumentUploadData"
+          }
+        },
+        "title": "PartnerCustomerDocumentUploadSuccessResponse"
       }
     },
     "securitySchemes": {
