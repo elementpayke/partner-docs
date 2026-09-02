@@ -25,6 +25,8 @@ Use each `account_id` for [deposit instructions](/customers/deposit-instructions
 
 ## Auth and environments
 
+Production: `https://api.elementpay.net/api/v1` with `is_live_…` keys.
+
 ```bash
 export BASE="https://sandbox.elementpay.net/api/v1"
 export API_KEY="is_test_…"
@@ -39,7 +41,7 @@ Content-Type: application/json
 
 | Gate | Field | Unlocks |
 |------|-------|---------|
-| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
+| **Quote identity** | `status` is `approved` | `customer_id` on quote |
 | **Banking** | `products.deposit_account.status` is `ready` | Account open / list / get |
 
 `approved` alone does **not** unlock accounts. Always read both fields from `GET /partner/customers/{customer_id}`.
@@ -52,7 +54,7 @@ If account routes are called before `ready`, the API returns **409** with messag
 
 <Steps>
   <Step title="Confirm banking ready">
-    Prefer `customer.deposit_account.updated` ([Webhooks](/webhooks)); or poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+    Prefer `customer.deposit_account.updated` ([Webhooks](/webhooks)); or poll `GET /partner/customers/{customer_id}` until `data.products.deposit_account.status` is `ready`
   </Step>
   <Step title="Open a rail (optional)">
     `POST /partner/customers/{customer_id}/accounts` when you need a new fiat or stablecoin rail

@@ -3,7 +3,7 @@
 Validated copy-paste payloads for sandbox QA. Replace `API_KEY` and `network_id` if your environment differs.
 
 <Warning>
-**Production integrations** must use vault KYC → `customer_id` on quote. Payloads below that use an inline **`customer`** object are for **sandbox QA only** — that path is [deprecated](/orders/quote-and-accept#deprecated-inline-customer) but still supported during migration.
+**New production integrations** must use vault KYC → `customer_id` on quote. Payloads below that use an inline **`customer`** object are for **sandbox QA only**. The legacy inline API path remains supported for existing production integrations during [migration](/orders/quote-and-accept#deprecated-inline-customer).
 </Warning>
 
 **Default asset:** Base USDC (`BASE_USDC` below). Prefer that for all corridors. `POLYGON_USDT` is optional — only use when testing that rail explicitly.
