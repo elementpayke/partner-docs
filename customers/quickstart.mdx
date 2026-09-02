@@ -157,7 +157,7 @@ curl -sS -X POST "$BASE/partner/customers" \
 ```
 
 
-Save `data.id` (`pcus_*`). While incomplete: `PATCH /partner/customers/{customer_id}` with `{"profile": { … }}`. List: `GET /partner/customers?status=incomplete&limit=50`.
+Save `data.id` (`pcus_*`). While incomplete: `PATCH /partner/customers/{customer_id}` with `{"profile": { … }}`. List: `GET /partner/customers?status=incomplete&limit=50`. Lookup by your ref: `GET /partner/customers?partner_customer_ref=partner-cust-001`.
 
 ## 3. Upload documents
 

@@ -8,7 +8,7 @@ Companion to [Customers quickstart](/customers/quickstart), [Accounts](/customer
 |--------|------|-------|
 | `GET` | `/partner/customers/requirements` | `type=individual\|business`, optional `country` |
 | `POST` | `/partner/customers` | `partner_customer_ref`, `type`, `profile` |
-| `GET` | `/partner/customers` | Optional `status`, `limit` |
+| `GET` | `/partner/customers` | Optional `status`, `limit`, or `partner_customer_ref` |
 | `GET` | `/partner/customers/{customer_id}` | Read `status` |
 | `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while incomplete |
 | `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
