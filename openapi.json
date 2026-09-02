@@ -2065,8 +2065,8 @@
                   }
                 },
                 "ke_onramp_inline_sandbox": {
-                  "summary": "KE OnRamp \u2014 inline customer (legacy)",
-                  "description": "Sandbox success MSISDN +2541111111111. Prefer customer_id for new integrations.",
+                  "summary": "KE OnRamp \u2014 inline customer",
+                  "description": "Inline customer object (no customer_id). Sandbox success MSISDN +2541111111111.",
                   "value": {
                     "order_type": "OnRamp",
                     "currency": "KES",
@@ -2252,7 +2252,7 @@
           }
         ],
         "x-mint": {
-          "content": "Create a binding quote for a fiat \u2194 crypto order.\n\n<Steps>\n  <Step title=\"Create quote\">\n    `POST` with corridor, customer, and payment method details.\n  </Step>\n  <Step title=\"Show pricing\">\n    Display returned amounts and **payment instructions** to the user (OnRamp).\n  </Step>\n  <Step title=\"Accept\">\n    [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.\n  </Step>\n</Steps>\n\n### Customer identity\n**Preferred:** `customer_id` (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) \u2014 omit the inline `customer` object.\n\n**Legacy:** inline `customer` on quote still works; see [Sandbox test payloads](/sandbox/test-payloads) for corridor-specific shapes.\n\n### Discovery before quote\n- [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) \u2192 rails for the corridor\n- [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` \u2192 `providers[].id` for momo/bank\n- [`GET /partner/order-requirements`](/partner/order-requirements) \u2192 exact field names (`network_id` required for momo/bank)\n- [`GET /partner/banks`](/partner/banks) \u2192 bank institution UUIDs where applicable\n\n### Payment method by rail\n**`mobile_money`**\n- `payment_method.type=mobile_money`\n- `payment_method.phone_number` (E.164)\n- `payment_method.network_id` (UUID from catalog `providers[].id`)\n\n**`bank`**\n- `payment_method.type=bank`\n- `account_number`, `account_name`\n- `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)\n\n`provider` is optional \u2014 when omitted, ElementPay auto-routes by corridor.\n\n### Quote IDs\n- OnRamp: `yc_receive_<id>`\n- OffRamp: `yc_send_<id>`\n\nThe quote expires at `data.expires_at`.",
+          "content": "Create a binding quote for a fiat \u2194 crypto order.\n\n<Steps>\n  <Step title=\"Create quote\">\n    `POST` with corridor, customer, and payment method details.\n  </Step>\n  <Step title=\"Show pricing\">\n    Display returned amounts and **payment instructions** to the user (OnRamp).\n  </Step>\n  <Step title=\"Accept\">\n    [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.\n  </Step>\n</Steps>\n\n### Customer identity\nUse **one** of:\n\n- **`customer_id`** (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) \u2014 recommended for new integrations\n- **Inline `customer`** \u2014 still supported; pick **KE OnRamp \u2014 inline customer** in Try it or fill the `customer` object\n\nDo not send both. Corridor-specific inline shapes: [Sandbox test payloads](/sandbox/test-payloads).\n\n<Note>\nTry it omits legacy top-level fields (`provider`, `channel_id`, `destination`, `rail`, \u2026). Omit `provider` on live calls too \u2014 Element Pay auto-routes by corridor.\n</Note>\n\n### Discovery before quote\n- [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) \u2192 rails for the corridor\n- [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` \u2192 `providers[].id` for momo/bank\n- [`GET /partner/order-requirements`](/partner/order-requirements) \u2192 exact field names (`network_id` required for momo/bank)\n- [`GET /partner/banks`](/partner/banks) \u2192 bank institution UUIDs where applicable\n\n### Payment method by rail\n**`mobile_money`**\n- `payment_method.type=mobile_money`\n- `payment_method.phone_number` (E.164)\n- `payment_method.network_id` (UUID from catalog `providers[].id`)\n\n**`bank`**\n- `payment_method.type=bank`\n- `account_number`, `account_name`\n- `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)\n\n### Quote IDs\n- OnRamp: `yc_receive_<id>`\n- OffRamp: `yc_send_<id>`\n\nThe quote expires at `data.expires_at`.",
           "playground": {
             "expand": false
           }
@@ -6217,12 +6217,51 @@
           },
           "customer_id": {
             "type": "string",
-            "description": "Preferred: approved vault customer id (pcus_*). Omit inline customer when set.",
+            "description": "Approved vault customer id (pcus_*). Use this **or** inline `customer`, not both.",
             "example": "pcus_a1b2c3d4e5f6"
           },
           "customer": {
             "type": "object",
-            "description": "Legacy inline KYC. Omit when customer_id is set. Corridor-specific examples: /sandbox/test-payloads.",
+            "description": "Inline retail KYC when you do not use customer_id. Corridor extras (BVN, institution): /sandbox/test-payloads.",
+            "properties": {
+              "uid": {
+                "type": "string",
+                "description": "Partner-stable user id for this order.",
+                "example": "sandbox-ke-onramp-success-001"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "institution"
+                ],
+                "example": "user"
+              },
+              "name": {
+                "type": "string",
+                "example": "Successful Jane Customer"
+              },
+              "country": {
+                "type": "string",
+                "example": "KE"
+              },
+              "phone": {
+                "type": "string",
+                "example": "+2541111111111"
+              },
+              "email": {
+                "type": "string",
+                "example": "jane@example.com"
+              },
+              "id_number": {
+                "type": "string",
+                "example": "A1234567"
+              },
+              "id_type": {
+                "type": "string",
+                "example": "passport"
+              }
+            },
             "additionalProperties": true
           },
           "asset": {
@@ -6285,7 +6324,7 @@
           }
         },
         "title": "PartnerOrderQuoteRequestTryIt",
-        "description": "Canonical quote body for Mintlify Try it. The live API also accepts legacy top-level fields (provider, channel_id, destination, \u2026) \u2014 see Quickstart and /sandbox/test-payloads.",
+        "description": "Quote body for Mintlify Try it. Includes customer_id **or** inline customer, asset, and payment_method only. Not shown here (still accepted on live API if needed): provider, channel_id, channel_type, sequence_id, destination, source, sender, recipient, rail, token top-level alias, crypto_currency/crypto_network hints.",
         "example": {
           "order_type": "OnRamp",
           "currency": "KES",

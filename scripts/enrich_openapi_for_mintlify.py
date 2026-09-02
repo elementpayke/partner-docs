@@ -142,9 +142,16 @@ Create a binding quote for a fiat ↔ crypto order.
 </Steps>
 
 ### Customer identity
-**Preferred:** `customer_id` (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) — omit the inline `customer` object.
+Use **one** of:
 
-**Legacy:** inline `customer` on quote still works; see [Sandbox test payloads](/sandbox/test-payloads) for corridor-specific shapes.
+- **`customer_id`** (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) — recommended for new integrations
+- **Inline `customer`** — still supported; pick **KE OnRamp — inline customer** in Try it or fill the `customer` object
+
+Do not send both. Corridor-specific inline shapes: [Sandbox test payloads](/sandbox/test-payloads).
+
+<Note>
+Try it omits legacy top-level fields (`provider`, `channel_id`, `destination`, `rail`, …). Omit `provider` on live calls too — Element Pay auto-routes by corridor.
+</Note>
 
 ### Discovery before quote
 - [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) → rails for the corridor
@@ -162,8 +169,6 @@ Create a binding quote for a fiat ↔ crypto order.
 - `payment_method.type=bank`
 - `account_number`, `account_name`
 - `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)
-
-`provider` is optional — when omitted, ElementPay auto-routes by corridor.
 
 ### Quote IDs
 - OnRamp: `yc_receive_<id>`
@@ -237,17 +242,35 @@ PARTNER_ORDER_QUOTE_TRY_IT_SCHEMA: dict[str, Any] = {
         "customer_id": {
             "type": "string",
             "description": (
-                "Preferred: approved vault customer id (pcus_*). "
-                "Omit inline customer when set."
+                "Approved vault customer id (pcus_*). Use this **or** inline "
+                "`customer`, not both."
             ),
             "example": "pcus_a1b2c3d4e5f6",
         },
         "customer": {
             "type": "object",
             "description": (
-                "Legacy inline KYC. Omit when customer_id is set. "
-                "Corridor-specific examples: /sandbox/test-payloads."
+                "Inline retail KYC when you do not use customer_id. "
+                "Corridor extras (BVN, institution): /sandbox/test-payloads."
             ),
+            "properties": {
+                "uid": {
+                    "type": "string",
+                    "description": "Partner-stable user id for this order.",
+                    "example": "sandbox-ke-onramp-success-001",
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["user", "institution"],
+                    "example": "user",
+                },
+                "name": {"type": "string", "example": "Successful Jane Customer"},
+                "country": {"type": "string", "example": "KE"},
+                "phone": {"type": "string", "example": "+2541111111111"},
+                "email": {"type": "string", "example": "jane@example.com"},
+                "id_number": {"type": "string", "example": "A1234567"},
+                "id_type": {"type": "string", "example": "passport"},
+            },
             "additionalProperties": True,
         },
         "asset": {
@@ -301,9 +324,11 @@ PARTNER_ORDER_QUOTE_TRY_IT_SCHEMA: dict[str, Any] = {
     },
     "title": "PartnerOrderQuoteRequestTryIt",
     "description": (
-        "Canonical quote body for Mintlify Try it. The live API also accepts "
-        "legacy top-level fields (provider, channel_id, destination, …) — "
-        "see Quickstart and /sandbox/test-payloads."
+        "Quote body for Mintlify Try it. Includes customer_id **or** inline "
+        "customer, asset, and payment_method only. Not shown here (still "
+        "accepted on live API if needed): provider, channel_id, channel_type, "
+        "sequence_id, destination, source, sender, recipient, rail, token "
+        "top-level alias, crypto_currency/crypto_network hints."
     ),
     "example": QUOTE_TRY_IT_DEFAULT,
 }
@@ -340,10 +365,10 @@ QUOTE_TRY_IT_EXAMPLES: dict[str, Any] = {
         },
     },
     "ke_onramp_inline_sandbox": {
-        "summary": "KE OnRamp — inline customer (legacy)",
+        "summary": "KE OnRamp — inline customer",
         "description": (
-            "Sandbox success MSISDN +2541111111111. "
-            "Prefer customer_id for new integrations."
+            "Inline customer object (no customer_id). Sandbox success MSISDN "
+            "+2541111111111."
         ),
         "value": {
             "order_type": "OnRamp",
