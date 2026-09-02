@@ -1,26 +1,44 @@
 # Customers quickstart
 
-Onboard end-customers once into the **customer vault**. You get a stable `customer_id` (`pcus_*`) to reuse on quotes instead of resending full KYC on every order.
+**Every end-customer must complete KYC** in the customer vault. You get a stable `customer_id` (`pcus_*`) for quotes and accepts.
 
-Inline `customer` on `POST /partner/orders/quote` still works. Prefer `customer_id` once the vault case is `approved`.
+**Banking** (IBAN, ledger, sends) is a **separate optional product** — see [Accounts](/customers/accounts). KYC alone is enough for corridor ramps.
+
+<Warning>
+Inline `customer` on quote is **deprecated** (still supported during migration). Use `customer_id` once `status=approved`. See [Quote and accept](/orders/quote-and-accept#deprecated-inline-customer).
+</Warning>
+
+## Two gates (do not confuse them)
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| **KYC / quotes** | `status` = `approved` or `active` | `customer_id` on [quote and accept](/orders/quote-and-accept) |
+| **Banking** | `products.deposit_account.status` = `ready` | [Accounts](/customers/accounts), deposit instructions, sends |
+
+```text
+KYC (required for everyone)
+  requirements → create → documents → submit → approved
+        │
+        ├─→ Quote / accept with customer_id
+        │
+        └─→ (optional) deposit_account ready → Banking APIs
+```
 
 ## Auth and environments
 
 ```bash
-export BASE_SANDBOX="$BASE_SANDBOX"   # fill: sandbox Partner API base
-export BASE_LIVE="$BASE_LIVE"         # fill: live Partner API base
-export BASE="$BASE_SANDBOX"
-export API_KEY="is_test_…"            # or is_live_… on live
+export BASE="https://sandbox.elementpay.net/api/v1"
+export API_KEY="is_test_…"
 ```
+
+Production base: `https://api.elementpay.net/api/v1` with `is_live_…` keys.
 
 ```http
 X-API-Key: <API_KEY>
 Content-Type: application/json
 ```
 
-Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
-
-**Live:** after submit, Element Pay reviews and approves customers. Always read `status` from `GET /partner/customers/{customer_id}` — do not assume automatic approval on any environment.
+**Live:** after submit, Element Pay reviews and approves customers. Sandbox may auto-approve — still verify `status` via GET or webhooks.
 
 ## Status model
 
@@ -50,8 +68,8 @@ Same partner `X-API-Key` as other `/partner/*` routes. Keys are per environment.
   <Step title="Wait for approved">
     Prefer webhooks (`customer.approved`); poll `GET /partner/customers/{customer_id}` as backup until `status=approved`
   </Step>
-  <Step title="Quote (optional)">
-    Pass `customer_id` on `POST /partner/orders/quote` instead of a full inline `customer`
+  <Step title="Quote and accept">
+    [`customer_id`](/orders/quote-and-accept) on `POST /partner/orders/quote` — required path for new integrations
   </Step>
 </Steps>
 
@@ -254,36 +272,53 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/revoke" \
 | After revoke | `PATCH` → **409**; `POST /partner/orders/quote` with this `customer_id` → **422** (`Customer is not approved for orders`) |
 | Webhook | `customer.revoked` when status transitions to `suspended` |
 
-## 7. Quote with `customer_id` (optional)
+## 7. Quote and accept with `customer_id`
 
-`payment_method` and `asset` remain required. Omit the full inline `customer` object when using `customer_id`. Accept is unchanged (`POST /partner/orders/{quote_id}/accept` with `{}`).
+After **`status=approved`**, use `customer_id` on quote. Full response examples: [Quote and accept](/orders/quote-and-accept).
 
-Amounts / networks / `network_id` are illustrative — discover `network_id` from payment-methods or catalog for the same `country` + `order_type`.
+Discover `network_id` from catalog for the same `country` + `order_type`:
+
+```bash
+curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" \
+  | jq '.data.onramp.countries.KE.payment_methods.mobile_money.providers[] | {id, name}'
+```
+
+**KE OnRamp (momo):**
 
 ```bash
 curl -sS -X POST "$BASE/partner/orders/quote" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "order_type": "OffRamp",
+    "order_type": "OnRamp",
     "currency": "KES",
     "country": "KE",
-    "local_amount": 100,
-    "customer_id": "pcus_…",
+    "local_amount": 800,
+    "customer_id": "'"$CUSTOMER_ID"'",
     "asset": {
-      "token": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
-      "currency": "USDT",
-      "network": "POLYGON"
+      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+      "currency": "USDC",
+      "network": "BASE"
     },
     "payment_method": {
       "type": "mobile_money",
-      "phone_number": "+2547XXXXXXXX",
-      "network_id": "<FROM_CATALOG_OR_PAYMENT_METHODS>"
-    }
-  }' | jq '{quote_id: .data.quote_id, status: .data.status}'
+      "phone_number": "+2541111111111",
+      "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
+    },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }' | tee /tmp/quote.json | jq '{quote_id: .data.quote_id, expires_at: .data.expires_at}'
+
+export QUOTE_ID=$(jq -r '.data.quote_id' /tmp/quote.json)
+sleep 2
+
+curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq '.data | {quote_id, status, order: .order.order_id}'
 ```
 
-Successful response includes a `quote_id` like `ep_bank_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
+OnRamp quote ids are typically `yc_receive_…`. Use `asset: { token, currency, network }` — not a bare top-level `"token"`.
 
 ## Errors
 
@@ -297,7 +332,8 @@ Successful response includes a `quote_id` like `ep_bank_…`. Use `asset: { toke
 
 ## Next
 
-- [Accounts](/customers/accounts)
-- [Route cheat sheet](/customers/route-cheat-sheet)
+- [Quote and accept](/orders/quote-and-accept) — OffRamp, response fields, deprecated inline
+- [Route cheat sheet](/customers/route-cheat-sheet) — KYC vs banking routes
 - [Webhooks](/webhooks)
-- [Corridors](/corridors/overview) · [Orders quickstart](/quickstart)
+- [Quickstart](/quickstart) — condensed end-to-end
+- [Banking / accounts](/customers/accounts) — optional, after deposit account ready

@@ -2,6 +2,10 @@
 
 Validated copy-paste payloads for sandbox QA. Replace `API_KEY` and `network_id` if your environment differs.
 
+<Warning>
+**Production integrations** must use vault KYC → `customer_id` on quote. Payloads below that use an inline **`customer`** object are for **sandbox QA only** — that path is [deprecated](/orders/quote-and-accept#deprecated-inline-customer) but still supported during migration.
+</Warning>
+
 **Default asset:** Base USDC (`BASE_USDC` below). Prefer that for all corridors. `POLYGON_USDT` is optional — only use when testing that rail explicitly.
 
 ## Setup
@@ -56,7 +60,9 @@ See [Sandbox success & failure](/sandbox/success-failure) for the full success/f
 
 Failure: momo `+2540000000000` / bank `0000000000` / OffRamp name contains `Failure` (retail `customer.name` or institution `business_name`).
 
-## KE OnRamp momo (inline)
+## KE OnRamp momo (inline — deprecated)
+
+For sandbox spikes only. Prefer [Quickstart](/quickstart) with vault `customer_id`.
 
 ```bash
 quote_and_accept '{

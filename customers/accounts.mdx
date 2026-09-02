@@ -1,13 +1,19 @@
 # Customer accounts
 
+**Optional banking product** — EUR/USD IBAN, stablecoin ledger, sends, book transfers, payouts, and cards.
+
+<Warning>
+**Prerequisite — KYC (required for everyone):** complete [Customer KYC quickstart](/customers/quickstart) until `status` is `approved`. Banking does **not** replace KYC.
+
+**Prerequisite — banking gate:** `products.deposit_account.status` must be **`ready`** before account open / list / sends. KYC approval alone is **not** enough for this section.
+</Warning>
+
 Give each vault customer **bankable and on-chain balances** under one `customer_id` (`pcus_*`):
 
-- **Fiat accounts** — e.g. **EUR** (IBAN) and **USD** (account / routing or SWIFT when returned) bank rails for receiving transfers
-- **Stablecoin accounts** — e.g. **USDC** / **USDT** wallets on **Base** or **Polygon**
+- **Fiat accounts** — e.g. **EUR** (IBAN) and **USD** (account / routing or SWIFT when returned)
+- **Stablecoin accounts** — e.g. **USDC** / **USDT** on **Base** or **Polygon**
 
-Open or list rails, then use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), book transfers / payouts / cards, or corridor [quote → accept](/quickstart) where that funds the same customer.
-
-Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status` is `approved` (or `active`).
+Use each `account_id` for [deposit instructions](/customers/deposit-instructions), [stablecoin sends](/customers/stablecoin-sends), book transfers / payouts / cards. Corridor [quote → accept](/orders/quote-and-accept) uses **`customer_id` only** — no account open required.
 
 <Note>
 **Sandbox funding:** usable balance for outbound [stablecoin sends](/customers/stablecoin-sends) may require an Element Pay sandbox credit. See [deposit instructions](/customers/deposit-instructions).
@@ -20,10 +26,8 @@ Prerequisite: [Customers quickstart](/customers/quickstart) until vault `status`
 ## Auth and environments
 
 ```bash
-export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
-export BASE_LIVE="$BASE_LIVE"         # live Partner API base
-export BASE="$BASE_SANDBOX"
-export API_KEY="is_test_…"            # or is_live_… on live
+export BASE="https://sandbox.elementpay.net/api/v1"
+export API_KEY="is_test_…"
 ```
 
 ```http

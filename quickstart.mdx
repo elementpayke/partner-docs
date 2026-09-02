@@ -1,14 +1,16 @@
 # Quickstart
 
-Get a sandbox quote and accept flow working in minutes.
+End-to-end: **KYC every customer** → **approved** → **KE OnRamp quote** → **accept**.
+
+Banking (IBAN / ledger) is optional and comes later — see [Accounts](/customers/accounts).
 
 ## Prerequisites
 
-- Sandbox **API key** (`is_test_…`) from Element Pay
-- **`webhook_url`** configured on that key (recommended)
-- `curl` and `jq` (optional)
+- Sandbox API key (`is_test_…`) from Element Pay
+- `webhook_url` on that key (recommended)
+- `curl` and `jq`
 
-## 1. Configure environment
+## 1. Environment
 
 ```bash
 export BASE="https://sandbox.elementpay.net/api/v1"
@@ -22,43 +24,74 @@ X-API-Key: <API_KEY>
 Content-Type: application/json
 ```
 
-### Asset to use (sandbox)
+## 2. Customer KYC (required)
 
-Use **Base USDC** on every quote unless we tell you otherwise:
+Every end-customer must complete the vault before you use `customer_id` on quote.
 
-| Field | Value |
-|-------|--------|
-| `asset.currency` | `USDC` |
-| `asset.network` | `BASE` |
-| `asset.token` | `0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913` |
+<Steps>
+  <Step title="Requirements">
+    See required profile fields and document categories.
+  </Step>
+  <Step title="Create">
+    `POST /partner/customers` — save `pcus_*`.
+  </Step>
+  <Step title="Documents">
+    Upload **identity** and **address** (individual).
+  </Step>
+  <Step title="Submit">
+    `POST …/submit` — fix any `missing[]` until **200**.
+  </Step>
+  <Step title="Approved">
+    Sandbox usually auto-approves; live waits for EP review. Poll or webhook `customer.approved`.
+  </Step>
+</Steps>
 
-(Polygon USDT is also on the rail — see [Corridors overview](/corridors/overview). Prefer Base USDC for integration.)
+Detailed curls: [Customer KYC quickstart](/customers/quickstart).
 
-## 2. Discover Kenya corridors
+**Minimal individual checklist before submit:**
+
+- Profile: name, email, DOB, gender, phone, **`id_number`**, **`id_type`**, **`address`** (`line1`, `city`, `country`)
+- Documents: **`identity`**, **`address`** (base64 upload)
+
+After create, always check what's left:
 
 ```bash
-# Full checkout catalog (providers + min/max) — preferred for integration
-curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
-  -H "X-API-Key: $API_KEY" | jq '.data.onramp.countries.KE.payment_methods.mobile_money.providers[] | {id, name}'
+export CUSTOMER_ID="pcus_…"
 
-# Lightweight country list only (no provider UUIDs)
-curl -sS "$BASE/partner/corridors?country=KE" \
-  -H "X-API-Key: $API_KEY" | jq '.data.african_markets'
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data | {status, missing, documents: [.documents[].category]}'
 ```
 
-Note a **`providers[].id`** for M-PESA (mobile money) from **catalog** — you will send it as `payment_method.network_id` on quote.
-
-## 3. Create a quote
-
-**Preferred:** pass an approved vault `customer_id` (`pcus_*`) from the [Customers quickstart](/customers/quickstart). That is the main identity path for new integrations.
-
-**Still accepted:** an inline `customer` object on quote (shown below) for existing integrations and a first sandbox spike. Prefer migrating to `customer_id` once the vault case is `approved`.
+Submit when `missing` is empty:
 
 ```bash
-# Preferred once you have an approved vault customer:
-#   "customer_id": "pcus_…"
-# and omit the inline "customer" object.
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/submit" \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{}' | jq '.data | {id, status}'
+```
 
+Wait until `status` is **`approved`**:
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID" \
+  -H "X-API-Key: $API_KEY" | jq '.data.status'
+```
+
+## 3. Discover Kenya M-PESA `network_id`
+
+```bash
+curl -sS "$BASE/partner/catalog?country=KE&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" \
+  | jq '.data.onramp.countries.KE.payment_methods.mobile_money.providers[] | {id, name}'
+```
+
+Copy a **`providers[].id`** for Safaricom M-PESA into `payment_method.network_id` below.
+
+## 4. Quote (OnRamp, `customer_id`)
+
+Default sandbox asset: **Base USDC**.
+
+```bash
 curl -sS -X POST "$BASE/partner/orders/quote" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
@@ -67,22 +100,11 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
     "currency": "KES",
     "country": "KE",
     "local_amount": 800,
+    "customer_id": "'"$CUSTOMER_ID"'",
     "asset": {
       "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
       "currency": "USDC",
       "network": "BASE"
-    },
-    "customer": {
-      "uid": "partner-ke-001",
-      "type": "user",
-      "name": "Jane Doe",
-      "country": "KE",
-      "phone": "+2541111111111",
-      "address": "Nairobi",
-      "dob": "02/01/1997",
-      "email": "jane@example.com",
-      "id_number": "A1234567",
-      "id_type": "passport"
     },
     "payment_method": {
       "type": "mobile_money",
@@ -90,45 +112,50 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
       "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb"
     },
     "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
-  }' | jq '{quote_id: .data.quote_id, expires_at: .data.expires_at, instructions: .data.payment_instructions}'
+  }' | tee /tmp/quote.json | jq '{quote_id: .data.quote_id, expires_at: .data.expires_at, amounts: .data.amounts}'
+
+export QUOTE_ID=$(jq -r '.data.quote_id' /tmp/quote.json)
 ```
 
-Save `data.quote_id` (format `yc_receive_…`).
+Response anatomy: [Quote and accept](/orders/quote-and-accept#quote-success--what-to-expect).
 
 <Warning>
-Replace `network_id` with a value from **your** sandbox catalog if the example UUID does not match your environment.
+Replace `network_id` with a value from **your** catalog if the example UUID does not match.
 </Warning>
 
-## 4. Accept the quote
-
-Wait ~2 seconds, then accept with an empty body:
+## 5. Accept
 
 ```bash
-export QUOTE_ID="yc_receive_..."   # from step 3
+sleep 2
 
 curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{}' | jq '.data'
+  -d '{}' | jq '.data | {quote_id, status, order: .order.order_id, payment_instructions}'
 ```
 
-## 5. Listen for webhooks
+## 6. Webhooks
 
-Configure `webhook_url` on your API key. Element Pay POSTs:
+Configure `webhook_url` on your API key:
 
 | Event | Meaning |
 |-------|---------|
-| `order.processing` | Accept succeeded; rail is executing |
+| `customer.approved` | KYC cleared — may quote with `customer_id` |
+| `order.processing` | Accept succeeded |
 | `order.settled` | Fiat and crypto legs complete |
 | `order.failed` | Terminal failure |
 
-See [Webhooks](/webhooks) for payload shape and signature verification.
+See [Webhooks](/webhooks).
 
-Prefer a vault `customer_id` (`pcus_*`) on quote when available — [Customers quickstart](/customers/quickstart).
+## Deprecated: inline customer on quote
 
-## Next steps
+Inline `customer` on quote is **deprecated**. Still **supported** while you migrate existing integrations. New work: vault KYC → `customer_id` only.
 
-- [Sandbox success & failure](/sandbox/success-failure) — required for reliable sandbox settle/fail
-- [Kenya corridor guide](/corridors/kenya) — momo vs bank
-- [Sandbox test payloads](/sandbox/test-payloads) — NG, UG, OffRamp curls
-- [API reference](/api-reference/introduction) — full OpenAPI
+Sandbox inline examples: [Quote and accept — deprecated](/orders/quote-and-accept#deprecated-inline-customer) · [Test payloads](/sandbox/test-payloads).
+
+## Next
+
+- [Customer KYC](/customers/quickstart) — business KYB, revoke, ref lookup
+- [Quote and accept](/orders/quote-and-accept) — OffRamp, errors, response fields
+- [Sandbox success & failure](/sandbox/success-failure) — sandbox phone/account triggers
+- [Banking / accounts](/customers/accounts) — optional, after `deposit_account.status=ready`
