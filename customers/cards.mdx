@@ -22,7 +22,7 @@ Prerequisite: [Customers quickstart](/customers/quickstart).
 </Warning>
 
 <Warning>
-**PAN / CVV** are accepted only on create. GET and list responses do **not** return full card numbers or CVV.
+**PAN / CVV** are returned only on **issue** (`POST …/cards`) and on explicit **`GET …/cards/{card_id}/credentials`**. List and ordinary GET omit them. Do not log or persist full numbers or CVV.
 </Warning>
 
 ## Auth and environments
@@ -149,7 +149,10 @@ Issue a **disposable** or **virtual** card linked to a **USD** fiat account. Spe
     `GET …/accounts` → USD fiat `account_id` with usable status
   </Step>
   <Step title="Issue">
-    `POST …/cards` with `type`, `reference`, `cardholder` → card id (PAN/CVV only on create)
+    `POST …/cards` with `type`, `reference`, `cardholder` → card id (PAN/CVV on create)
+  </Step>
+  <Step title="Show card to the user">
+    Call `GET …/cards/{card_id}/credentials` when the UI needs PAN/CVV (do not store them)
   </Step>
   <Step title="Manage">
     List / get / transactions / freeze / unfreeze as needed
@@ -177,9 +180,13 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_I
   }' | jq '.'
 ```
 
-`type` is `virtual` or `disposable`. Disposable cards also require `expiration_month` / `expiration_year`. Optional `spending_controls` apply to virtual cards only. Store PAN/CVV from the **create** response if you need them; later GET/list omit them.
+`type` is `virtual` or `disposable`. Disposable cards also require `expiration_month` / `expiration_year`. Optional `spending_controls` apply to virtual cards only. Capture PAN/CVV from the **create** response if shown once at issue time; otherwise use **credentials** (below). Ordinary GET/list omit secrets.
 
 ### List / get / transactions
+
+`GET …/cards` **syncs** issued cards from the upstream issuer into Element Pay, then returns the local list (USD fiat accounts only — other currencies **422**). Cards that already exist upstream but were never issued through this API appear with a stable `reference` like `imported-{id}`. Treat `reference` as opaque; use `card_id` for subsequent calls.
+
+List and get return **metadata only** (status, name, last four when known, expiry). Get refreshes status / last four / expiry from upstream when possible — still **no** PAN/CVV.
 
 ```bash
 curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards" \
@@ -191,6 +198,17 @@ curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards/
 curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards/$CARD_ID/transactions" \
   -H "X-API-Key: $API_KEY" | jq '.'
 ```
+
+### Reveal credentials (PAN / CVV)
+
+Call this when the frontend needs to show the full card number and CVV (for example after the user opens a “show card” action). Secrets are fetched live and are **not** stored by Element Pay. Prefer this over logging create-response secrets.
+
+```bash
+curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_ID/cards/$CARD_ID/credentials" \
+  -H "X-API-Key: $API_KEY" | jq '.'
+```
+
+Response includes the usual card metadata plus `number` and `cvv`. Do not write those fields to your database or application logs.
 
 ### Freeze / unfreeze
 
@@ -206,8 +224,8 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$USD_ACCOUNT_I
 
 1. Error `message` / `data` do not expose upstream provider names.
 2. **Acquiring** supports configured fiat currencies (typically USD / GBP / EUR); billing country rules differ by charge currency (see table above). **Issuing** requires a **USD** account and is unavailable for some residence countries.
-3. **PAN/CVV** only on create charge / create card; never on GET or list.
-4. Reuse stable `reference` values for idempotent creates after timeouts.
+3. **PAN/CVV** only on issue create and on `GET …/cards/{card_id}/credentials`; never on list or ordinary get.
+4. Reuse stable `reference` values for idempotent creates after timeouts. Synced upstream cards may use an `imported-…` reference — still opaque to partners.
 5. Same banking gate as [book transfers](/customers/book-transfers) and [payouts](/customers/payouts).
 
 ## Legacy routes
