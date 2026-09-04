@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Element Pay Partner API",
-    "description": "Provider-neutral fiat \u2194 crypto ramps for partners. Discover corridors, create a binding quote, accept it, and receive webhooks. African local fiat (mobile money and bank) is auto-routed by corridor.",
+    "description": "Provider-neutral partner APIs for fiat \u2194 crypto corridors and deposit accounts. Discover corridors, create a binding quote, accept it, and receive webhooks. Onboard customers (pcus_*), open fiat and USDC deposit accounts, fetch deposit instructions, send stablecoins, and run card acquiring/issuing from customer-scoped accounts. Legacy entity onboarding remains available. African local fiat is auto-routed by corridor.",
     "version": "1.0.0"
   },
   "paths": {
@@ -754,26 +754,21 @@
                   "status": "success",
                   "message": "Supported corridors and payment methods",
                   "data": {
-                    "disclaimer": "Indicative catalog. Binding eligibility and price: POST /api/v1/partner/orders/quote.",
-                    "onramp": {
-                      "countries": {
-                        "KE": {
-                          "country_code": "KE",
-                          "country_name": "Kenya",
-                          "currency": "KES",
+                    "african_markets": [
+                      {
+                        "country": "KE",
+                        "currency": "KES",
+                        "onramp": {
                           "enabled": true,
                           "payment_methods": {
                             "mobile_money": {
                               "enabled": true,
-                              "label": "Mobile Money",
-                              "quote_type": "mobile_money",
                               "providers": [
                                 {
-                                  "code": "M PESA",
-                                  "name": "Mobile Wallet (M-PESA)",
-                                  "enabled": true,
                                   "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
-                                  "min_amount": 150,
+                                  "name": "Safaricom M-PESA",
+                                  "enabled": true,
+                                  "min_amount": 100,
                                   "max_amount": 250000,
                                   "currency": "KES"
                                 }
@@ -781,23 +776,17 @@
                             },
                             "bank": {
                               "enabled": true,
-                              "label": "Bank Transfer",
-                              "quote_type": "bank",
-                              "providers": [
-                                {
-                                  "code": "NATIONAL_BANK_OF_KENYA",
-                                  "name": "NATIONAL BANK OF KENYA",
-                                  "enabled": true,
-                                  "id": "30f11b2e-0905-4c09-ba5f-d05aa4e4a11c",
-                                  "min_amount": 300,
-                                  "max_amount": 99999999,
-                                  "currency": "KES"
-                                }
-                              ]
+                              "providers": []
                             }
                           }
+                        },
+                        "offramp": {
+                          "enabled": true
                         }
                       }
+                    ],
+                    "international_bank": {
+                      "currencies": []
                     }
                   }
                 },
@@ -808,26 +797,21 @@
                       "status": "success",
                       "message": "Supported corridors and payment methods",
                       "data": {
-                        "disclaimer": "Indicative catalog. Binding eligibility and price: POST /api/v1/partner/orders/quote.",
-                        "onramp": {
-                          "countries": {
-                            "KE": {
-                              "country_code": "KE",
-                              "country_name": "Kenya",
-                              "currency": "KES",
+                        "african_markets": [
+                          {
+                            "country": "KE",
+                            "currency": "KES",
+                            "onramp": {
                               "enabled": true,
                               "payment_methods": {
                                 "mobile_money": {
                                   "enabled": true,
-                                  "label": "Mobile Money",
-                                  "quote_type": "mobile_money",
                                   "providers": [
                                     {
-                                      "code": "M PESA",
-                                      "name": "Mobile Wallet (M-PESA)",
-                                      "enabled": true,
                                       "id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
-                                      "min_amount": 150,
+                                      "name": "Safaricom M-PESA",
+                                      "enabled": true,
+                                      "min_amount": 100,
                                       "max_amount": 250000,
                                       "currency": "KES"
                                     }
@@ -835,13 +819,17 @@
                                 },
                                 "bank": {
                                   "enabled": true,
-                                  "label": "Bank Transfer",
-                                  "quote_type": "bank",
                                   "providers": []
                                 }
                               }
+                            },
+                            "offramp": {
+                              "enabled": true
                             }
                           }
+                        ],
+                        "international_bank": {
+                          "currencies": []
                         }
                       }
                     }
@@ -1784,18 +1772,15 @@
                 },
                 "example": {
                   "status": "success",
-                  "message": "Partner bank/network options (indicative)",
+                  "message": "Partner banks (indicative)",
                   "data": {
-                    "disclaimer": "Indicative. Binding check: POST /api/v1/partner/orders/quote.",
                     "context": {
                       "country": "NG",
                       "currency": "NGN",
                       "order_type": "OnRamp",
                       "payment_method_type": "bank"
                     },
-                    "supported": true,
-                    "message": "Active bank networks for this corridor.",
-                    "banks": [
+                    "institutions": [
                       {
                         "id": "5f1af11b-305f-4420-8fce-65ed2725a409",
                         "name": "Access Bank"
@@ -1805,21 +1790,18 @@
                 },
                 "examples": {
                   "ng_bank_onramp": {
-                    "summary": "NG bank OnRamp banks",
+                    "summary": "NG bank OnRamp institutions",
                     "value": {
                       "status": "success",
-                      "message": "Partner bank/network options (indicative)",
+                      "message": "Partner banks (indicative)",
                       "data": {
-                        "disclaimer": "Indicative. Binding check: POST /api/v1/partner/orders/quote.",
                         "context": {
                           "country": "NG",
                           "currency": "NGN",
                           "order_type": "OnRamp",
                           "payment_method_type": "bank"
                         },
-                        "supported": true,
-                        "message": "Active bank networks for this corridor.",
-                        "banks": [
+                        "institutions": [
                           {
                             "id": "5f1af11b-305f-4420-8fce-65ed2725a409",
                             "name": "Access Bank"
@@ -2217,10 +2199,10 @@
                     ],
                     "route": {
                       "family": "ramp_provider",
+                      "rail": "local_fiat",
                       "direction": "payin",
                       "mode": "auto",
-                      "reason": "Selected rail for KE KES OnRamp.",
-                      "rail": "local_fiat"
+                      "reason": "Auto-routed for KE KES OnRamp."
                     }
                   }
                 }
@@ -2232,19 +2214,23 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "local_fiat_ng_sandbox_500": {
-                    "summary": "local fiat rail sandbox upstream 500",
+                  "upstream_unavailable": {
+                    "summary": "Upstream quote failed",
                     "value": {
                       "status": "error",
                       "message": "Quote request failed",
-                      "data": null
+                      "data": {
+                        "upstream_http_status": 500
+                      }
                     }
                   }
                 },
                 "example": {
                   "status": "error",
                   "message": "Quote request failed",
-                  "data": null
+                  "data": {
+                    "upstream_http_status": 500
+                  }
                 }
               }
             }
@@ -2284,9 +2270,13 @@
             "schema": {
               "type": "string",
               "description": "Order id returned by quote accept (e.g. `rail-{preview_id}`).",
-              "title": "Order Id"
+              "title": "Order Id",
+              "examples": [
+                "rail-580e04c2-a136-5cca-be54-b49fcf80970c"
+              ]
             },
-            "description": "Order id returned by quote accept (e.g. `rail-{preview_id}`)."
+            "description": "Order id returned by quote accept (e.g. `rail-{preview_id}`).",
+            "example": "rail-580e04c2-a136-5cca-be54-b49fcf80970c"
           }
         ],
         "responses": {
@@ -2403,9 +2393,13 @@
             "schema": {
               "type": "string",
               "description": "Quote id returned by `/partner/orders/quote`.",
-              "title": "Quote Id"
+              "title": "Quote Id",
+              "examples": [
+                "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c"
+              ]
             },
-            "description": "Quote id returned by `/partner/orders/quote`."
+            "description": "Quote id returned by `/partner/orders/quote`.",
+            "example": "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c"
           }
         ],
         "requestBody": {
@@ -2434,7 +2428,8 @@
                     "rail": "local_fiat"
                   }
                 }
-              }
+              },
+              "example": {}
             }
           }
         },
@@ -2451,6 +2446,7 @@
                   "message": "Partner order quote accepted",
                   "data": {
                     "quote_id": "yc_receive_580e04c2-a136-5cca-be54-b49fcf80970c",
+                    "rail": "local_fiat",
                     "status": "processing",
                     "order": {
                       "order_id": "YC-580e04c2-a136-5cca-be54-b49fcf80970c",
@@ -2481,8 +2477,7 @@
                         "order.refunded"
                       ],
                       "delivery": "ElementPay will notify the webhook_url configured on the API key."
-                    },
-                    "rail": "local_fiat"
+                    }
                   }
                 }
               }
@@ -2505,17 +2500,17 @@
               "application/json": {
                 "examples": {
                   "not_accepted_or_terminal": {
-                    "summary": "local fiat rail preview cannot be synced as accepted",
+                    "summary": "Quote is not in an accepted or terminal state",
                     "value": {
                       "status": "error",
-                      "message": "Quote request failed",
+                      "message": "Quote is not in an accepted or terminal state.",
                       "data": null
                     }
                   }
                 },
                 "example": {
                   "status": "error",
-                  "message": "Quote request failed",
+                  "message": "Quote is not in an accepted or terminal state.",
                   "data": null
                 }
               }
@@ -2527,18 +2522,22 @@
               "application/json": {
                 "examples": {
                   "accept_failed": {
-                    "summary": "local fiat rail accept failed upstream",
+                    "summary": "Quote accept failed upstream",
                     "value": {
                       "status": "error",
                       "message": "Quote request failed",
-                      "data": null
+                      "data": {
+                        "upstream_http_status": 500
+                      }
                     }
                   }
                 },
                 "example": {
                   "status": "error",
                   "message": "Quote request failed",
-                  "data": null
+                  "data": {
+                    "upstream_http_status": 500
+                  }
                 }
               }
             }
@@ -3298,65 +3297,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Customer list or ref lookup result. With ``partner_customer_ref``: zero or one full vault row. Without it: up to ``limit`` summary rows (newest first). ``limit`` is ignored when ``partner_customer_ref`` is set.",
+            "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PartnerCustomerListSuccessResponse"
-                },
-                "example": {
-                  "status": "success",
-                  "message": "Customers",
-                  "data": {
-                    "customers": [
-                      {
-                        "id": "pcus_a1b2c3d4e5f6",
-                        "partner_customer_ref": "partner-cust-001",
-                        "type": "individual",
-                        "status": "approved",
-                        "profile": {
-                          "first_name": "Jane",
-                          "last_name": "Doe",
-                          "email": "jane@example.com",
-                          "date_of_birth": "1990-01-15",
-                          "country_of_residence": "GB",
-                          "phone": "+447700900123",
-                          "gender": "f",
-                          "id_type": "passport",
-                          "id_number": "A1234567",
-                          "address": {
-                            "line1": "1 Example Street",
-                            "city": "London",
-                            "country": "GB",
-                            "postal_code": "E1 6AN"
-                          }
-                        },
-                        "documents": [
-                          {
-                            "id": "pdoc_a1b2c3d4e5f6",
-                            "category": "identity",
-                            "content_type": "application/pdf",
-                            "created_at": "2026-08-01T12:00:00+00:00"
-                          },
-                          {
-                            "id": "pdoc_b2c3d4e5f6a7",
-                            "category": "address",
-                            "content_type": "application/pdf",
-                            "created_at": "2026-08-01T12:01:00+00:00"
-                          }
-                        ],
-                        "products": {
-                          "deposit_account": {
-                            "status": "ready"
-                          }
-                        },
-                        "created_at": "2026-08-01T11:55:00+00:00",
-                        "updated_at": "2026-08-01T12:05:00+00:00",
-                        "submitted_at": "2026-08-01T12:02:00+00:00"
-                      }
-                    ]
-                  }
-                }
+                "schema": {}
               }
             }
           },
@@ -4756,11 +4700,11 @@
       },
       "get": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customers"
         ],
         "summary": "List accounts for a ready customer",
         "description": "List customer accounts, refreshing pending coordinates when available.",
-        "operationId": "partner_customer_list_accounts",
+        "operationId": "partner_customer_list_accounts_partner_customers__customer_id__accounts_get",
         "security": [
           {
             "APIKeyHeader": []
@@ -4784,64 +4728,43 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "status": "success",
-                  "message": "Accounts",
-                  "data": {
-                    "accounts": [
-                      {
-                        "id": 21,
-                        "customer_id": "pcus_a1b2c3d4e5f6",
-                        "asset_type": "stablecoin",
-                        "currency": "USDC",
-                        "network": "Base",
-                        "status": "active",
-                        "display_name": "USDC Base",
-                        "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
-                        "balance": {
-                          "available": "12.50",
-                          "currency": "USDC"
-                        },
-                        "created_at": "2026-08-01T12:00:00+00:00"
-                      },
-                      {
-                        "id": 18,
-                        "customer_id": "pcus_a1b2c3d4e5f6",
-                        "asset_type": "fiat",
-                        "currency": "EUR",
-                        "network": null,
-                        "status": "active",
-                        "display_name": "EUR",
-                        "account_number": "DE89370400440532013000",
-                        "bank_name": "Example Bank",
-                        "swift_bic": "COBADEFFXXX",
-                        "balance": {
-                          "available": "250.00",
-                          "currency": "EUR"
-                        },
-                        "created_at": "2026-08-01T12:00:00+00:00"
-                      }
-                    ]
-                  }
-                }
+                "schema": {}
               }
             }
           },
-          "409": {
-            "description": "Deposit account is not ready",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
                 },
                 "example": {
                   "status": "error",
-                  "message": "Deposit account is not ready",
+                  "message": "Validation error",
                   "data": {
-                    "deposit_account_status": "pending"
+                    "field": "country"
                   }
                 }
               }
@@ -4853,11 +4776,11 @@
     "/partner/customers/{customer_id}/accounts/{account_id}": {
       "get": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customers"
         ],
         "summary": "Get one account for a ready customer",
         "description": "Get one customer-owned account and its current coordinates.",
-        "operationId": "partner_customer_get_account",
+        "operationId": "partner_customer_get_account_partner_customers__customer_id__accounts__account_id__get",
         "security": [
           {
             "APIKeyHeader": []
@@ -4893,58 +4816,43 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "status": "success",
-                  "message": "Account",
-                  "data": {
-                    "id": 21,
-                    "customer_id": "pcus_a1b2c3d4e5f6",
-                    "asset_type": "stablecoin",
-                    "currency": "USDC",
-                    "network": "Base",
-                    "status": "active",
-                    "display_name": "USDC Base",
-                    "wallet_address": "0x40C2f2e0326bD1f647fbeB8732529e08B4DB309f",
-                    "balance": {
-                      "available": "12.50",
-                      "currency": "USDC"
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
                     },
-                    "created_at": "2026-08-01T12:00:00+00:00"
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
                   }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Account not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
                 },
                 "example": {
                   "status": "error",
-                  "message": "Account not found",
-                  "data": null
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Deposit account is not ready",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "status": "error",
-                  "message": "Deposit account is not ready",
+                  "message": "Validation error",
                   "data": {
-                    "deposit_account_status": "pending"
+                    "field": "country"
                   }
                 }
               }
@@ -5057,7 +4965,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/preview": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customers"
         ],
         "summary": "Preview a stablecoin send for a ready customer account",
         "description": "Preview fees and amounts for a stablecoin send.",
@@ -5259,7 +5167,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customers"
         ],
         "summary": "Confirm a stablecoin send for a ready customer account",
         "description": "Submit a stablecoin send using a prior preview token.",
@@ -5425,7 +5333,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}": {
       "get": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customers"
         ],
         "summary": "Get a stablecoin send for a ready customer account",
         "description": "Get one stablecoin send status for a customer-owned account.",
@@ -5591,7 +5499,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/book-transfers/preview": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customers"
         ],
         "summary": "Preview a fiat book-transfer for a ready customer account",
         "operationId": "partner_customer_preview_book_transfer_partner_customers__customer_id__accounts__account_id__book_transfers_preview_post",
@@ -5650,70 +5558,15 @@
         },
         "responses": {
           "201": {
-            "description": "Same-currency fiat book-transfer preview",
+            "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "success"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "object"
-                    }
-                  }
-                },
-                "example": {
-                  "status": "success",
-                  "message": "Book-transfer preview",
-                  "data": {
-                    "preview_token": "nvbook.eyJhbGciOiJIUzI1NiJ9.preview",
-                    "currency": "EUR",
-                    "from_account_id": 21,
-                    "to_account_id": 31,
-                    "amount": "10.50",
-                    "fee": "0.00",
-                    "receive_amount": "10.50",
-                    "fee_status": "estimated",
-                    "expires_at": "2026-07-30T12:10:00+00:00"
-                  }
-                },
-                "examples": {
-                  "preview": {
-                    "summary": "Book-transfer preview",
-                    "value": {
-                      "status": "success",
-                      "message": "Book-transfer preview",
-                      "data": {
-                        "preview_token": "nvbook.eyJhbGciOiJIUzI1NiJ9.preview",
-                        "currency": "EUR",
-                        "from_account_id": 21,
-                        "to_account_id": 31,
-                        "amount": "10.50",
-                        "fee": "0.00",
-                        "receive_amount": "10.50",
-                        "fee_status": "estimated",
-                        "expires_at": "2026-07-30T12:10:00+00:00"
-                      }
-                    }
-                  }
-                }
+                "schema": {}
               }
             }
           },
           "422": {
-            "description": "Currency mismatch, inactive account, or invalid amount",
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -5736,209 +5589,15 @@
                       "type": [
                         "object",
                         "null"
-                      ],
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "field": {
-                          "type": "string"
-                        },
-                        "allowed": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "upstream_http_status": {
-                          "type": "integer"
-                        },
-                        "liveness_required": {
-                          "type": "boolean"
-                        },
-                        "hint": {
-                          "type": "string"
-                        },
-                        "missing_fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                "example": {
-                  "status": "error",
-                  "message": "Book transfers require the same currency on both accounts",
-                  "data": null
-                },
-                "examples": {
-                  "same_currency": {
-                    "summary": "Currency mismatch",
-                    "value": {
-                      "status": "error",
-                      "message": "Book transfers require the same currency on both accounts",
-                      "data": null
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
                       ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ],
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "field": {
-                          "type": "string"
-                        },
-                        "allowed": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "upstream_http_status": {
-                          "type": "integer"
-                        },
-                        "liveness_required": {
-                          "type": "boolean"
-                        },
-                        "hint": {
-                          "type": "string"
-                        },
-                        "missing_fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
                     }
                   }
                 },
                 "example": {
                   "status": "error",
-                  "message": "Unauthorized"
-                },
-                "examples": {
-                  "unauthorized": {
-                    "summary": "Unauthorized",
-                    "value": {
-                      "status": "error",
-                      "message": "Unauthorized"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "International entity onboarding not configured on this environment",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "message"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "error"
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": [
-                        "object",
-                        "null"
-                      ],
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "field": {
-                          "type": "string"
-                        },
-                        "allowed": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "upstream_http_status": {
-                          "type": "integer"
-                        },
-                        "liveness_required": {
-                          "type": "boolean"
-                        },
-                        "hint": {
-                          "type": "string"
-                        },
-                        "missing_fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                "example": {
-                  "status": "error",
-                  "message": "International entity onboarding is not configured",
-                  "data": null
-                },
-                "examples": {
-                  "not_configured": {
-                    "summary": "Feature not enabled",
-                    "value": {
-                      "status": "error",
-                      "message": "International entity onboarding is not configured",
-                      "data": null
-                    }
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
                   }
                 }
               }
@@ -5950,7 +5609,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/book-transfers": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customers"
         ],
         "summary": "Confirm a fiat book-transfer for a ready customer account",
         "operationId": "partner_customer_confirm_book_transfer_partner_customers__customer_id__accounts__account_id__book_transfers_post",
@@ -6009,7 +5668,15 @@
         },
         "responses": {
           "201": {
-            "description": "Same-currency fiat book-transfer submitted",
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -6022,59 +5689,121 @@
                     "status": {
                       "type": "string",
                       "enum": [
-                        "success"
+                        "error"
                       ]
                     },
                     "message": {
                       "type": "string"
                     },
                     "data": {
-                      "type": "object"
+                      "type": [
+                        "object",
+                        "null"
+                      ]
                     }
                   }
                 },
                 "example": {
-                  "status": "success",
-                  "message": "Book transfer submitted",
+                  "status": "error",
+                  "message": "Validation error",
                   "data": {
-                    "id": "01KYPXBOOKTRANSFER0000000001",
-                    "status": "completed",
-                    "from_account_id": 21,
-                    "to_account_id": 31,
-                    "currency": "EUR",
-                    "amount": "10.50",
-                    "fee": "0.00",
-                    "receive_amount": "10.50",
-                    "fee_status": "final",
-                    "created_at": "2026-07-30T12:00:00+00:00"
-                  }
-                },
-                "examples": {
-                  "submitted": {
-                    "summary": "Book transfer submitted",
-                    "value": {
-                      "status": "success",
-                      "message": "Book transfer submitted",
-                      "data": {
-                        "id": "01KYPXBOOKTRANSFER0000000001",
-                        "status": "completed",
-                        "from_account_id": 21,
-                        "to_account_id": 31,
-                        "currency": "EUR",
-                        "amount": "10.50",
-                        "fee": "0.00",
-                        "receive_amount": "10.50",
-                        "fee_status": "final",
-                        "created_at": "2026-07-30T12:00:00+00:00"
-                      }
-                    }
+                    "field": "country"
                   }
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/card-charges": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Charge a card into a ready customer fiat account (acquiring)",
+        "description": "Charge a card into a customer-owned fiat account.",
+        "operationId": "partner_customer_create_card_charge_partner_customers__customer_id__accounts__account_id__card_charges_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
           },
-          "409": {
-            "description": "Idempotent replay conflict while confirm is in progress",
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntityCardChargeCreateRequest"
+              },
+              "example": {
+                "amount": "50.00",
+                "auth_model": "3ds_disabled",
+                "billing_address": {
+                  "city": "New York",
+                  "country": "US",
+                  "line_1": "350 Fifth Avenue",
+                  "postal_code": "10118",
+                  "state": "NY"
+                },
+                "card": {
+                  "cvv": "123",
+                  "expiry_month": "12",
+                  "expiry_year": "2030",
+                  "holder_name": "Jane Doe",
+                  "number": "4000000000002701"
+                },
+                "customer": {
+                  "email": "jane@example.com",
+                  "first_name": "Jane",
+                  "last_name": "Doe"
+                },
+                "description": "Wallet top-up",
+                "reference": "order-card-001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -6097,66 +5826,88 @@
                       "type": [
                         "object",
                         "null"
-                      ],
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "field": {
-                          "type": "string"
-                        },
-                        "allowed": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "upstream_http_status": {
-                          "type": "integer"
-                        },
-                        "liveness_required": {
-                          "type": "boolean"
-                        },
-                        "hint": {
-                          "type": "string"
-                        },
-                        "missing_fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
+                      ]
                     }
                   }
                 },
                 "example": {
                   "status": "error",
-                  "message": "Book transfer already in progress",
+                  "message": "Validation error",
                   "data": {
-                    "field": "idempotency_key"
-                  }
-                },
-                "examples": {
-                  "in_progress": {
-                    "summary": "In progress",
-                    "value": {
-                      "status": "error",
-                      "message": "Book transfer already in progress",
-                      "data": {
-                        "field": "idempotency_key"
-                      }
-                    }
+                    "field": "country"
                   }
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/card-charges/{charge_id}": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get a card charge for a ready customer account",
+        "description": "Get one card charge for a customer-owned account.",
+        "operationId": "partner_customer_get_card_charge_partner_customers__customer_id__accounts__account_id__card_charges__charge_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
           },
-          "401": {
-            "description": "Missing or invalid API key",
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "charge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Card charge id returned by card-charges",
+              "title": "Charge Id"
+            },
+            "description": "Card charge id returned by card-charges"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -6179,60 +5930,97 @@
                       "type": [
                         "object",
                         "null"
-                      ],
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "field": {
-                          "type": "string"
-                        },
-                        "allowed": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "upstream_http_status": {
-                          "type": "integer"
-                        },
-                        "liveness_required": {
-                          "type": "boolean"
-                        },
-                        "hint": {
-                          "type": "string"
-                        },
-                        "missing_fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
+                      ]
                     }
                   }
                 },
                 "example": {
                   "status": "error",
-                  "message": "Unauthorized"
-                },
-                "examples": {
-                  "unauthorized": {
-                    "summary": "Unauthorized",
-                    "value": {
-                      "status": "error",
-                      "message": "Unauthorized"
-                    }
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
                   }
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/cards": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Issue a disposable or virtual card for a ready customer USD account",
+        "description": "Issue a card linked to a customer-owned USD fiat account.",
+        "operationId": "partner_customer_create_issued_card_partner_customers__customer_id__accounts__account_id__cards_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
           },
-          "503": {
-            "description": "International entity onboarding not configured on this environment",
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntityIssuedCardCreateRequest"
+              },
+              "example": {
+                "card_name": "Team card",
+                "cardholder": {
+                  "email": "jane@example.com",
+                  "first_name": "Jane",
+                  "last_name": "Doe",
+                  "phone_number": "+12125550198"
+                },
+                "reference": "card-issue-001",
+                "type": "virtual"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -6255,57 +6043,613 @@
                       "type": [
                         "object",
                         "null"
-                      ],
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "field": {
-                          "type": "string"
-                        },
-                        "allowed": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "upstream_http_status": {
-                          "type": "integer"
-                        },
-                        "liveness_required": {
-                          "type": "boolean"
-                        },
-                        "hint": {
-                          "type": "string"
-                        },
-                        "missing_fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
+                      ]
                     }
                   }
                 },
                 "example": {
                   "status": "error",
-                  "message": "International entity onboarding is not configured",
-                  "data": null
-                },
-                "examples": {
-                  "not_configured": {
-                    "summary": "Feature not enabled",
-                    "value": {
-                      "status": "error",
-                      "message": "International entity onboarding is not configured",
-                      "data": null
-                    }
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
                   }
                 }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "List issued cards (syncs from upstream; no PAN/CVV)",
+        "description": "List issued cards for a customer-owned account (primary partner path).",
+        "operationId": "partner_customer_list_issued_cards_partner_customers__customer_id__accounts__account_id__cards_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get an issued card (status refresh; no PAN/CVV)",
+        "description": "Get one issued card for a customer-owned account.",
+        "operationId": "partner_customer_get_issued_card_partner_customers__customer_id__accounts__account_id__cards__card_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Issued card id returned by cards",
+              "title": "Card Id"
+            },
+            "description": "Issued card id returned by cards"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/credentials": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Reveal card PAN/CVV (explicit; never stored)",
+        "description": "Reveal PAN/CVV for UI use on a customer-owned card (primary partner path).",
+        "operationId": "partner_customer_get_issued_card_credentials_partner_customers__customer_id__accounts__account_id__cards__card_id__credentials_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Issued card id returned by cards",
+              "title": "Card Id"
+            },
+            "description": "Issued card id returned by cards"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/transactions": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "List transactions for an issued card",
+        "description": "List transactions for one issued card.",
+        "operationId": "partner_customer_list_issued_card_transactions_partner_customers__customer_id__accounts__account_id__cards__card_id__transactions_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Issued card id returned by cards",
+              "title": "Card Id"
+            },
+            "description": "Issued card id returned by cards"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/freeze": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Freeze an issued card for a ready customer account",
+        "description": "Freeze an issued card on a customer-owned account.",
+        "operationId": "partner_customer_freeze_issued_card_partner_customers__customer_id__accounts__account_id__cards__card_id__freeze_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Issued card id returned by cards",
+              "title": "Card Id"
+            },
+            "description": "Issued card id returned by cards"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/unfreeze": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Unfreeze an issued card for a ready customer account",
+        "description": "Unfreeze an issued card on a customer-owned account.",
+        "operationId": "partner_customer_unfreeze_issued_card_partner_customers__customer_id__accounts__account_id__cards__card_id__unfreeze_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Issued card id returned by cards",
+              "title": "Card Id"
+            },
+            "description": "Issued card id returned by cards"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -6354,7 +6698,15 @@
   "components": {
     "schemas": {
       "HTTPValidationError": {
-        "properties": {},
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
         "type": "object",
         "title": "HTTPValidationError"
       },
@@ -6366,7 +6718,7 @@
                 "type": "string",
                 "enum": [
                   "local fiat rail",
-                  "international bank",
+                  "bank",
                   "elementpay"
                 ]
               },
@@ -6387,7 +6739,7 @@
               }
             ],
             "title": "Payment Method",
-            "description": "Required for international bank OffRamp: form fields from the corridor's ``form_schema`` (returned in the quote response). Keys match the international bank FormSchema properties e.g. ``BankDetails``, ``AccountHolderName``, ``PaymentPurpose``."
+            "description": "Required for bank OffRamp: form fields from the corridor's ``form_schema`` (returned in the quote response). Keys match the bank FormSchema properties e.g. ``BankDetails``, ``AccountHolderName``, ``PaymentPurpose``."
           }
         },
         "additionalProperties": false,
@@ -6409,7 +6761,7 @@
                 "type": "string",
                 "enum": [
                   "local fiat rail",
-                  "international bank",
+                  "bank",
                   "elementpay",
                   "native"
                 ]
@@ -6419,19 +6771,17 @@
               }
             ],
             "title": "Provider",
-            "description": "Optional route override. Omit for ElementPay auto-routing. Use `elementpay` for native on-chain routes; `local fiat rail` and `international bank` for ramp providers."
+            "description": "Optional route override. Omit for ElementPay auto-routing. Use `elementpay` for native on-chain routes; `local fiat rail` and `bank` for ramp providers."
           },
           "order_type": {
+            "type": "string",
             "enum": [
               "OnRamp",
-              "OffRamp",
-              "onramp",
-              "offramp",
-              0,
-              1
+              "OffRamp"
             ],
             "title": "Order Type",
-            "description": "OnRamp/0 = fiat to crypto. OffRamp/1 = crypto to fiat."
+            "description": "OnRamp = fiat to crypto. OffRamp = crypto to fiat. Aliases also accepted at runtime: onramp/offramp and integers 0/1.",
+            "example": "OnRamp"
           },
           "token": {
             "anyOf": [
@@ -6556,7 +6906,7 @@
               }
             ],
             "title": "Subject Type",
-            "description": "Stable subject type for providers that require pre-approved PSP customer links (for example international bank USD/EUR IBAN payins)."
+            "description": "Stable subject type for providers that require pre-approved PSP customer links (for example bank USD/EUR IBAN payins)."
           },
           "subject_id": {
             "anyOf": [
@@ -6581,7 +6931,7 @@
               }
             ],
             "title": "Crypto Currency",
-            "description": "Provider crypto currency hint, e.g. USDC or USDC_TEST for international bank."
+            "description": "Provider crypto currency hint, e.g. USDC or USDC_TEST for bank."
           },
           "crypto_network": {
             "anyOf": [
@@ -6593,7 +6943,7 @@
               }
             ],
             "title": "Crypto Network",
-            "description": "Provider network hint, e.g. Base or PolygonTestAmoy for international bank."
+            "description": "Provider network hint, e.g. Base or PolygonTestAmoy for bank."
           },
           "amount": {
             "anyOf": [
@@ -6658,7 +7008,19 @@
               }
             ],
             "title": "Customer",
-            "description": "Provider-neutral customer details. Retail: personal KYC fields (name, dob, id_number, \u2026). Institution (`type: institution` with top-level `customer_type: institution`): `uid`, `business_name`, `business_id` (legal registration/tax id of the paying business), and `email` \u2014 no DOB / national ID / personal name. Used to derive provider party details when provider-specific fields are omitted."
+            "description": "Provider-neutral customer details. Used to derive provider party details when provider-specific fields are omitted."
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "Public KYC vault customer id (``pcus_...`` from `POST /partner/customers`). When set, identity is hydrated from the reviewed vault profile and overrides any inline `customer` block; the order is only accepted if that customer has been approved. Omit `customer_id` to keep using the legacy inline `customer` flow."
           },
           "payment_method": {
             "anyOf": [
@@ -6670,7 +7032,7 @@
               }
             ],
             "title": "Payment Method",
-            "description": "Provider-neutral fiat rail. For ``type: mobile_money`` use ``phone_number`` (MSISDN) and ``network_id`` (institution UUID from catalog ``providers[].id``). For ``type: bank`` use ``account_number``, ``account_name``, and ``network_id`` (UUID from ``GET /banks`` or catalog). Do not use top-level legacy fields."
+            "description": "Provider-neutral fiat rail. For ``type: mobile_money`` use ``phone_number`` (MSISDN) and ``network_id`` (institution UUID from catalog ``providers[].id``). For ``type: bank`` use ``network_id`` from catalog/``GET /banks``. ElementPay ledger FX (EUR/USD/GBP \u2194 USDC) also requires ``entity_id`` and ``account_id`` (partner integers from ``/partner/entities/.../accounts``): OnRamp ``account_id`` is the fiat source; OffRamp ``account_id`` is the USDC source (optional ``destination_account_id`` for the fiat credit account). Do not use top-level legacy fields."
           },
           "recipient": {
             "anyOf": [
@@ -6782,7 +7144,7 @@
           "order_type"
         ],
         "title": "PartnerOrderQuoteRequest",
-        "description": "Generic partner quote request for the `quote -> accept -> webhook` flow. `provider` is optional. When omitted, the partner order router selects the route from country, currency, order type, payment method, asset, and amount. New partner integrations should use the canonical `asset`, `customer`, and `payment_method` blocks. For local fiat rail momo/bank, ``payment_method.network_id`` is required (catalog or ``GET /banks``). For mobile money MSISDN, use ``payment_method.phone_number`` only \u2014 do not fall back to ``customer.phone``. Legacy provider-specific blocks (``destination``, etc.) are still accepted and mapped to the canonical request fields.",
+        "description": "Generic partner quote request for the `quote -> accept -> webhook` flow. `provider` is optional. When omitted, the partner order router selects the route from country, currency, order type, payment method, asset, and amount. New partner integrations should use the canonical `asset`, `customer`, and `payment_method` blocks. For local fiat rail momo/bank, ``payment_method.network_id`` is required (catalog or ``GET /banks``). For mobile money MSISDN, use ``payment_method.phone_number`` only \u2014 do not fall back to ``customer.phone``. Legacy provider-specific blocks (``destination``, etc.) are still accepted and mapped to the canonical request fields. Pass ``customer_id`` (from the KYC vault, `POST /partner/customers`) instead of an inline ``customer`` block once that customer has been EP-approved.",
         "examples": [
           {
             "asset": {
@@ -7070,16 +7432,14 @@
             "description": "Document key from requirements (e.g. identity, address).",
             "examples": [
               "identity"
-            ],
-            "example": "identity"
+            ]
           },
           "content_base64": {
             "type": "string",
             "maxLength": 12000000,
             "minLength": 1,
             "title": "Content Base64",
-            "description": "Base64-encoded file bytes (max ~8 MiB decoded).",
-            "example": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+            "description": "Base64-encoded file bytes (max ~8 MiB decoded)."
           },
           "content_type": {
             "anyOf": [
@@ -7095,8 +7455,7 @@
             "examples": [
               "image/jpeg",
               "application/pdf"
-            ],
-            "example": "application/pdf"
+            ]
           },
           "file_name": {
             "anyOf": [
@@ -7109,8 +7468,7 @@
               }
             ],
             "title": "File Name",
-            "description": "Optional original filename for the partner only; not stored in object keys.",
-            "example": "passport.pdf"
+            "description": "Optional original filename for the partner only; not stored in object keys."
           }
         },
         "type": "object",
@@ -7118,59 +7476,21 @@
           "category",
           "content_base64"
         ],
-        "title": "PartnerCustomerDocumentUploadRequest",
-        "example": {
-          "category": "identity",
-          "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
-          "content_type": "application/pdf",
-          "file_name": "passport.pdf"
-        }
+        "title": "PartnerCustomerDocumentUploadRequest"
       },
       "PartnerCustomerProfilePatchRequest": {
         "properties": {
           "profile": {
             "type": "object",
             "title": "Profile",
-            "description": "Partial profile merge into the customer vault.",
-            "example": {
-              "first_name": "Jane",
-              "last_name": "Doe",
-              "email": "jane@example.com",
-              "date_of_birth": "1990-01-15",
-              "country_of_residence": "GB",
-              "phone": "+447700900123",
-              "gender": "f",
-              "address": {
-                "line1": "1 Example Street",
-                "city": "London",
-                "country": "GB",
-                "postal_code": "E1 6AN"
-              }
-            }
+            "description": "Partial profile merge into the customer vault."
           }
         },
         "type": "object",
         "required": [
           "profile"
         ],
-        "title": "PartnerCustomerProfilePatchRequest",
-        "example": {
-          "profile": {
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "email": "jane@example.com",
-            "date_of_birth": "1990-01-15",
-            "country_of_residence": "GB",
-            "phone": "+447700900123",
-            "gender": "f",
-            "address": {
-              "line1": "1 Example Street",
-              "city": "London",
-              "country": "GB",
-              "postal_code": "E1 6AN"
-            }
-          }
-        }
+        "title": "PartnerCustomerProfilePatchRequest"
       },
       "PartnerCustomerCreateRequest": {
         "properties": {
@@ -7182,8 +7502,7 @@
             "description": "Partner's stable customer reference (unique per tenant).",
             "examples": [
               "cust-ke-001"
-            ],
-            "example": "cust-ke-001"
+            ]
           },
           "type": {
             "type": "string",
@@ -7192,7 +7511,6 @@
             "examples": [
               "individual"
             ],
-            "example": "individual",
             "enum": [
               "individual",
               "business"
@@ -7208,22 +7526,7 @@
               }
             ],
             "title": "Profile",
-            "description": "Identity / KYB fields (see GET /customers/requirements).",
-            "example": {
-              "first_name": "Jane",
-              "last_name": "Doe",
-              "email": "jane@example.com",
-              "date_of_birth": "1990-01-15",
-              "country_of_residence": "GB",
-              "phone": "+447700900123",
-              "gender": "f",
-              "address": {
-                "line1": "1 Example Street",
-                "city": "London",
-                "country": "GB",
-                "postal_code": "E1 6AN"
-              }
-            }
+            "description": "Identity / KYB fields (see GET /customers/requirements)."
           }
         },
         "type": "object",
@@ -7231,26 +7534,7 @@
           "partner_customer_ref",
           "type"
         ],
-        "title": "PartnerCustomerCreateRequest",
-        "example": {
-          "partner_customer_ref": "cust-ke-001",
-          "type": "individual",
-          "profile": {
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "email": "jane@example.com",
-            "date_of_birth": "1990-01-15",
-            "country_of_residence": "GB",
-            "phone": "+447700900123",
-            "gender": "f",
-            "address": {
-              "line1": "1 Example Street",
-              "city": "London",
-              "country": "GB",
-              "postal_code": "E1 6AN"
-            }
-          }
-        }
+        "title": "PartnerCustomerCreateRequest"
       },
       "PartnerCustomerRevokeRequest": {
         "properties": {
@@ -7963,6 +8247,495 @@
             }
           }
         ]
+      },
+      "PartnerEntityBookTransferConfirmRequest": {
+        "properties": {
+          "preview_token": {
+            "type": "string",
+            "minLength": 16,
+            "title": "Preview Token",
+            "description": "Token from book-transfers/preview"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Idempotency Key",
+            "description": "Partner-stable id; forwarded as upstream unique_reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preview_token",
+          "idempotency_key"
+        ],
+        "title": "PartnerEntityBookTransferConfirmRequest",
+        "description": "Confirm a previewed book-transfer using the signed preview token.",
+        "example": {
+          "idempotency_key": "book-2026-07-30-001",
+          "preview_token": "preview_token_from_book_transfer_preview"
+        }
+      },
+      "PartnerEntityBookTransferPreviewRequest": {
+        "properties": {
+          "to_account_id": {
+            "type": "integer",
+            "title": "To Account Id",
+            "description": "Destination partner account id"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount",
+            "description": "Decimal amount in account currency, e.g. 10.50"
+          }
+        },
+        "type": "object",
+        "required": [
+          "to_account_id",
+          "amount"
+        ],
+        "title": "PartnerEntityBookTransferPreviewRequest",
+        "description": "Preview a same-currency fiat book-transfer between two accounts under this API key.",
+        "example": {
+          "amount": "25.00",
+          "to_account_id": 18
+        }
+      },
+      "PartnerEntityCardBillingAddress": {
+        "properties": {
+          "line_1": {
+            "type": "string",
+            "title": "Line 1"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country"
+          },
+          "line_2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line 2"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_1",
+          "city",
+          "state",
+          "country"
+        ],
+        "title": "PartnerEntityCardBillingAddress"
+      },
+      "PartnerEntityCardChargeCreateRequest": {
+        "properties": {
+          "amount": {
+            "type": "string",
+            "title": "Amount",
+            "description": "Major units, e.g. 50.00"
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Reference"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 250
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "auth_model": {
+            "type": "string",
+            "title": "Auth Model",
+            "description": "3ds_disabled (sandbox Non-3DS cards) or 3ds_required",
+            "default": "3ds_disabled"
+          },
+          "return_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Url",
+            "description": "Required when auth_model is 3ds_required"
+          },
+          "card": {
+            "$ref": "#/components/schemas/PartnerEntityCardDetails"
+          },
+          "billing_address": {
+            "$ref": "#/components/schemas/PartnerEntityCardBillingAddress"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/PartnerEntityCardCustomer"
+          },
+          "browser_info": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Browser Info",
+            "description": "Browser data for 3DS; required when auth_model is 3ds_required"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "reference",
+          "card",
+          "billing_address",
+          "customer"
+        ],
+        "title": "PartnerEntityCardChargeCreateRequest",
+        "description": "Charge a card into this fiat account (card acquiring / deposit).",
+        "example": {
+          "amount": "50.00",
+          "auth_model": "3ds_disabled",
+          "billing_address": {
+            "city": "New York",
+            "country": "US",
+            "line_1": "350 Fifth Avenue",
+            "postal_code": "10118",
+            "state": "NY"
+          },
+          "card": {
+            "cvv": "123",
+            "expiry_month": "12",
+            "expiry_year": "2030",
+            "holder_name": "Jane Doe",
+            "number": "4000000000002701"
+          },
+          "customer": {
+            "email": "jane@example.com",
+            "first_name": "Jane",
+            "last_name": "Doe"
+          },
+          "description": "Wallet top-up",
+          "reference": "order-card-001"
+        }
+      },
+      "PartnerEntityCardCustomer": {
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name",
+          "email"
+        ],
+        "title": "PartnerEntityCardCustomer"
+      },
+      "PartnerEntityCardDetails": {
+        "properties": {
+          "number": {
+            "type": "string",
+            "maxLength": 23,
+            "minLength": 13,
+            "title": "Number",
+            "description": "Card PAN (spaces allowed)"
+          },
+          "expiry_month": {
+            "type": "string",
+            "title": "Expiry Month",
+            "description": "01\u201312"
+          },
+          "expiry_year": {
+            "type": "string",
+            "title": "Expiry Year",
+            "description": "Four-digit year, e.g. 2030"
+          },
+          "cvv": {
+            "type": "string",
+            "maxLength": 4,
+            "minLength": 3,
+            "title": "Cvv"
+          },
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name",
+            "description": "Name on card"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "expiry_month",
+          "expiry_year",
+          "cvv"
+        ],
+        "title": "PartnerEntityCardDetails"
+      },
+      "PartnerEntityIssuedCardCreateRequest": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "disposable or virtual"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "Optional. Upstream treats this as a future placeholder (not a card top-up). Card spends from the USD account balance. Omit for standard issue."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Reference"
+          },
+          "card_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Name"
+          },
+          "cardholder": {
+            "$ref": "#/components/schemas/PartnerEntityIssuedCardholder"
+          },
+          "expiration_month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiration Month",
+            "description": "MM \u2014 required for disposable"
+          },
+          "expiration_year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiration Year",
+            "description": "YY or YYYY \u2014 required for disposable"
+          },
+          "spending_controls": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartnerEntityIssuedCardSpendingControls"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional; applied for virtual cards only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "reference",
+          "cardholder"
+        ],
+        "title": "PartnerEntityIssuedCardCreateRequest",
+        "description": "Issue a disposable or virtual card linked to this USD fiat account. Spend draws from the account balance. ``amount`` is optional upstream (placeholder for future load behaviour); omit it for normal issue.",
+        "example": {
+          "card_name": "Team card",
+          "cardholder": {
+            "email": "jane@example.com",
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "phone_number": "+12125550198"
+          },
+          "reference": "card-issue-001",
+          "type": "virtual"
+        }
+      },
+      "PartnerEntityIssuedCardSpendingControls": {
+        "properties": {
+          "billing_cycle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Cycle",
+            "description": "e.g. Weekly, Monthly"
+          },
+          "billing_cycle_day": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Cycle Day",
+            "description": "e.g. Sunday"
+          },
+          "daily_amount_limit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Amount Limit",
+            "description": "Major units, e.g. 50.00"
+          },
+          "daily_transaction_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Transaction Count"
+          },
+          "transaction_amount_limit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Amount Limit",
+            "description": "Major units"
+          },
+          "cycle_transaction_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Transaction Count"
+          }
+        },
+        "type": "object",
+        "title": "PartnerEntityIssuedCardSpendingControls",
+        "description": "Optional controls for virtual cards (major units for amount limits)."
+      },
+      "PartnerEntityIssuedCardholder": {
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone_number": {
+            "type": "string",
+            "title": "Phone Number",
+            "description": "E.164, e.g. +12125550198"
+          }
+        },
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name",
+          "email",
+          "phone_number"
+        ],
+        "title": "PartnerEntityIssuedCardholder"
       }
     },
     "securitySchemes": {
@@ -7988,14 +8761,14 @@
       "x-group": "Partner"
     },
     {
-      "name": "partner-customers",
-      "description": "Vault KYC: requirements, create, list, get/update, documents, and submit (pcus_*).",
-      "x-group": "Customers"
-    },
-    {
       "name": "partner-customer-accounts",
       "description": "Customer accounts and funding: open/list/get rails, deposit instructions, stablecoin sends, and same-currency fiat book transfers.",
       "x-group": "Customer accounts"
+    },
+    {
+      "name": "partner-customers",
+      "description": "Customer vault KYC (pcus_*), deposit accounts, deposit instructions, stablecoin sends, and same-currency fiat book transfers from customer-scoped account paths.",
+      "x-group": "Customers"
     }
   ],
   "servers": [

@@ -84,9 +84,10 @@ Same banking gate (`deposit_account=ready`). Acquiring charges a card into fiat;
 |--------|------|-------|
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/card-charges` | Acquiring create |
 | `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/card-charges/{charge_id}` | Poll charge |
-| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` | Issue card (PAN/CVV on create only) |
-| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` | List |
-| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}` | Get (no PAN/CVV) |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` | Issue card (PAN/CVV on create) |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards` | List (syncs upstream; no PAN/CVV) |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}` | Get metadata (no PAN/CVV) |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/credentials` | Reveal PAN/CVV (do not store) |
 | `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/transactions` | Card txs |
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/freeze` | Freeze |
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/cards/{card_id}/unfreeze` | Unfreeze |
