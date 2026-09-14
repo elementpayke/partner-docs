@@ -37,29 +37,25 @@ OpenAPI tag: **`partner-customers`**.
 
 Guide: [Customers quickstart](/customers/quickstart).
 
-## Banking (optional product)
+## External bank payouts (banking)
 
-Requires vault approved/active **and** `products.deposit_account.status=ready`. Prefer this call order when integrating payouts:
+Requires vault approved/active **and** `products.deposit_account.status=ready`. Integrator order:
 
 | Method | Path | Notes |
 |--------|------|-------|
-| `GET`/`POST` | `/partner/customers/{customer_id}/accounts` | List / open rails |
-| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}` | Balance + status |
-| `GET` | `…/deposit-instructions` | Fund fiat / stablecoin |
-| `GET` | `…/payout-methods` | Schemes + required fields |
-| `GET` | `…/payout-banks` | Local `bank_code` directory |
-| `POST` | `…/payouts/preview` | Quote-like preview → `preview_token` |
-| `POST` | `…/payouts` | Confirm |
+| `GET` | `…/accounts` / `…/accounts/{account_id}` | Resolve fiat `account_id` + balance |
+| `GET` | `…/payout-methods` | Schemes + `required_fields` / `require_one_of` (CAD Interac, NGN NIP, GHS EFT, SEPA, ACH, SWIFT, …) |
+| `GET` | `…/payout-banks` | Local `bank_code` directory (NGN / GHS / CAD) |
+| `POST` | `…/payouts/preview` | → `preview_token` |
+| `POST` | `…/payouts` | Confirm + `idempotency_key` |
 | `GET` | `…/payouts/{payout_id}` | Poll |
-| `POST`/`GET` | `…/sends…` | Stablecoin sends |
-| `POST` | `…/book-transfers…` | Internal fiat book |
-| `POST`/`GET` | `…/cards…` / `…/card-charges…` | Issuing / acquiring |
 
-Guides: [Accounts](/customers/accounts) · [Deposit instructions](/customers/deposit-instructions) · [Payouts](/customers/payouts) · [Route cheat sheet](/customers/route-cheat-sheet).
+Not the same as corridor [`GET /partner/banks`](/partner/banks) (quote `network_id`).
+
+Guide: [External bank payouts](/customers/payouts) · [Route cheat sheet](/customers/route-cheat-sheet).
 
 ## Try it
 
 1. Open an endpoint under this tab.
 2. Set `X-API-Key` to your sandbox key.
-3. Prefill path params (`customer_id`, `account_id`) from your vault.
-4. For payouts: call **payout-methods** → **payout-banks** (local rails) → **payouts/preview** before confirm.
+3. For payouts: **payout-methods** → **payout-banks** (local rails) → **payouts/preview** before confirm.
