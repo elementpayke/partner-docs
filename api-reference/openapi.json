@@ -5098,15 +5098,58 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Schemes and required fields for this fiat account currency.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout methods",
+                  "data": {
+                    "account_id": 39,
+                    "account_status": "active",
+                    "currency": "NGN",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "methods": [
+                      {
+                        "scheme": "nip",
+                        "country": "NG",
+                        "default": true,
+                        "required_fields": [
+                          "bank_code",
+                          "account_number",
+                          "bank_name",
+                          "country",
+                          "account_holder_name"
+                        ]
+                      },
+                      {
+                        "scheme": "swift",
+                        "country": "",
+                        "default": false,
+                        "required_fields": [
+                          "swift_bic",
+                          "bank_name",
+                          "country",
+                          "account_holder_name"
+                        ],
+                        "require_one_of": [
+                          [
+                            "iban",
+                            "account_number"
+                          ]
+                        ]
+                      }
+                    ]
+                  }
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Currency does not support external bank payouts",
             "content": {
               "application/json": {
                 "schema": {
@@ -5135,10 +5178,55 @@
                 },
                 "example": {
                   "status": "error",
-                  "message": "Validation error",
+                  "message": "External bank payout is not supported for this currency",
                   "data": {
-                    "field": "country"
+                    "currency": "XXX",
+                    "supported": [
+                      "CAD",
+                      "EUR",
+                      "USD",
+                      "GBP",
+                      "AED",
+                      "NGN",
+                      "GHS"
+                    ]
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -5193,10 +5281,33 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Local bank directory (bank_code / bank_name) for this account country.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout banks",
+                  "data": {
+                    "account_id": 39,
+                    "currency": "NGN",
+                    "country": "NG",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "banks": [
+                      {
+                        "bank_code": "044",
+                        "bank_name": "Access Bank",
+                        "swift_bic": "ABNGNGLA"
+                      },
+                      {
+                        "bank_code": "058",
+                        "bank_name": "Guaranty Trust Bank"
+                      }
+                    ]
+                  }
+                }
               }
             }
           },
@@ -5234,6 +5345,42 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -5298,15 +5445,40 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "Preview token for confirm. Fee often pending_confirm until confirm.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout preview",
+                  "data": {
+                    "preview_token": "nvpay.eyJhbGciOiJIUzI1NiJ9.preview",
+                    "currency": "NGN",
+                    "from_account_id": 39,
+                    "amount": "1.00",
+                    "fee": null,
+                    "receive_amount": null,
+                    "fee_status": "pending_confirm",
+                    "scheme": "nip",
+                    "destination": {
+                      "rail": "bank",
+                      "country": "NG",
+                      "scheme": "nip",
+                      "bank_name": "Access Bank",
+                      "account_number_masked": "****0031"
+                    },
+                    "expires_at": "2026-09-14T12:10:00+00:00",
+                    "customer_id": "pcus_a1b2c3d4e5f6"
+                  }
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Insufficient balance or invalid bank fields",
             "content": {
               "application/json": {
                 "schema": {
@@ -5335,10 +5507,48 @@
                 },
                 "example": {
                   "status": "error",
-                  "message": "Validation error",
+                  "message": "Insufficient balance",
                   "data": {
-                    "field": "country"
+                    "available": "0.00",
+                    "amount": "1.00",
+                    "currency": "NGN"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -5403,10 +5613,36 @@
         },
         "responses": {
           "201": {
-            "description": "Successful Response",
+            "description": "External bank payout accepted for processing.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout submitted",
+                  "data": {
+                    "id": 101,
+                    "status": "submitted",
+                    "from_account_id": 39,
+                    "currency": "NGN",
+                    "amount": "1.00",
+                    "fee": "0.50",
+                    "receive_amount": "0.50",
+                    "fee_status": "final",
+                    "scheme": "nip",
+                    "destination": {
+                      "rail": "bank",
+                      "country": "NG",
+                      "scheme": "nip",
+                      "bank_name": "Access Bank",
+                      "account_number_masked": "****0031"
+                    },
+                    "created_at": "2026-09-14T12:05:00+00:00",
+                    "customer_id": "pcus_a1b2c3d4e5f6"
+                  }
+                }
               }
             }
           },
@@ -5444,6 +5680,42 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }
@@ -5510,10 +5782,36 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Payout status for polling.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout",
+                  "data": {
+                    "id": 101,
+                    "status": "submitted",
+                    "from_account_id": 39,
+                    "currency": "NGN",
+                    "amount": "1.00",
+                    "fee": "0.50",
+                    "receive_amount": "0.50",
+                    "fee_status": "final",
+                    "scheme": "nip",
+                    "destination": {
+                      "rail": "bank",
+                      "country": "NG",
+                      "scheme": "nip",
+                      "bank_name": "Access Bank",
+                      "account_number_masked": "****0031"
+                    },
+                    "created_at": "2026-09-14T12:05:00+00:00",
+                    "customer_id": "pcus_a1b2c3d4e5f6"
+                  }
+                }
               }
             }
           },
@@ -5551,6 +5849,42 @@
                   "data": {
                     "field": "country"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
                 }
               }
             }

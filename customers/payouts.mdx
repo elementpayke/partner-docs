@@ -11,13 +11,13 @@ Send **same-currency fiat** from a customer account to an **outside** bank benef
 Prerequisite: [Customers quickstart](/customers/quickstart). Banking gate: `products.deposit_account.status=ready`. Source account must be `status=active` for the payout currency.
 
 <Warning>
-**Preview requires available balance** (`available >= amount`). Confirm on live **moves money**. Sandbox often cannot complete a full bank push — use discovery + insufficient-balance checks first.
+**Preview requires available balance** (`available >= amount`). Confirm on live **moves money**. Sandbox often cannot complete a full bank push - use discovery + insufficient-balance checks first.
 </Warning>
 
 ## Auth
 
 ```bash
-export BASE="https://sandbox.elementpay.net/api/v1"   # or live base
+export BASE="https://sandbox.elementpay.net/api/v1"   # or live / staging base
 export API_KEY="is_test_…"                            # or is_live_…
 export CUSTOMER_ID="pcus_…"
 export ACCOUNT_ID="…"   # fiat account in the payout currency
@@ -30,7 +30,7 @@ Content-Type: application/json
 
 ## Integrator flow (recommended order)
 
-Do **not** hardcode bank field lists from this guide alone — call discovery first.
+Do **not** hardcode bank field lists from this guide alone - call discovery first.
 
 <Steps>
   <Step title="Resolve source account">
@@ -53,7 +53,7 @@ Do **not** hardcode bank field lists from this guide alone — call discovery fi
   </Step>
 </Steps>
 
-Use **Try it** under [API Reference](/api-reference) for the same paths (search `payout-methods`, `payout-banks`, then `payouts/preview`).
+Use **Try it** under [API Reference](/api-reference) for the same paths (search `payout-methods`, `payout-banks`, then `payouts/preview`). After this docs PR deploys, those operations show success/error response examples in the panel.
 
 ## 1. Discover schemes
 
@@ -83,9 +83,9 @@ Typical `data`:
 | EUR | `sepa` (default), `swift` | SEPA: `iban` + `bank_name` + `country` |
 | USD | `ach` / `wire`, `swift` | `routing_number` + `account_number` + … |
 
-**SWIFT:** `required_fields` include `swift_bic`; use `require_one_of: [["iban","account_number"]]` — do not treat both as optional.
+**SWIFT:** `required_fields` include `swift_bic`; use `require_one_of: [["iban","account_number"]]`. Do not treat both as optional.
 
-**Do not** use corridor [`GET /partner/banks`](/partner/banks) for these codes — that list is for quote `network_id` (African / international corridors), not banking payouts.
+**Do not** use corridor [`GET /partner/banks`](/partner/banks) for these codes. That list is for quote `network_id` (African / international corridors), not banking payouts.
 
 ## 2. Discover banks (NGN / GHS / CAD)
 
@@ -188,7 +188,7 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payo
   }' | jq '.'
 ```
 
-Outbound Interac `security_question` / `security_answer` are optional on preview. Share the answer with the recipient out of band — answers are never returned in partner responses.
+Outbound Interac `security_question` / `security_answer` are optional on preview. Share the answer with the recipient out of band. Answers are never returned in partner responses.
 
 ### EUR SEPA (shape check)
 
@@ -236,7 +236,7 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payo
   }' | jq '.'
 ```
 
-Reuse the same `idempotency_key` after network errors. Tokens expire quickly — re-preview if needed.
+Reuse the same `idempotency_key` after network errors. Tokens expire quickly; re-preview if needed.
 
 ## 5. Get payout
 
@@ -251,7 +251,7 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts/$PAY
 2. **Discover → preview → confirm** on the same source `account_id`.
 3. **Balance:** `available >= amount` (exact balance allowed). Insufficient → **422** with `data.available`, `data.amount`, `data.currency`.
 4. **Partner-neutral JSON:** errors do not name upstream PSPs.
-5. **Fees** may finalize only on confirm/GET — do not invent a fee schedule.
+5. **Fees** may finalize only on confirm/GET; do not invent a fee schedule.
 
 ## Funding the source account
 
@@ -261,11 +261,7 @@ curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts/$PAY
 | CAD | Deposit instructions and/or Interac payment-requests (when enabled) |
 | EUR / GBP | Deposit instructions and/or Open Banking payment-requests (when enabled) |
 
-NGN has no “request money” payment-request — use deposit coordinates.
-
-## Legacy routes
-
-`/partner/entities/{entity_id}/accounts/.../payouts` remains for old integrations. **New work uses `pcus_*` only.** Discovery (`payout-methods` / `payout-banks`) is customer-scoped only.
+NGN has no "request money" payment-request; use deposit coordinates.
 
 ## Errors
 
