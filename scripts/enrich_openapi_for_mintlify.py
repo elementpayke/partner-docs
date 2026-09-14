@@ -204,6 +204,46 @@ Pick **Individual** or **Business** in the request body picker — each tab show
 
 Full walkthrough: [Customer KYC quickstart](/customers/quickstart).
 """,
+    ("get", "/partner/customers/{customer_id}/accounts/{account_id}/payout-methods"): """\
+List **payout schemes** for this fiat account before preview.
+
+### What to use
+- `methods[].scheme` — send as `bank.scheme` (or omit when `default: true`)
+- `required_fields` / `require_one_of` / `optional_fields` / `aliases`
+
+### SWIFT
+`require_one_of` means **iban or account_number** (not both optional).
+
+Full guide: [External bank payouts](/customers/payouts).
+""",
+    ("get", "/partner/customers/{customer_id}/accounts/{account_id}/payout-banks"): """\
+Bank routing directory for **local** payout rails (NGN / GHS / CAD).
+
+Use `bank_code` + `bank_name` from `data.banks[]` on preview. Not the same as corridor [`GET /partner/banks`](/partner/banks) (`network_id` for quotes).
+
+Country is derived from the account currency. Empty `banks` when no directory exists for that currency.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
+    ("post", "/partner/customers/{customer_id}/accounts/{account_id}/payouts/preview"): """\
+Preview a same-currency fiat payout to an external bank.
+
+Requires `available >= amount`. Call [`payout-methods`](/customers/payouts) (and [`payout-banks`](/customers/payouts) for local rails) first. Returns `preview_token`; fees may be `pending_confirm` until confirm.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
+    ("post", "/partner/customers/{customer_id}/accounts/{account_id}/payouts"): """\
+Confirm a payout with `preview_token` + `idempotency_key`.
+
+On live this **sends funds**. Reuse the same idempotency key after network errors; re-preview if the token expired.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
+    ("get", "/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}"): """\
+Poll payout status after confirm.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
 }
 
 QUOTE_TRY_IT_DEFAULT = {
