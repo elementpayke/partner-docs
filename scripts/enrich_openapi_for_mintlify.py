@@ -204,6 +204,46 @@ Pick **Individual** or **Business** in the request body picker — each tab show
 
 Full walkthrough: [Customer KYC quickstart](/customers/quickstart).
 """,
+    ("get", "/partner/customers/{customer_id}/accounts/{account_id}/payout-methods"): """\
+List **payout schemes** for this fiat account before preview.
+
+### What to use
+- `methods[].scheme` — send as `bank.scheme` (or omit when `default: true`)
+- `required_fields` / `require_one_of` / `optional_fields` / `aliases`
+
+### SWIFT
+`require_one_of` means **iban or account_number** (not both optional).
+
+Full guide: [External bank payouts](/customers/payouts).
+""",
+    ("get", "/partner/customers/{customer_id}/accounts/{account_id}/payout-banks"): """\
+Bank routing directory for **local** payout rails (NGN / GHS / CAD).
+
+Use `bank_code` + `bank_name` from `data.banks[]` on preview. Not the same as corridor [`GET /partner/banks`](/partner/banks) (`network_id` for quotes).
+
+Country is derived from the account currency. Empty `banks` when no directory exists for that currency.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
+    ("post", "/partner/customers/{customer_id}/accounts/{account_id}/payouts/preview"): """\
+Preview a same-currency fiat payout to an external bank.
+
+Requires `available >= amount`. Call [`payout-methods`](/customers/payouts) (and [`payout-banks`](/customers/payouts) for local rails) first. Returns `preview_token`; fees may be `pending_confirm` until confirm.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
+    ("post", "/partner/customers/{customer_id}/accounts/{account_id}/payouts"): """\
+Confirm a payout with `preview_token` + `idempotency_key`.
+
+On live this **sends funds**. Reuse the same idempotency key after network errors; re-preview if the token expired.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
+    ("get", "/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}"): """\
+Poll payout status after confirm.
+
+Guide: [External bank payouts](/customers/payouts).
+""",
 }
 
 QUOTE_TRY_IT_DEFAULT = {
@@ -874,6 +914,98 @@ SEND_CONFIRMED_DATA: dict[str, Any] = {
     "created_at": "2026-08-01T12:05:00+00:00",
 }
 
+PAYOUT_METHODS_DATA: dict[str, Any] = {
+    "account_id": 39,
+    "account_status": "active",
+    "currency": "NGN",
+    "customer_id": "pcus_a1b2c3d4e5f6",
+    "methods": [
+        {
+            "scheme": "nip",
+            "country": "NG",
+            "default": True,
+            "required_fields": [
+                "bank_code",
+                "account_number",
+                "bank_name",
+                "country",
+                "account_holder_name",
+            ],
+        },
+        {
+            "scheme": "swift",
+            "country": "",
+            "default": False,
+            "required_fields": [
+                "swift_bic",
+                "bank_name",
+                "country",
+                "account_holder_name",
+            ],
+            "require_one_of": [["iban", "account_number"]],
+        },
+    ],
+}
+
+PAYOUT_BANKS_DATA: dict[str, Any] = {
+    "account_id": 39,
+    "currency": "NGN",
+    "country": "NG",
+    "customer_id": "pcus_a1b2c3d4e5f6",
+    "banks": [
+        {
+            "bank_code": "044",
+            "bank_name": "Access Bank",
+            "swift_bic": "ABNGNGLA",
+        },
+        {
+            "bank_code": "058",
+            "bank_name": "Guaranty Trust Bank",
+        },
+    ],
+}
+
+PAYOUT_PREVIEW_DATA: dict[str, Any] = {
+    "preview_token": "nvpay.eyJhbGciOiJIUzI1NiJ9.preview",
+    "currency": "NGN",
+    "from_account_id": 39,
+    "amount": "1.00",
+    "fee": None,
+    "receive_amount": None,
+    "fee_status": "pending_confirm",
+    "scheme": "nip",
+    "destination": {
+        "rail": "bank",
+        "country": "NG",
+        "scheme": "nip",
+        "bank_name": "Access Bank",
+        "account_number_masked": "****0031",
+    },
+    "expires_at": "2026-09-14T12:10:00+00:00",
+    "customer_id": "pcus_a1b2c3d4e5f6",
+}
+
+PAYOUT_CONFIRMED_DATA: dict[str, Any] = {
+    "id": 101,
+    "status": "submitted",
+    "from_account_id": 39,
+    "currency": "NGN",
+    "amount": "1.00",
+    "fee": "0.50",
+    "receive_amount": "0.50",
+    "fee_status": "final",
+    "scheme": "nip",
+    "destination": {
+        "rail": "bank",
+        "country": "NG",
+        "scheme": "nip",
+        "bank_name": "Access Bank",
+        "account_number_masked": "****0031",
+    },
+    "created_at": "2026-09-14T12:05:00+00:00",
+    "customer_id": "pcus_a1b2c3d4e5f6",
+}
+
 
 def _json_success(message: str, data: Any) -> dict[str, Any]:
     return {"status": "success", "message": message, "data": data}
@@ -1276,6 +1408,113 @@ def patch_partner_integrator_responses(doc: dict[str, Any]) -> int:
             data=deepcopy(SEND_CONFIRMED_DATA),
             schema_ref=envelope_schema,
             description="Stablecoin send status for polling.",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    payout_methods_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/payout-methods", {}
+    ).get("get")
+    if isinstance(payout_methods_op, dict):
+        responses = payout_methods_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Payout methods",
+            data=deepcopy(PAYOUT_METHODS_DATA),
+            schema_ref=envelope_schema,
+            description="Schemes and required fields for this fiat account currency.",
+        )
+        _patch_error_response(
+            responses,
+            "422",
+            description="Currency does not support external bank payouts",
+            example={
+                "status": "error",
+                "message": "External bank payout is not supported for this currency",
+                "data": {
+                    "currency": "XXX",
+                    "supported": ["CAD", "EUR", "USD", "GBP", "AED", "NGN", "GHS"],
+                },
+            },
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    payout_banks_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/payout-banks", {}
+    ).get("get")
+    if isinstance(payout_banks_op, dict):
+        responses = payout_banks_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Payout banks",
+            data=deepcopy(PAYOUT_BANKS_DATA),
+            schema_ref=envelope_schema,
+            description="Local bank directory (bank_code / bank_name) for this account country.",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    payout_preview_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/payouts/preview", {}
+    ).get("post")
+    if isinstance(payout_preview_op, dict):
+        responses = payout_preview_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "201",
+            message="Payout preview",
+            data=deepcopy(PAYOUT_PREVIEW_DATA),
+            schema_ref=envelope_schema,
+            description="Preview token for confirm. Fee often pending_confirm until confirm.",
+        )
+        _patch_error_response(
+            responses,
+            "422",
+            description="Insufficient balance or invalid bank fields",
+            example={
+                "status": "error",
+                "message": "Insufficient balance",
+                "data": {
+                    "available": "0.00",
+                    "amount": "1.00",
+                    "currency": "NGN",
+                },
+            },
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    payout_confirm_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/payouts", {}
+    ).get("post")
+    if isinstance(payout_confirm_op, dict):
+        responses = payout_confirm_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "201",
+            message="Payout submitted",
+            data=deepcopy(PAYOUT_CONFIRMED_DATA),
+            schema_ref=envelope_schema,
+            description="External bank payout accepted for processing.",
+        )
+        _ensure_unauthorized(responses)
+        patched += 1
+
+    payout_get_op = paths.get(
+        "/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}", {}
+    ).get("get")
+    if isinstance(payout_get_op, dict):
+        responses = payout_get_op.setdefault("responses", {})
+        _patch_success_response(
+            responses,
+            "200",
+            message="Payout",
+            data=deepcopy(PAYOUT_CONFIRMED_DATA),
+            schema_ref=envelope_schema,
+            description="Payout status for polling.",
         )
         _ensure_unauthorized(responses)
         patched += 1

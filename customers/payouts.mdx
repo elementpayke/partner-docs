@@ -1,6 +1,6 @@
 # External bank payouts
 
-Send **same-currency fiat** from a customer account to an **outside** bank (SEPA / ACH / CAD EFT / SWIFT). Source is always a customer-owned fiat `account_id` (`pcus_*`). Destination is beneficiary + bank details, not another ledger `account_id`.
+Send **same-currency fiat** from a customer account to an **outside** bank beneficiary (not another Element Pay ledger account).
 
 | Flow | Destination |
 |------|-------------|
@@ -8,19 +8,19 @@ Send **same-currency fiat** from a customer account to an **outside** bank (SEPA
 | **Payout** | External beneficiary bank |
 | [Stablecoin sends](/customers/stablecoin-sends) | Crypto wallet |
 
-Prerequisite: [Customers quickstart](/customers/quickstart). Banking gate: `products.deposit_account.status=ready`.
+Prerequisite: [Customers quickstart](/customers/quickstart). Banking gate: `products.deposit_account.status=ready`. Source account must be `status=active` for the payout currency.
 
 <Warning>
-**Sandbox:** full payout preview → confirm is often **not** exercisable end-to-end. Deposit rails may not credit usable fiat balance, and there may be no partner-safe sandbox beneficiary for a real bank push. Prefer validating **preview validation** (for example amount above `available` → **422**) and field shapes. Contact Element Pay if you need a sandbox credit or a known-good test beneficiary. **Live:** fund the source account (deposit instructions or corridor quote → accept where applicable), then run preview → confirm only when you intend to send funds.
+**Preview requires available balance** (`available >= amount`). Confirm on live **moves money**. Sandbox often cannot complete a full bank push - use discovery + insufficient-balance checks first.
 </Warning>
 
-## Auth and environments
+## Auth
 
 ```bash
-export BASE_SANDBOX="$BASE_SANDBOX"   # sandbox Partner API base
-export BASE_LIVE="$BASE_LIVE"         # live Partner API base
-export BASE="$BASE_SANDBOX"
-export API_KEY="is_test_…"            # or is_live_… on live
+export BASE="https://sandbox.elementpay.net/api/v1"   # or live / staging base
+export API_KEY="is_test_…"                            # or is_live_…
+export CUSTOMER_ID="pcus_…"
+export ACCOUNT_ID="…"   # fiat account in the payout currency
 ```
 
 ```http
@@ -28,54 +28,172 @@ X-API-Key: <API_KEY>
 Content-Type: application/json
 ```
 
-## Gates
+## Integrator flow (recommended order)
 
-| Gate | Field | Unlocks |
-|------|-------|---------|
-| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on quote |
-| **Banking** | `products.deposit_account.status` is `ready` | Fiat payouts from that customer's accounts |
-
-Source `account_id` must belong to `{customer_id}`.
-
-If banking routes are called before `ready`, expect **409** with `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
-
-## Happy path
+Do **not** hardcode bank field lists from this guide alone - call discovery first.
 
 <Steps>
-  <Step title="Confirm banking ready">
-    Poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+  <Step title="Resolve source account">
+    `GET …/accounts` → pick fiat `account_id` with `status=active` and enough `balance.available`
   </Step>
-  <Step title="List accounts">
-    Resolve source fiat `account_id` via `GET …/accounts`
+  <Step title="Discover schemes">
+    `GET …/payout-methods` → `methods[].scheme`, `required_fields`, `require_one_of`, `aliases`, `default`
+  </Step>
+  <Step title="Discover banks (local rails)">
+    For NGN / GHS / CAD local rails: `GET …/payout-banks` → pick `bank_code` (and `bank_name`)
   </Step>
   <Step title="Preview">
     `POST …/payouts/preview` with `amount`, `beneficiary`, `bank` → `preview_token`
   </Step>
   <Step title="Confirm">
-    `POST …/payouts` with `preview_token` + `idempotency_key` (tokens expire quickly; use a fresh preview)
+    `POST …/payouts` with `preview_token` + `idempotency_key`
   </Step>
   <Step title="Poll">
     `GET …/payouts/{payout_id}` until terminal status
   </Step>
 </Steps>
 
-## 1. Resolve source account
+Use **Try it** under [API Reference](/api-reference) for the same paths (search `payout-methods`, `payout-banks`, then `payouts/preview`). After this docs PR deploys, those operations show success/error response examples in the panel.
+
+## 1. Discover schemes
 
 ```bash
-export FROM_CUSTOMER="pcus_…"   # approved/active + deposit_account ready
-
-curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts" \
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payout-methods" \
   -H "X-API-Key: $API_KEY" | jq '.data'
-
-export ACCOUNT_ID="…"   # fiat account in the payout currency
 ```
 
-## 2. Preview
+Typical `data`:
 
-Preview and confirm must use the **same** source `account_id`. Required bank fields depend on currency / scheme (EUR SEPA: `iban` + `country`; USD ACH: `routing_number` + `account_number`; CAD EFT: institution + transit + account; SWIFT: `scheme=swift` + `swift_bic`).
+| Field | Meaning |
+|-------|---------|
+| `currency` | Account currency |
+| `methods[].scheme` | Value to send as `bank.scheme` (or omit when `default`) |
+| `methods[].required_fields` | Always required on `bank` / beneficiary for that scheme |
+| `methods[].require_one_of` | At least one field from each group (e.g. SWIFT: `iban` **or** `account_number`) |
+| `methods[].optional_fields` | Truly optional only |
+| `methods[].aliases` | Accepted alternate scheme strings (e.g. GHS `eft` → `gh_eft`) |
+
+### Common schemes by currency
+
+| Currency | Schemes (see discovery) | Local bank fields |
+|----------|-------------------------|-------------------|
+| NGN | `nip` (default), `swift` | `bank_code` + `account_number` + `bank_name` + `country=NG` |
+| GHS | `gh_eft` / `eft`, `swift` | `bank_code` + `account_number` + `bank_name` + `country=GH` |
+| CAD | `eft` (default), `interac_email`, `interac_account`, `swift` | EFT: institution + transit + account; Interac email: `email` |
+| EUR | `sepa` (default), `swift` | SEPA: `iban` + `bank_name` + `country` |
+| USD | `ach` / `wire`, `swift` | `routing_number` + `account_number` + … |
+
+**SWIFT:** `required_fields` include `swift_bic`; use `require_one_of: [["iban","account_number"]]`. Do not treat both as optional.
+
+**Do not** use corridor [`GET /partner/banks`](/partner/banks) for these codes. That list is for quote `network_id` (African / international corridors), not banking payouts.
+
+## 2. Discover banks (NGN / GHS / CAD)
 
 ```bash
-curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/payouts/preview" \
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payout-banks" \
+  -H "X-API-Key: $API_KEY" | jq '.data | {country, currency, n: (.banks|length), sample: .banks[0:3]}'
+```
+
+`data.banks[]` typically includes `bank_code`, `bank_name`, and optionally `swift_bic` / `bank_institution_number`. Country is derived from the account currency (`NGN→NG`, `GHS→GH`, `CAD→CA`). Currencies without a directory return `banks: []`.
+
+## 3. Preview
+
+Preview and confirm must use the **same** source `account_id`.
+
+### NGN (NIP)
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "1.00",
+    "beneficiary": {
+      "first_name": "Chidinma",
+      "last_name": "Okafor",
+      "email": "chidinma@example.com",
+      "address": {
+        "line_1": "1 Broad St",
+        "city": "Lagos",
+        "postal_code": "100001",
+        "country": "NG"
+      }
+    },
+    "bank": {
+      "account_holder_name": "Chidinma Okafor",
+      "country": "NG",
+      "bank_code": "044",
+      "account_number": "0690000031",
+      "bank_name": "Access Bank"
+    }
+  }' | jq '.'
+```
+
+### GHS (EFT)
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "1.00",
+    "beneficiary": {
+      "first_name": "Kwame",
+      "last_name": "Mensah",
+      "email": "kwame@example.com",
+      "address": {
+        "line_1": "1 Independence Ave",
+        "city": "Accra",
+        "postal_code": "GA000",
+        "country": "GH"
+      }
+    },
+    "bank": {
+      "account_holder_name": "Kwame Mensah",
+      "country": "GH",
+      "bank_code": "030100",
+      "account_number": "1234567890",
+      "bank_name": "ABSA BANK OF GHANA LIMITED"
+    }
+  }' | jq '.'
+```
+
+### CAD Interac email
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "1.00",
+    "beneficiary": {
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane@example.com",
+      "address": {
+        "line_1": "1 Main",
+        "city": "Toronto",
+        "postal_code": "M5V1A1",
+        "country": "CA"
+      }
+    },
+    "bank": {
+      "scheme": "interac_email",
+      "account_holder_name": "Jane Doe",
+      "country": "CA",
+      "email": "jane@example.com"
+    },
+    "security_question": "What is your favorite color?",
+    "security_answer": "blue"
+  }' | jq '.'
+```
+
+Outbound Interac `security_question` / `security_answer` are optional on preview. Share the answer with the recipient out of band. Answers are never returned in partner responses.
+
+### EUR SEPA (shape check)
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts/preview" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -100,63 +218,63 @@ curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/pa
   }' | jq '.'
 ```
 
-Typical success includes `preview_token`, amounts, fee fields (often `fee_status=pending_confirm` until confirm), and `customer_id`. Save `preview_token`.
+Save `preview_token`. Fees on preview are often `fee_status=pending_confirm` / `fee: null` until confirm.
 
-<Note>
-In sandbox, until Element Pay has credited balance and shared a known-good beneficiary, prefer **insufficient-balance** preview checks (below) over confirm.
-</Note>
-
-## 3. Confirm
+## 4. Confirm
 
 <Warning>
-On **live**, confirm initiates an **external bank payout**. Do not confirm on live unless you intend to send funds. On sandbox, confirm may still fail or be unavailable without funded balance and an approved test beneficiary.
+On **live**, confirm initiates an **external bank payout**. Do not confirm unless you intend to send funds.
 </Warning>
 
 ```bash
-curl -sS -X POST "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/payouts" \
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "preview_token": "<from preview response>",
-    "idempotency_key": "payout-2026-08-23-001"
+    "idempotency_key": "payout-2026-09-14-001"
   }' | jq '.'
 ```
 
-Reuse the same `idempotency_key` on retries after network errors. Confirm / GET typically surface final fee status.
+Reuse the same `idempotency_key` after network errors. Tokens expire quickly; re-preview if needed.
 
-## 4. Get payout
+## 5. Get payout
 
 ```bash
-curl -sS "$BASE/partner/customers/$FROM_CUSTOMER/accounts/$ACCOUNT_ID/payouts/$PAYOUT_ID" \
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/payouts/$PAYOUT_ID" \
   -H "X-API-Key: $API_KEY" | jq '.'
 ```
 
 ## Business rules
 
 1. **Same currency fiat → external bank** only (no FX on this rail).
-2. **Preview → confirm** on the same source `account_id`; use a fresh preview if the token expired.
-3. **Partner-neutral JSON**: error `message` / `data` do not expose upstream PSP names.
-4. **Balance:** like [book transfers](/customers/book-transfers), require `available >= amount` (exact balance is allowed). This differs from [stablecoin sends](/customers/stablecoin-sends), which need amount **strictly below** `available` (1 minor-unit headroom). Insufficient balance returns **422** with `data.available`, `data.amount`, and `data.currency` when known.
-5. Fees may be `pending_confirm` on preview and final on confirm/GET. **Fees can dominate small principals** (for example a fixed fee larger than a tiny payout). Always read preview / confirm / GET fee fields and do not invent a fee schedule; do not assume net receive equals `amount`.
+2. **Discover → preview → confirm** on the same source `account_id`.
+3. **Balance:** `available >= amount` (exact balance allowed). Insufficient → **422** with `data.available`, `data.amount`, `data.currency`.
+4. **Partner-neutral JSON:** errors do not name upstream PSPs.
+5. **Fees** may finalize only on confirm/GET; do not invent a fee schedule.
 
-Practical sandbox check (insufficient only): preview with `amount` above `available` → **422** + balance fields. Do **not** confirm unless you have usable balance and intend a bank push.
+## Funding the source account
 
-## Legacy routes
+| Rail | How the end-customer funds |
+|------|----------------------------|
+| NGN / GHS / many local fiats | [Deposit instructions](/customers/deposit-instructions) only |
+| CAD | Deposit instructions and/or Interac payment-requests (when enabled) |
+| EUR / GBP | Deposit instructions and/or Open Banking payment-requests (when enabled) |
 
-The same operations exist under `/partner/entities/{entity_id}/accounts/.../payouts`. Those paths are **legacy**. New integrations should use `pcus_*` customer paths only.
+NGN has no "request money" payment-request; use deposit coordinates.
 
 ## Errors
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
-| Insufficient balance (`amount` > `available`) | `422` + `available` / `amount` / `currency` | Lower amount or fund source account (may require Element Pay sandbox credit) |
-| Invalid bank / beneficiary fields | `422` | Fix scheme-required fields for the currency |
-| Preview token expired / wrong account | `4xx` | Re-preview on the same source `account_id` |
+| Insufficient balance | `422` + `available` / `amount` / `currency` | Fund via deposit-instructions or lower amount |
+| Missing `bank_code` / scheme fields | `422` + `field` | Re-read `payout-methods` / `payout-banks` |
+| Preview token expired | `4xx` | Re-preview on the same `account_id` |
 
 ## Next
 
-- [Book transfers](/customers/book-transfers)
 - [Deposit instructions](/customers/deposit-instructions)
-- [Stablecoin sends](/customers/stablecoin-sends)
+- [Book transfers](/customers/book-transfers)
 - [Route cheat sheet](/customers/route-cheat-sheet)
+- [API Reference](/api-reference)

@@ -66,15 +66,17 @@ Guide: [Book transfers](/customers/book-transfers). Legacy: `/partner/entities/�
 
 ## External bank payouts
 
-Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another ledger account). Same-currency only. Sandbox full E2E is often unavailable (funding / beneficiary limits); see the guide Warning.
+Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another ledger account). Same-currency only. Call discovery before preview. Sandbox full E2E is often unavailable (funding / beneficiary limits); see the guide Warning.
 
 | Method | Path | Notes |
 |--------|------|-------|
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/payout-methods` | Schemes + `required_fields` / `require_one_of` |
+| `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/payout-banks` | Local bank directory (`bank_code`) for NGN/GHS/CAD |
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts/preview` | `amount`, `beneficiary`, `bank` → `preview_token` |
 | `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts` | Confirm + `idempotency_key` |
 | `GET` | `/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}` | Poll status |
 
-Guide: [External bank payouts](/customers/payouts). Legacy: `/partner/entities/…/payouts` (do not adopt).
+Guide: [External bank payouts](/customers/payouts). Legacy: `/partner/entities/…/payouts` (do not adopt). Not the same as corridor [`GET /partner/banks`](/partner/banks).
 
 ## Cards
 

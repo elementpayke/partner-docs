@@ -1,8 +1,10 @@
 # API reference
 
-Interactive reference for the Element Pay Partner API — discovery, quotes, and order acceptance.
+Interactive reference for the Element Pay Partner API. Use **Try it** with your sandbox `X-API-Key`  -  requests go to the sandbox base URL configured for this site.
 
-## Included endpoints
+Auth header: `X-API-Key`.
+
+## Corridor discovery + orders
 
 | Method | Path |
 |--------|------|
@@ -16,7 +18,7 @@ Interactive reference for the Element Pay Partner API — discovery, quotes, and
 | `POST` | `/partner/orders/{quote_id}/accept` |
 | `GET` | `/partner/orders/{order_id}` |
 
-
+Guides: [Quickstart](/quickstart) · [Quote and accept](/orders/quote-and-accept).
 
 ## Customers (vault KYC)
 
@@ -35,6 +37,25 @@ OpenAPI tag: **`partner-customers`**.
 
 Guide: [Customers quickstart](/customers/quickstart).
 
+## External bank payouts (banking)
+
+Requires vault approved/active **and** `products.deposit_account.status=ready`. Integrator order:
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `…/accounts` / `…/accounts/{account_id}` | Resolve fiat `account_id` + balance |
+| `GET` | `…/payout-methods` | Schemes + `required_fields` / `require_one_of` (CAD Interac, NGN NIP, GHS EFT, SEPA, ACH, SWIFT, …) |
+| `GET` | `…/payout-banks` | Local `bank_code` directory (NGN / GHS / CAD) |
+| `POST` | `…/payouts/preview` | → `preview_token` |
+| `POST` | `…/payouts` | Confirm + `idempotency_key` |
+| `GET` | `…/payouts/{payout_id}` | Poll |
+
+Not the same as corridor [`GET /partner/banks`](/partner/banks) (quote `network_id`).
+
+Guide: [External bank payouts](/customers/payouts) · [Route cheat sheet](/customers/route-cheat-sheet).
+
 ## Try it
 
-Use **Try it** on any endpoint with your sandbox `X-API-Key`. Requests are sent to the sandbox base URL configured for this site.
+1. Open an endpoint under this tab.
+2. Set `X-API-Key` to your sandbox key.
+3. For payouts: **payout-methods** → **payout-banks** (local rails) → **payouts/preview** before confirm.

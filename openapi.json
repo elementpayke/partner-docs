@@ -5054,6 +5054,847 @@
         }
       }
     },
+    "/partner/customers/{customer_id}/accounts/{account_id}/payout-methods": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "List payout schemes for a customer fiat account",
+        "description": "List **payout schemes** for this fiat account before preview.",
+        "operationId": "partner_customer_list_payout_methods_partner_customers__customer_id__accounts__account_id__payout_methods_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schemes and required fields for this fiat account currency.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout methods",
+                  "data": {
+                    "account_id": 39,
+                    "account_status": "active",
+                    "currency": "NGN",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "methods": [
+                      {
+                        "scheme": "nip",
+                        "country": "NG",
+                        "default": true,
+                        "required_fields": [
+                          "bank_code",
+                          "account_number",
+                          "bank_name",
+                          "country",
+                          "account_holder_name"
+                        ]
+                      },
+                      {
+                        "scheme": "swift",
+                        "country": "",
+                        "default": false,
+                        "required_fields": [
+                          "swift_bic",
+                          "bank_name",
+                          "country",
+                          "account_holder_name"
+                        ],
+                        "require_one_of": [
+                          [
+                            "iban",
+                            "account_number"
+                          ]
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Currency does not support external bank payouts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "External bank payout is not supported for this currency",
+                  "data": {
+                    "currency": "XXX",
+                    "supported": [
+                      "CAD",
+                      "EUR",
+                      "USD",
+                      "GBP",
+                      "AED",
+                      "NGN",
+                      "GHS"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "List **payout schemes** for this fiat account before preview.\n\n### What to use\n- `methods[].scheme` \u2014 send as `bank.scheme` (or omit when `default: true`)\n- `required_fields` / `require_one_of` / `optional_fields` / `aliases`\n\n### SWIFT\n`require_one_of` means **iban or account_number** (not both optional).\n\nFull guide: [External bank payouts](/customers/payouts)."
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/payout-banks": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "List destination banks for a customer fiat payout account",
+        "description": "Bank routing directory for **local** payout rails (NGN / GHS / CAD).",
+        "operationId": "partner_customer_list_payout_banks_partner_customers__customer_id__accounts__account_id__payout_banks_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local bank directory (bank_code / bank_name) for this account country.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout banks",
+                  "data": {
+                    "account_id": 39,
+                    "currency": "NGN",
+                    "country": "NG",
+                    "customer_id": "pcus_a1b2c3d4e5f6",
+                    "banks": [
+                      {
+                        "bank_code": "044",
+                        "bank_name": "Access Bank",
+                        "swift_bic": "ABNGNGLA"
+                      },
+                      {
+                        "bank_code": "058",
+                        "bank_name": "Guaranty Trust Bank"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Bank routing directory for **local** payout rails (NGN / GHS / CAD).\n\nUse `bank_code` + `bank_name` from `data.banks[]` on preview. Not the same as corridor [`GET /partner/banks`](/partner/banks) (`network_id` for quotes).\n\nCountry is derived from the account currency. Empty `banks` when no directory exists for that currency.\n\nGuide: [External bank payouts](/customers/payouts)."
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/payouts/preview": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Preview an external bank payout for a ready customer account",
+        "description": "Preview a same-currency fiat payout to an external bank.",
+        "operationId": "partner_customer_preview_payout_partner_customers__customer_id__accounts__account_id__payouts_preview_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntityPayoutPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Preview token for confirm. Fee often pending_confirm until confirm.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout preview",
+                  "data": {
+                    "preview_token": "nvpay.eyJhbGciOiJIUzI1NiJ9.preview",
+                    "currency": "NGN",
+                    "from_account_id": 39,
+                    "amount": "1.00",
+                    "fee": null,
+                    "receive_amount": null,
+                    "fee_status": "pending_confirm",
+                    "scheme": "nip",
+                    "destination": {
+                      "rail": "bank",
+                      "country": "NG",
+                      "scheme": "nip",
+                      "bank_name": "Access Bank",
+                      "account_number_masked": "****0031"
+                    },
+                    "expires_at": "2026-09-14T12:10:00+00:00",
+                    "customer_id": "pcus_a1b2c3d4e5f6"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Insufficient balance or invalid bank fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Insufficient balance",
+                  "data": {
+                    "available": "0.00",
+                    "amount": "1.00",
+                    "currency": "NGN"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Preview a same-currency fiat payout to an external bank.\n\nRequires `available >= amount`. Call [`payout-methods`](/customers/payouts) (and [`payout-banks`](/customers/payouts) for local rails) first. Returns `preview_token`; fees may be `pending_confirm` until confirm.\n\nGuide: [External bank payouts](/customers/payouts)."
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/payouts": {
+      "post": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Confirm an external bank payout for a ready customer account",
+        "description": "Confirm a payout with `preview_token` + `idempotency_key`.",
+        "operationId": "partner_customer_confirm_payout_partner_customers__customer_id__accounts__account_id__payouts_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerEntityPayoutConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "External bank payout accepted for processing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout submitted",
+                  "data": {
+                    "id": 101,
+                    "status": "submitted",
+                    "from_account_id": 39,
+                    "currency": "NGN",
+                    "amount": "1.00",
+                    "fee": "0.50",
+                    "receive_amount": "0.50",
+                    "fee_status": "final",
+                    "scheme": "nip",
+                    "destination": {
+                      "rail": "bank",
+                      "country": "NG",
+                      "scheme": "nip",
+                      "bank_name": "Access Bank",
+                      "account_number_masked": "****0031"
+                    },
+                    "created_at": "2026-09-14T12:05:00+00:00",
+                    "customer_id": "pcus_a1b2c3d4e5f6"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Confirm a payout with `preview_token` + `idempotency_key`.\n\nOn live this **sends funds**. Reuse the same idempotency key after network errors; re-preview if the token expired.\n\nGuide: [External bank payouts](/customers/payouts)."
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}": {
+      "get": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Get an external bank payout for a ready customer account",
+        "description": "Poll payout status after confirm.",
+        "operationId": "partner_customer_get_payout_partner_customers__customer_id__accounts__account_id__payouts__payout_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Account id returned by the customer account API",
+              "title": "Account Id"
+            },
+            "description": "Account id returned by the customer account API"
+          },
+          {
+            "name": "payout_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "description": "Payout id returned by payout confirm",
+              "title": "Payout Id"
+            },
+            "description": "Payout id returned by payout confirm"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payout status for polling.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerSuccessEnvelope"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Payout",
+                  "data": {
+                    "id": 101,
+                    "status": "submitted",
+                    "from_account_id": 39,
+                    "currency": "NGN",
+                    "amount": "1.00",
+                    "fee": "0.50",
+                    "receive_amount": "0.50",
+                    "fee_status": "final",
+                    "scheme": "nip",
+                    "destination": {
+                      "rail": "bank",
+                      "country": "NG",
+                      "scheme": "nip",
+                      "bank_name": "Access Bank",
+                      "account_number_masked": "****0031"
+                    },
+                    "created_at": "2026-09-14T12:05:00+00:00",
+                    "customer_id": "pcus_a1b2c3d4e5f6"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": {
+                    "field": "country"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Poll payout status after confirm.\n\nGuide: [External bank payouts](/customers/payouts)."
+        }
+      }
+    },
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/preview": {
       "post": {
         "tags": [
@@ -7963,6 +8804,330 @@
             }
           }
         ]
+      },
+      "PartnerEntityPayoutBank": {
+        "properties": {
+          "scheme": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme",
+            "description": "CAD: eft|interac_email|interac_account; USD: ach|wire; NGN: nip; GHS: gh_eft|eft; swift for cross-border / non-local corridors"
+          },
+          "swift_bic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swift Bic",
+            "description": "Required for scheme=swift"
+          },
+          "iban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iban"
+          },
+          "routing_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Number"
+          },
+          "account_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Type",
+            "description": "USD \u2014 checking or savings"
+          },
+          "bank_institution_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Institution Number",
+            "description": "CAD EFT / Interac account \u2014 3 digits"
+          },
+          "transit_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transit Number",
+            "description": "CAD EFT / Interac account \u2014 5 digits"
+          },
+          "bank_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Code",
+            "description": "Local bank code \u2014 NGN NIP, GHS EFT (and similar bank-code rails)"
+          },
+          "account_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Number"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "Required for CAD scheme=interac_email (Interac e-Transfer destination)"
+          },
+          "account_holder_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Account Holder Name"
+          },
+          "bank_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Name",
+            "description": "Required except CAD interac_email"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country",
+            "description": "ISO-3166 alpha-2"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_holder_name",
+          "country"
+        ],
+        "title": "PartnerEntityPayoutBank",
+        "description": "External bank destination. Required fields depend on account currency / scheme. CAD local: scheme ``eft`` (default) | ``interac_email`` | ``interac_account`` - eft / interac_account: bank_institution_number (3), transit_number (5), account_number, bank_name, country=CA - interac_email: email, account_holder_name, country=CA (bank_name optional) EUR SEPA: iban, country (EU), optional swift_bic USD ACH/wire: routing_number, account_number, country=US, optional scheme/account_type NGN NIP: bank_code, account_number, bank_name, country=NG (scheme ``nip`` or omit) GHS EFT: bank_code, account_number, bank_name, country=GH (scheme ``gh_eft``, ``eft``, or omit) SWIFT: scheme=swift, swift_bic, plus iban or account_number (any supported currency)"
+      },
+      "PartnerEntityPayoutBeneficiary": {
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Last Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email"
+          },
+          "address": {
+            "$ref": "#/components/schemas/PartnerEntityResidentialAddress"
+          }
+        },
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name",
+          "email",
+          "address"
+        ],
+        "title": "PartnerEntityPayoutBeneficiary",
+        "description": "External payout recipient identity (counterparty)."
+      },
+      "PartnerEntityPayoutConfirmRequest": {
+        "properties": {
+          "preview_token": {
+            "type": "string",
+            "minLength": 16,
+            "title": "Preview Token",
+            "description": "Token from payouts/preview"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Idempotency Key",
+            "description": "Partner-stable id; same key returns the prior payout"
+          }
+        },
+        "type": "object",
+        "required": [
+          "preview_token",
+          "idempotency_key"
+        ],
+        "title": "PartnerEntityPayoutConfirmRequest",
+        "description": "Confirm a previewed bank payout using the signed preview token."
+      },
+      "PartnerEntityPayoutPreviewRequest": {
+        "properties": {
+          "amount": {
+            "type": "string",
+            "title": "Amount",
+            "description": "Decimal amount in account currency, e.g. 1.00"
+          },
+          "beneficiary": {
+            "$ref": "#/components/schemas/PartnerEntityPayoutBeneficiary"
+          },
+          "bank": {
+            "$ref": "#/components/schemas/PartnerEntityPayoutBank"
+          },
+          "security_question": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Security Question",
+            "description": "CAD Interac outbound only: question the recipient must answer to deposit. Requires security_answer. Mapped upstream as payment-details meta."
+          },
+          "security_answer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Security Answer",
+            "description": "CAD Interac outbound only: answer for security_question. Share with the recipient out-of-band; never returned in partner responses."
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "beneficiary",
+          "bank"
+        ],
+        "title": "PartnerEntityPayoutPreviewRequest",
+        "description": "Preview an external bank payout from a fiat account (same-currency, no FX)."
+      },
+      "PartnerEntityResidentialAddress": {
+        "properties": {
+          "line_1": {
+            "type": "string",
+            "title": "Line 1"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country",
+            "description": "ISO-3166 alpha-2"
+          },
+          "line_2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line 2"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_1",
+          "city",
+          "country"
+        ],
+        "title": "PartnerEntityResidentialAddress",
+        "description": "Partner address shape; mapped to upstream ``country_code`` on attach."
       }
     },
     "securitySchemes": {
