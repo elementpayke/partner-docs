@@ -1,6 +1,6 @@
 # Currency conversions
 
-Convert **cross-currency fiat** (and eligible ledger pairs) between accounts owned by the **same** customer — for example EUR → NGN before an [external bank payout](/customers/payouts).
+Convert **cross-currency fiat** (and eligible ledger pairs) between accounts owned by the **same** customer — for example EUR → NGN on that customer's ledger.
 
 This is **not** a [book transfer](/customers/book-transfers) (same currency) and **not** a corridor [order quote](/orders/quote-and-accept) (fiat ↔ crypto ramp).
 
@@ -9,7 +9,7 @@ This is **not** a [book transfer](/customers/book-transfers) (same currency) and
 | [Book transfers](/customers/book-transfers) | Same currency, any account under this API key |
 | **Conversions** | Different currencies on the **same** `pcus_*` |
 | Corridor [quote → accept](/orders/quote-and-accept) | African / international **ramps** (fiat ↔ crypto) |
-| [External bank payouts](/customers/payouts) | Same-currency push to an outside bank |
+| [External bank payouts](/customers/payouts) | Same-currency push to an outside bank (separate product) |
 
 Prerequisite: [Customers quickstart](/customers/quickstart). Banking gate: `products.deposit_account.status=ready`. Both accounts must be `status=active` and owned by `{customer_id}`.
 
@@ -46,8 +46,6 @@ Use conversion **preview** for ledger FX insight and confirm. Do not treat corri
 
 ## Happy path
 
-Typical sandbox / staging loop when funding an NGN payout: convert EUR (or another funded rail) → NGN, then call [payouts](/customers/payouts) on the NGN account.
-
 <Steps>
   <Step title="Confirm banking ready">
     Poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
@@ -62,7 +60,7 @@ Typical sandbox / staging loop when funding an NGN payout: convert EUR (or anoth
     `POST …/conversions` with `preview_token` + `idempotency_key` before `expires_at` (often a few minutes)
   </Step>
   <Step title="Re-list balances">
-    `GET …/accounts` — then optional [NGN/GHS payout](/customers/payouts) from the funded destination rail
+    `GET …/accounts` on source and destination to confirm balances moved
   </Step>
 </Steps>
 
@@ -123,7 +121,7 @@ Amounts below the rail minimum return **422** (for example `data.min_amount` / `
 ## 3. Confirm
 
 <Warning>
-On **live**, confirm moves **real** balances. Prefer sandbox or staging when both accounts already have usable balance. Sandbox self-serve funding is often limited — Element Pay may need to credit the source rail first.
+On **live**, confirm moves **real** balances. **Sandbox:** self-serve deposits may not credit usable balance for outbound converts. Contact Element Pay for a sandbox credit if you need to exercise preview → confirm (same pattern as [deposit instructions](/customers/deposit-instructions) / [stablecoin sends](/customers/stablecoin-sends)).
 </Warning>
 
 ```bash
@@ -159,6 +157,5 @@ Reuse the same `idempotency_key` on retries after network errors (replay returns
 
 ## Next
 
-- [External bank payouts](/customers/payouts) (e.g. NGN after convert)
-- [Book transfers](/customers/book-transfers) · [Accounts](/customers/accounts)
-- [Route cheat sheet](/customers/route-cheat-sheet)
+- [Accounts](/customers/accounts) · [Book transfers](/customers/book-transfers)
+- [External bank payouts](/customers/payouts) · [Route cheat sheet](/customers/route-cheat-sheet)
