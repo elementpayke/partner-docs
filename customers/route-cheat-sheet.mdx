@@ -64,6 +64,17 @@ Same banking gate (`deposit_account=ready`). Same-currency fiat → fiat under o
 
 Guide: [Book transfers](/customers/book-transfers). Legacy: `/partner/entities/…/book-transfers` (do not adopt).
 
+## Currency conversions
+
+Same banking gate (`deposit_account=ready`). **Cross-currency** between two accounts owned by the **same** `pcus_*` (for example EUR → NGN before a payout). Binding rate comes from preview — not corridor [`GET /partner/rates/indicative`](/partner/rates/indicative).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/conversions/preview` | `to_account_id`, `amount` → `preview_token`, `rate`, `expires_at` |
+| `POST` | `/partner/customers/{customer_id}/accounts/{account_id}/conversions` | Confirm + `idempotency_key` (confirm before `expires_at`) |
+
+Guide: [Currency conversions](/customers/conversions).
+
 ## External bank payouts
 
 Same banking gate (`deposit_account=ready`). Fiat → outside bank (not another ledger account). Same-currency only. Call discovery before preview. Sandbox full E2E is often unavailable (funding / beneficiary limits); see the guide Warning.
@@ -115,5 +126,6 @@ Guide: [Quote and accept](/orders/quote-and-accept).
 | Deposit instructions | Same banking gate; **422** if coords not ready |
 | Stablecoin send | Same banking gate; amount **strictly below** available |
 | Book transfer | Same banking gate; same-currency fiat; `available >= amount` |
+| Currency conversion | Same banking gate; cross-currency; same `pcus_*`; confirm before short `expires_at` |
 | External bank payout | Same banking gate; `available >= amount`; sandbox E2E often needs Element Pay credit |
 | Card charge / issue | Same banking gate; **issuing is USD-account-only**; **KE individuals cannot open USD fiat** (so cannot issue); issuing also blocked for some other residence countries; GBP/EUR charges **UK/EU billing only**; sandbox USD/issuing often limited |

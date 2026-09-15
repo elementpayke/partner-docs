@@ -18,6 +18,8 @@ Auth header: `X-API-Key`.
 | `POST` | `/partner/orders/{quote_id}/accept` |
 | `GET` | `/partner/orders/{order_id}` |
 
+`GET /partner/rates/indicative` is corridor **fiat vs USD** only — not ledger convert pricing. For cross-currency ledger FX use [Currency conversions](/customers/conversions).
+
 Guides: [Quickstart](/quickstart) · [Quote and accept](/orders/quote-and-accept).
 
 ## Customers (vault KYC)
@@ -36,6 +38,17 @@ OpenAPI tag: **`partner-customers`**.
 | `POST` | `/partner/customers/{customer_id}/deposit-account/retry` |
 
 Guide: [Customers quickstart](/customers/quickstart).
+
+## Currency conversions (banking)
+
+Requires vault approved/active **and** `products.deposit_account.status=ready`. Cross-currency between two accounts on the **same** `pcus_*`.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `…/conversions/preview` | `to_account_id`, `amount` → `preview_token`, `rate`, `expires_at` |
+| `POST` | `…/conversions` | Confirm + `idempotency_key` before `expires_at` |
+
+Guide: [Currency conversions](/customers/conversions) · [Route cheat sheet](/customers/route-cheat-sheet).
 
 ## External bank payouts (banking)
 
@@ -58,4 +71,4 @@ Guide: [External bank payouts](/customers/payouts) · [Route cheat sheet](/custo
 
 1. Open an endpoint under this tab.
 2. Set `X-API-Key` to your sandbox key.
-3. For payouts: **payout-methods** → **payout-banks** (local rails) → **payouts/preview** before confirm.
+3. Banking money-movement order in guides: accounts → (optional) deposit-instructions → book-transfers / conversions / sends → for external payouts: **payout-methods** → **payout-banks** (local rails) → **payouts/preview**.
