@@ -5057,7 +5057,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/preview": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-transfers"
         ],
         "summary": "Preview a stablecoin send for a ready customer account",
         "description": "Preview fees and amounts for a stablecoin send.",
@@ -5259,7 +5259,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-transfers"
         ],
         "summary": "Confirm a stablecoin send for a ready customer account",
         "description": "Submit a stablecoin send using a prior preview token.",
@@ -5425,7 +5425,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/sends/{send_id}": {
       "get": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-transfers"
         ],
         "summary": "Get a stablecoin send for a ready customer account",
         "description": "Get one stablecoin send status for a customer-owned account.",
@@ -5591,7 +5591,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/book-transfers/preview": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-transfers"
         ],
         "summary": "Preview a fiat book-transfer for a ready customer account",
         "operationId": "partner_customer_preview_book_transfer_partner_customers__customer_id__accounts__account_id__book_transfers_preview_post",
@@ -5950,7 +5950,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/book-transfers": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-transfers"
         ],
         "summary": "Confirm a fiat book-transfer for a ready customer account",
         "operationId": "partner_customer_confirm_book_transfer_partner_customers__customer_id__accounts__account_id__book_transfers_post",
@@ -6353,7 +6353,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/conversions/preview": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-transfers"
         ],
         "summary": "Preview a currency conversion for a ready customer account",
         "description": "Preview a **cross-currency** conversion between two accounts owned by this customer.",
@@ -6558,7 +6558,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/conversions": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-transfers"
         ],
         "summary": "Confirm a currency conversion for a ready customer account",
         "description": "Confirm a conversion using `preview_token` + `idempotency_key` from a prior preview on the **same** source `account_id`.",
@@ -6764,7 +6764,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/payout-methods": {
       "get": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-payouts"
         ],
         "summary": "List payout schemes for a customer fiat account",
         "description": "List **payout schemes** for this fiat account before preview.",
@@ -6947,7 +6947,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/payout-banks": {
       "get": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-payouts"
         ],
         "summary": "List destination banks for a customer fiat payout account",
         "description": "Bank routing directory for **local** payout rails (NGN / GHS / CAD).",
@@ -7101,7 +7101,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/payouts/preview": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-payouts"
         ],
         "summary": "Preview an external bank payout for a ready customer account",
         "description": "Preview a same-currency fiat payout to an external bank.",
@@ -7269,7 +7269,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/payouts": {
       "post": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-payouts"
         ],
         "summary": "Confirm an external bank payout for a ready customer account",
         "description": "Confirm a payout with `preview_token` + `idempotency_key`.",
@@ -7436,7 +7436,7 @@
     "/partner/customers/{customer_id}/accounts/{account_id}/payouts/{payout_id}": {
       "get": {
         "tags": [
-          "partner-customer-accounts"
+          "partner-customer-payouts"
         ],
         "summary": "Get an external bank payout for a ready customer account",
         "description": "Poll payout status after confirm.",
@@ -9560,18 +9560,28 @@
   "tags": [
     {
       "name": "partner",
-      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including order-path account currency conversion rails). Customer ledger conversions use partner-customer-accounts `/conversions`.",
+      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including order-path account currency conversion rails). Customer ledger conversions use partner-customer-transfers `/conversions`.",
       "x-group": "Partner"
     },
     {
       "name": "partner-customers",
-      "description": "Vault KYC: requirements, create, list, get/update, documents, and submit (pcus_*).",
+      "description": "Vault KYC: requirements, create, list, get/update, documents, submit, and revoke (`pcus_*`).",
       "x-group": "Customers"
     },
     {
       "name": "partner-customer-accounts",
-      "description": "Customer accounts and money movement: open/list/get rails, deposit instructions, stablecoin sends, book transfers, currency conversions, and external bank payouts (including NGN/GHS/CAD payout-banks discovery).",
+      "description": "Customer deposit rails: open / list / get accounts and deposit instructions.",
       "x-group": "Customer accounts"
+    },
+    {
+      "name": "partner-customer-transfers",
+      "description": "On-ledger money movement: stablecoin sends, same-currency book transfers, and cross-currency conversions.",
+      "x-group": "Customer transfers"
+    },
+    {
+      "name": "partner-customer-payouts",
+      "description": "External bank payouts: scheme discovery, local bank directory (NGN/GHS/CAD), preview, confirm, and status.",
+      "x-group": "Customer payouts"
     }
   ],
   "servers": [

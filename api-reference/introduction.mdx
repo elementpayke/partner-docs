@@ -4,7 +4,11 @@ Interactive reference for the Element Pay Partner API. Use **Try it** with your 
 
 Auth header: `X-API-Key`.
 
+Try-it sidebar groups follow OpenAPI tags: **Partner** · **Customers** · **Customer accounts** · **Customer transfers** · **Customer payouts**.
+
 ## Corridor discovery + orders
+
+OpenAPI tag: **`partner`**.
 
 | Method | Path |
 |--------|------|
@@ -35,29 +39,42 @@ OpenAPI tag: **`partner-customers`**.
 | `PATCH` | `/partner/customers/{customer_id}` |
 | `POST` | `/partner/customers/{customer_id}/documents` |
 | `POST` | `/partner/customers/{customer_id}/submit` |
+| `POST` | `/partner/customers/{customer_id}/revoke` |
 | `POST` | `/partner/customers/{customer_id}/deposit-account/retry` |
 
 Guide: [Customers quickstart](/customers/quickstart).
 
-## Currency conversions (banking)
+## Customer accounts
 
-Requires vault approved/active **and** `products.deposit_account.status=ready`. Cross-currency between two accounts on the **same** `pcus_*`.
-
-| Method | Path | Notes |
-|--------|------|-------|
-| `POST` | `…/conversions/preview` | `to_account_id`, `amount` → `preview_token`, `rate`, `expires_at` |
-| `POST` | `…/conversions` | Confirm + `idempotency_key` before `expires_at` |
-
-Guide: [Currency conversions](/customers/conversions) · [Route cheat sheet](/customers/route-cheat-sheet).
-
-## External bank payouts (banking)
-
-Requires vault approved/active **and** `products.deposit_account.status=ready`. Integrator order:
+OpenAPI tag: **`partner-customer-accounts`**. Requires vault approved/active **and** `products.deposit_account.status=ready` for banking rails.
 
 | Method | Path | Notes |
 |--------|------|-------|
-| `GET` | `…/accounts` / `…/accounts/{account_id}` | Resolve fiat `account_id` + balance |
-| `GET` | `…/payout-methods` | Schemes + `required_fields` / `require_one_of` (CAD Interac, NGN NIP, GHS EFT, SEPA, ACH, SWIFT, …) |
+| `POST` / `GET` | `…/accounts` | Open / list |
+| `GET` | `…/accounts/{account_id}` | Get one |
+| `GET` | `…/deposit-instructions` | Fiat or stablecoin funding coordinates |
+
+Guide: [Accounts](/customers/accounts) · [Deposit instructions](/customers/deposit-instructions).
+
+## Customer transfers
+
+OpenAPI tag: **`partner-customer-transfers`**. Same banking gate. On-ledger moves (not external bank push).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `…/sends/preview` · `…/sends` · `GET …/sends/{id}` | Stablecoin sends |
+| `POST` | `…/book-transfers/preview` · `…/book-transfers` | Same-currency fiat |
+| `POST` | `…/conversions/preview` · `…/conversions` | Cross-currency; confirm before `expires_at` |
+
+Guides: [Stablecoin sends](/customers/stablecoin-sends) · [Book transfers](/customers/book-transfers) · [Currency conversions](/customers/conversions).
+
+## Customer payouts
+
+OpenAPI tag: **`partner-customer-payouts`**. Same banking gate. Same-currency fiat → **outside** bank.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `…/payout-methods` | Schemes + `required_fields` / `require_one_of` |
 | `GET` | `…/payout-banks` | Local `bank_code` directory (NGN / GHS / CAD) |
 | `POST` | `…/payouts/preview` | → `preview_token` |
 | `POST` | `…/payouts` | Confirm + `idempotency_key` |
@@ -69,6 +86,6 @@ Guide: [External bank payouts](/customers/payouts) · [Route cheat sheet](/custo
 
 ## Try it
 
-1. Open an endpoint under this tab.
+1. Open an endpoint under this tab (sidebar groups match the tags above).
 2. Set `X-API-Key` to your sandbox key.
-3. Banking money-movement order in guides: accounts → (optional) deposit-instructions → book-transfers / conversions / sends → for external payouts: **payout-methods** → **payout-banks** (local rails) → **payouts/preview**.
+3. Recommended banking order: **accounts** → deposit-instructions → **transfers** (sends / book / conversions) → for external payouts: **payout-methods** → **payout-banks** → **payouts/preview**.
