@@ -55,6 +55,7 @@
               "customers/deposit-instructions",
               "customers/stablecoin-sends",
               "customers/book-transfers",
+              "customers/conversions",
               "customers/payouts",
               "customers/cards"
             ]

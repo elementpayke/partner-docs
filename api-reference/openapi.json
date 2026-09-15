@@ -11,8 +11,8 @@
         "tags": [
           "partner"
         ],
-        "summary": "Indicative fiat vs USD rates",
-        "description": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes.",
+        "summary": "Indicative corridor fiat vs USD rates",
+        "description": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes (corridor **fiat vs USD** tickers).",
         "operationId": "partner_indicative_rates_partner_rates_indicative_get",
         "security": [
           {
@@ -311,7 +311,7 @@
           }
         },
         "x-mint": {
-          "content": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes.\n\n<Warning>\nThese rates are **not** binding. Use [`POST /partner/orders/quote`](/partner/orders/quote) for checkout pricing.\n</Warning>\n\nResponse `data` includes `requested`, `rates`, and `fetched_at`.\n\n**Auth:** `X-API-Key` header."
+          "content": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes (corridor **fiat vs USD** tickers).\n\n<Warning>\nThese rates are **not** binding.\n\n- Corridor checkout pricing: [`POST /partner/orders/quote`](/partner/orders/quote)\n- Ledger **cross-currency** convert: use [`conversions/preview`](/customers/conversions) for the binding pair rate \u2014 do not treat these tickers as the convert price\n</Warning>\n\nResponse `data` includes `requested`, `rates`, and `fetched_at`.\n\n**Auth:** `X-API-Key` header."
         }
       }
     },
@@ -7190,6 +7190,417 @@
           }
         }
       }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/conversions/preview": {
+      "post": {
+        "tags": [
+          "partner-customer-accounts"
+        ],
+        "summary": "Preview a currency conversion for a ready customer account",
+        "description": "Preview a **cross-currency** conversion between two accounts owned by this customer.",
+        "operationId": "partner_customer_preview_conversion",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_06a83150db3c"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Source account id owned by this customer",
+              "examples": [
+                63
+              ],
+              "title": "Account Id",
+              "example": 63
+            },
+            "description": "Source account id owned by this customer",
+            "example": 63
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "to_account_id",
+                  "amount"
+                ],
+                "properties": {
+                  "to_account_id": {
+                    "type": "integer",
+                    "description": "Destination partner account id (different currency, same customer)"
+                  },
+                  "amount": {
+                    "type": "string",
+                    "description": "Decimal debit amount in the source account currency",
+                    "example": "1.00"
+                  }
+                }
+              },
+              "example": {
+                "to_account_id": 68,
+                "amount": "1.00"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cross-currency conversion preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Conversion preview",
+                  "data": {
+                    "preview_token": "ep_fx_prev_example.token",
+                    "from_account_id": 63,
+                    "to_account_id": 68,
+                    "from_currency": "EUR",
+                    "to_currency": "NGN",
+                    "amount_from": "1.00",
+                    "amount_to": "1511.72",
+                    "rate": 1511.724589,
+                    "fee": "0.00",
+                    "fee_status": "estimated",
+                    "expires_at": "2026-09-15T11:05:13+00:00"
+                  }
+                },
+                "examples": {
+                  "eur_to_ngn": {
+                    "summary": "EUR \u2192 NGN preview",
+                    "value": {
+                      "status": "success",
+                      "message": "Conversion preview",
+                      "data": {
+                        "preview_token": "ep_fx_prev_example.token",
+                        "from_account_id": 63,
+                        "to_account_id": 68,
+                        "from_currency": "EUR",
+                        "to_currency": "NGN",
+                        "amount_from": "1.00",
+                        "amount_to": "1511.72",
+                        "rate": 1511.724589,
+                        "fee": "0.00",
+                        "fee_status": "estimated",
+                        "expires_at": "2026-09-15T11:05:13+00:00"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or quote expiry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "min_amount": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Source and destination accounts must differ",
+                  "data": {
+                    "field": "to_account_id"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Preview a **cross-currency** conversion between two accounts owned by this customer.\n\nReturns a signed `preview_token`, `rate`, `amount_from` / `amount_to`, and `expires_at` (often only a few minutes). Confirm before expiry.\n\n<Note>\nSame-currency moves use [book transfers](/customers/book-transfers). Corridor ramps use [quote \u2192 accept](/orders/quote-and-accept).\n</Note>\n\nGuide: [Currency conversions](/customers/conversions)."
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/accounts/{account_id}/conversions": {
+      "post": {
+        "tags": [
+          "partner-customer-accounts"
+        ],
+        "summary": "Confirm a currency conversion for a ready customer account",
+        "description": "Confirm a conversion using `preview_token` + `idempotency_key` from a prior preview on the **same** source `account_id`.",
+        "operationId": "partner_customer_confirm_conversion",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned by POST /partner/customers",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_06a83150db3c"
+            },
+            "description": "Public customer id returned by POST /partner/customers",
+            "example": "pcus_06a83150db3c"
+          },
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Source account id owned by this customer",
+              "examples": [
+                63
+              ],
+              "title": "Account Id",
+              "example": 63
+            },
+            "description": "Source account id owned by this customer",
+            "example": 63
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "preview_token",
+                  "idempotency_key"
+                ],
+                "properties": {
+                  "preview_token": {
+                    "type": "string",
+                    "minLength": 16,
+                    "description": "Token from conversions/preview"
+                  },
+                  "idempotency_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 64,
+                    "description": "Partner-stable id; forwarded as upstream unique_reference",
+                    "example": "fx-2026-09-15-001"
+                  }
+                }
+              },
+              "example": {
+                "preview_token": "ep_fx_prev_example.token",
+                "idempotency_key": "fx-2026-09-15-001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cross-currency conversion submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Conversion submitted",
+                  "data": {
+                    "id": "01M2JBPTX2A9R85G1SZMQC5AKS",
+                    "status": "completed",
+                    "from_account_id": 63,
+                    "to_account_id": 68,
+                    "from_currency": "EUR",
+                    "to_currency": "NGN",
+                    "amount_from": "1.00",
+                    "amount_to": "1511.72",
+                    "rate": 1511.724589,
+                    "fee": "0.00",
+                    "fee_status": "final"
+                  }
+                },
+                "examples": {
+                  "completed": {
+                    "summary": "Conversion completed",
+                    "value": {
+                      "status": "success",
+                      "message": "Conversion submitted",
+                      "data": {
+                        "id": "01M2JBPTX2A9R85G1SZMQC5AKS",
+                        "status": "completed",
+                        "from_account_id": 63,
+                        "to_account_id": 68,
+                        "from_currency": "EUR",
+                        "to_currency": "NGN",
+                        "amount_from": "1.00",
+                        "amount_to": "1511.72",
+                        "rate": 1511.724589,
+                        "fee": "0.00",
+                        "fee_status": "final"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid or mismatched preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "min_amount": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "upstream_http_status": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Conversion preview does not match this account",
+                  "data": null
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "content": "Confirm a conversion using `preview_token` + `idempotency_key` from a prior preview on the **same** source `account_id`.\n\nReuse the same `idempotency_key` after network errors. Request a **fresh** preview for each new conversion.\n\nGuide: [Currency conversions](/customers/conversions)."
+        }
+      }
     }
   },
   "components": {
@@ -9149,7 +9560,7 @@
   "tags": [
     {
       "name": "partner",
-      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including account currency conversion).",
+      "description": "Corridor discovery, indicative rates, binding quotes, and order acceptance (including order-path account currency conversion rails). Customer ledger conversions use partner-customer-accounts `/conversions`.",
       "x-group": "Partner"
     },
     {

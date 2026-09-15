@@ -1,0 +1,164 @@
+# Currency conversions
+
+Convert **cross-currency fiat** (and eligible ledger pairs) between accounts owned by the **same** customer — for example EUR → NGN before an [external bank payout](/customers/payouts).
+
+This is **not** a [book transfer](/customers/book-transfers) (same currency) and **not** a corridor [order quote](/orders/quote-and-accept) (fiat ↔ crypto ramp).
+
+| Flow | When to use |
+|------|-------------|
+| [Book transfers](/customers/book-transfers) | Same currency, any account under this API key |
+| **Conversions** | Different currencies on the **same** `pcus_*` |
+| Corridor [quote → accept](/orders/quote-and-accept) | African / international **ramps** (fiat ↔ crypto) |
+| [External bank payouts](/customers/payouts) | Same-currency push to an outside bank |
+
+Prerequisite: [Customers quickstart](/customers/quickstart). Banking gate: `products.deposit_account.status=ready`. Both accounts must be `status=active` and owned by `{customer_id}`.
+
+## Auth and environments
+
+```bash
+export BASE="https://sandbox.elementpay.net/api/v1"   # or live / staging base
+export API_KEY="is_test_…"                            # or is_live_…
+export CUSTOMER_ID="pcus_…"
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## Gates
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| **Quote identity** | `status` is `approved` (or `active`) | `customer_id` on ramps |
+| **Banking** | `products.deposit_account.status` is `ready` | Conversions from that customer's accounts |
+
+If banking routes are called before `ready`, expect **409** with `data` such as `deposit_account_status` and `reason: banking_profile_incomplete`.
+
+## Indicative rates vs binding conversion
+
+| Source | Role |
+|--------|------|
+| [`GET /partner/rates/indicative?fiat=…`](/partner/rates/indicative) | Corridor **fiat vs USD** tickers for checkout UI — **not** binding; not ledger pair FX |
+| `POST …/conversions/preview` | Binding **pair** quote for this debit (`rate`, `amount_from`, `amount_to`, `expires_at`) |
+
+Use conversion **preview** for ledger FX insight and confirm. Do not treat corridor indicative rates as the convert price.
+
+## Happy path
+
+Typical sandbox / staging loop when funding an NGN payout: convert EUR (or another funded rail) → NGN, then call [payouts](/customers/payouts) on the NGN account.
+
+<Steps>
+  <Step title="Confirm banking ready">
+    Poll `GET /partner/customers/{customer_id}` until `deposit_account.status=ready`
+  </Step>
+  <Step title="List accounts">
+    Resolve **source** and **destination** fiat `account_id`s via `GET …/accounts` (different currencies; both owned by this customer)
+  </Step>
+  <Step title="Preview">
+    `POST …/conversions/preview` with `to_account_id` + `amount` → `preview_token`, `rate`, `expires_at`
+  </Step>
+  <Step title="Confirm promptly">
+    `POST …/conversions` with `preview_token` + `idempotency_key` before `expires_at` (often a few minutes)
+  </Step>
+  <Step title="Re-list balances">
+    `GET …/accounts` — then optional [NGN/GHS payout](/customers/payouts) from the funded destination rail
+  </Step>
+</Steps>
+
+## 1. Resolve accounts
+
+Use ids returned by **your** API key (do not hardcode from this guide).
+
+```bash
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+
+export ACCOUNT_ID="<source fiat account_id>"       # e.g. EUR
+export TO_ACCOUNT_ID="<destination fiat account_id>"  # e.g. NGN
+```
+
+## 2. Preview
+
+Preview and confirm must use the **same** source `account_id`. The `preview_token` seals source, destination, amounts, and rate.
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/conversions/preview" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"to_account_id\": $TO_ACCOUNT_ID,
+    \"amount\": \"1.00\"
+  }" | jq '.'
+```
+
+Typical success shape:
+
+```json
+{
+  "status": "success",
+  "message": "Conversion preview",
+  "data": {
+    "preview_token": "ep_fx_prev_…",
+    "from_account_id": 63,
+    "to_account_id": 68,
+    "from_currency": "EUR",
+    "to_currency": "NGN",
+    "amount_from": "1.00",
+    "amount_to": "1511.72",
+    "rate": 1511.724589,
+    "fee": "0.00",
+    "fee_status": "estimated",
+    "expires_at": "2026-09-15T11:05:13+00:00"
+  }
+}
+```
+
+Save `preview_token`. Confirm **before** `expires_at`. If the quote is already stale at preview time, expect **422** with `data.code: quote_expired` — request a new preview.
+
+<Note>
+Amounts below the rail minimum return **422** (for example `data.min_amount` / `data.field: amount`). Same source and destination account returns **422** on `to_account_id`.
+</Note>
+
+## 3. Confirm
+
+<Warning>
+On **live**, confirm moves **real** balances. Prefer sandbox or staging when both accounts already have usable balance. Sandbox self-serve funding is often limited — Element Pay may need to credit the source rail first.
+</Warning>
+
+```bash
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts/$ACCOUNT_ID/conversions" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preview_token": "<from preview response>",
+    "idempotency_key": "fx-2026-09-15-001"
+  }' | jq '.'
+```
+
+Reuse the same `idempotency_key` on retries after network errors (replay returns the same conversion `id`). Do **not** reuse a preview token after a successful confirm — request a fresh preview for the next conversion.
+
+## Business rules
+
+1. **Cross-currency only** — source and destination currencies must differ; same-currency moves use [book transfers](/customers/book-transfers).
+2. **Same customer** — both accounts belong to `{customer_id}` (not another `pcus_*` under the key).
+3. **Preview → confirm** on the same source `account_id`; respect `expires_at` (shorter than many other banking previews).
+4. **Balance:** `available >= amount` on the source account.
+5. **Partner-neutral JSON:** error `message` / `data` do not expose upstream PSP names. Ops may see `upstream_http_status` only.
+
+## Errors
+
+| Situation | Typical | Action |
+|-----------|---------|--------|
+| Banking gate not ready | `409` + `banking_profile_incomplete` | Poll `deposit_account` |
+| Same account / same currency | `422` + `to_account_id` | Pick a different-currency destination owned by this customer |
+| Amount below minimum / insufficient balance | `422` + amount fields | Raise amount or fund source |
+| Stale upstream quote at preview | `422` + `code: quote_expired` | Retry preview |
+| Expired / wrong-account / tampered token | `422` | Fresh preview on the correct source `account_id` |
+| Upstream reject after confirm | `5xx` + `upstream_http_status` | New preview; do not assume balances moved |
+
+## Next
+
+- [External bank payouts](/customers/payouts) (e.g. NGN after convert)
+- [Book transfers](/customers/book-transfers) · [Accounts](/customers/accounts)
+- [Route cheat sheet](/customers/route-cheat-sheet)

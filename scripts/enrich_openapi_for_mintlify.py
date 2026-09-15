@@ -116,15 +116,36 @@ Lists bank/network institution options for a rail chosen via [`GET /partner/paym
 - International bank types (e.g. `BankSepa`, `BankSwift`) — best-effort enum options from upstream form schema
 """,
     ("get", "/partner/rates/indicative"): """\
-Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes.
+Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes (corridor **fiat vs USD** tickers).
 
 <Warning>
-These rates are **not** binding. Use [`POST /partner/orders/quote`](/partner/orders/quote) for checkout pricing.
+These rates are **not** binding.
+
+- Corridor checkout pricing: [`POST /partner/orders/quote`](/partner/orders/quote)
+- Ledger **cross-currency** convert: use [`conversions/preview`](/customers/conversions) for the binding pair rate — do not treat these tickers as the convert price
 </Warning>
 
 Response `data` includes `requested`, `rates`, and `fetched_at`.
 
 **Auth:** `X-API-Key` header.
+""",
+    ("post", "/partner/customers/{customer_id}/accounts/{account_id}/conversions/preview"): """\
+Preview a **cross-currency** conversion between two accounts owned by this customer.
+
+Returns a signed `preview_token`, `rate`, `amount_from` / `amount_to`, and `expires_at` (often only a few minutes). Confirm before expiry.
+
+<Note>
+Same-currency moves use [book transfers](/customers/book-transfers). Corridor ramps use [quote → accept](/orders/quote-and-accept).
+</Note>
+
+Guide: [Currency conversions](/customers/conversions).
+""",
+    ("post", "/partner/customers/{customer_id}/accounts/{account_id}/conversions"): """\
+Confirm a conversion using `preview_token` + `idempotency_key` from a prior preview on the **same** source `account_id`.
+
+Reuse the same `idempotency_key` after network errors. Request a **fresh** preview for each new conversion.
+
+Guide: [Currency conversions](/customers/conversions).
 """,
     ("post", "/partner/orders/quote"): """\
 Create a binding quote for a fiat ↔ crypto order.
