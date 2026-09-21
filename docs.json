@@ -87,7 +87,10 @@
         "groups": [
           {
             "group": "Partner API",
-            "openapi": "/api-reference/openapi.json"
+            "openapi": {
+              "source": "/api-reference/openapi.json",
+              "directory": "api-reference"
+            }
           }
         ]
       }

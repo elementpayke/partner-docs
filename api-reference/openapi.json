@@ -9539,6 +9539,183 @@
         ],
         "title": "PartnerEntityResidentialAddress",
         "description": "Partner address shape; mapped to upstream ``country_code`` on attach."
+      },
+      "PartnerWebhookHeaders": {
+        "type": "object",
+        "description": "Headers on every webhook delivery. Signature: HMAC-SHA256 over `{t}.{raw_body}` using `webhook_secret`, base64-encoded as `v1`. Reject if `t` older than 5 minutes. Deduplicate with `X-Webhook-Id`.",
+        "properties": {
+          "Content-Type": {
+            "type": "string",
+            "const": "application/json"
+          },
+          "User-Agent": {
+            "type": "string",
+            "example": "ElementPay/1.0 (+support@elementpay.net)"
+          },
+          "X-Webhook-Event": {
+            "type": "string",
+            "description": "Event name",
+            "enum": [
+              "order.processing",
+              "order.settled",
+              "order.failed",
+              "order.refunded",
+              "customer.submitted",
+              "customer.approved",
+              "customer.rejected",
+              "customer.revoked",
+              "customer.updated",
+              "customer.deposit_account.updated",
+              "account.opened",
+              "account.ready",
+              "account.credited",
+              "account.send.completed",
+              "account.send.failed"
+            ]
+          },
+          "X-Webhook-Id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key for this delivery"
+          },
+          "X-Webhook-Signature": {
+            "type": "string",
+            "description": "Format: `t=<unix_ts>,v1=<base64_hmac>`",
+            "example": "t=1710000000,v1=<base64_signature>"
+          }
+        },
+        "required": [
+          "X-Webhook-Event",
+          "X-Webhook-Id",
+          "X-Webhook-Signature"
+        ]
+      },
+      "PartnerOrderWebhookPayload": {
+        "type": "object",
+        "description": "Typical order webhook body. Fields vary by corridor and rail. `client_metadata` and upstream PSP blobs are not included.",
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "example": "YC-580e04c2-a136-5cca-be54-b49fcf80970c"
+          },
+          "status": {
+            "type": "string",
+            "example": "settled"
+          },
+          "amount_fiat": {
+            "type": "number",
+            "example": 800.0
+          },
+          "currency": {
+            "type": "string",
+            "example": "KES"
+          },
+          "amount_crypto": {
+            "type": "number",
+            "example": 5.12
+          },
+          "exchange_rate": {
+            "type": "number",
+            "example": 156.25
+          },
+          "order_type": {
+            "type": "string",
+            "example": "OnRamp"
+          },
+          "wallet_address": {
+            "type": "string",
+            "example": "0x4F07419E6bfCCF8D256E8ef803Cc2653dfbB9558"
+          },
+          "phone_number": {
+            "type": "string",
+            "example": "2541111111111"
+          },
+          "settlement_transaction_hash": {
+            "type": "string",
+            "example": "0xabc..."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "order_id",
+          "status"
+        ],
+        "example": {
+          "order_id": "YC-580e04c2-a136-5cca-be54-b49fcf80970c",
+          "status": "settled",
+          "amount_fiat": 800.0,
+          "currency": "KES",
+          "amount_crypto": 5.12,
+          "exchange_rate": 156.25,
+          "order_type": "OnRamp",
+          "wallet_address": "0x4F07419E6bfCCF8D256E8ef803Cc2653dfbB9558",
+          "phone_number": "2541111111111",
+          "settlement_transaction_hash": "0xabc...",
+          "created_at": "2026-07-07T10:00:00.000000Z",
+          "updated_at": "2026-07-07T10:00:15.000000Z"
+        }
+      },
+      "PartnerCustomerWebhookPayload": {
+        "type": "object",
+        "description": "Customer / deposit-account webhook body (example from docs).",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "example": "pcus_\u2026"
+          },
+          "partner_customer_ref": {
+            "type": "string",
+            "example": "partner-cust-001"
+          },
+          "type": {
+            "type": "string",
+            "example": "individual"
+          },
+          "status": {
+            "type": "string",
+            "example": "approved"
+          },
+          "environment": {
+            "type": "string",
+            "example": "sandbox"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "products": {
+            "type": "object",
+            "properties": {
+              "deposit_account": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "ready"
+                  }
+                }
+              }
+            }
+          },
+          "can_open_deposit_account": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customer_id",
+          "status"
+        ]
       }
     },
     "securitySchemes": {
@@ -9601,5 +9778,117 @@
     {
       "APIKeyHeader": []
     }
-  ]
+  ],
+  "webhooks": {
+    "partnerEvent": {
+      "post": {
+        "summary": "Partner webhook delivery",
+        "description": "Element Pay POSTs to your configured `webhook_url` when orders, customers, or accounts change. Treat webhooks as the source of truth for settlement and KYC readiness.\n\n**Signature verification**\n1. Parse `X-Webhook-Signature`: `t=<unix_ts>,v1=<base64_hmac>`.\n2. Reject if `t` is older than 5 minutes.\n3. Compute HMAC-SHA256 over `{t}.{raw_body}` with `webhook_secret`; constant-time compare to `v1`.\n\n**Idempotency:** dedupe on `X-Webhook-Id`. Return 2xx quickly.\n\nGuide: `webhooks.mdx` / hosted `/webhooks`.",
+        "parameters": [
+          {
+            "name": "X-Webhook-Event",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "order.processing",
+                "order.settled",
+                "order.failed",
+                "order.refunded",
+                "customer.submitted",
+                "customer.approved",
+                "customer.rejected",
+                "customer.revoked",
+                "customer.updated",
+                "customer.deposit_account.updated",
+                "account.opened",
+                "account.ready",
+                "account.credited",
+                "account.send.completed",
+                "account.send.failed"
+              ]
+            }
+          },
+          {
+            "name": "X-Webhook-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Webhook-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`t=<unix_ts>,v1=<base64_hmac>`"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PartnerOrderWebhookPayload"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PartnerCustomerWebhookPayload"
+                  }
+                ],
+                "description": "Payload shape depends on X-Webhook-Event. Account event bodies: TODO - see docs/KNOWN_GAPS.md."
+              },
+              "examples": {
+                "order.settled": {
+                  "summary": "order.settled",
+                  "value": {
+                    "order_id": "YC-580e04c2-a136-5cca-be54-b49fcf80970c",
+                    "status": "settled",
+                    "amount_fiat": 800.0,
+                    "currency": "KES",
+                    "amount_crypto": 5.12,
+                    "exchange_rate": 156.25,
+                    "order_type": "OnRamp",
+                    "wallet_address": "0x4F07419E6bfCCF8D256E8ef803Cc2653dfbB9558",
+                    "phone_number": "2541111111111",
+                    "settlement_transaction_hash": "0xabc...",
+                    "created_at": "2026-07-07T10:00:00.000000Z",
+                    "updated_at": "2026-07-07T10:00:15.000000Z"
+                  }
+                },
+                "customer.approved": {
+                  "summary": "customer.approved",
+                  "value": {
+                    "customer_id": "pcus_\u2026",
+                    "partner_customer_ref": "partner-cust-001",
+                    "type": "individual",
+                    "status": "approved",
+                    "environment": "sandbox",
+                    "submitted_at": "2026-08-01T12:00:00+00:00",
+                    "reviewed_at": "2026-08-01T12:05:00+00:00",
+                    "products": {
+                      "deposit_account": {
+                        "status": "ready"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledge receipt. Return any 2xx quickly; process asynchronously if needed."
+          }
+        }
+      }
+    }
+  }
 }
