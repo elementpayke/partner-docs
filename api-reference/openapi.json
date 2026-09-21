@@ -9884,7 +9884,7 @@
           }
         },
         "responses": {
-          "2xx": {
+          "2XX": {
             "description": "Acknowledge receipt. Return any 2xx quickly; process asynchronously if needed."
           }
         }
