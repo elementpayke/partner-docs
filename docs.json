@@ -34,6 +34,9 @@
             "group": "Get started",
             "pages": [
               "introduction",
+              "docs/agents",
+              "docs/integration-fiat-stablecoin",
+              "docs/KNOWN_GAPS",
               "quickstart",
               "orders/quote-and-accept",
               "authentication",
@@ -94,7 +97,10 @@
     ]
   },
   "api": {
-    "baseUrl": "https://sandbox.elementpay.net/api/v1",
+    "baseUrl": [
+      "https://sandbox.elementpay.net/api/v1",
+      "https://api.elementpay.net/api/v1"
+    ],
     "auth": {
       "method": "key",
       "name": "X-API-Key"

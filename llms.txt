@@ -1,0 +1,44 @@
+# Element Pay Partner API — agent reading list
+
+Read these paths **in order** before implementing. Prefer Markdown + OpenAPI over Mintlify UI chrome.
+
+## 1. Must read first
+
+- `AGENTS.md` — one-page pointer
+- `docs/agents.md` — install, auth, sandbox OnRamp happy path, webhooks, pitfalls
+- `openapi.yaml` — machine-readable contract (servers, security, paths, webhook schemas)
+- `docs/integration-fiat-stablecoin.md` — local fiat ↔ USDC/USDT (OnRamp + OffRamp)
+
+## 2. Supporting guides (same repo)
+
+- `authentication.mdx` — `X-API-Key` (`is_test_` / `is_live_`)
+- `webhooks.mdx` — events, HMAC-SHA256 verify, `X-Webhook-Id` idempotency
+- `errors.mdx` — envelope + HTTP statuses
+- `quickstart.mdx` — KYC → KE OnRamp quote → accept
+- `orders/quote-and-accept.mdx` — binding quote fields and examples
+- `corridors/kenya.mdx` — KES momo/bank discovery + sandbox phones
+- `sandbox/success-failure.mdx` — **sandbox-only** success/failure triggers
+- `docs/KNOWN_GAPS.md` — conflicts, TODOs, undocumented surfaces
+
+## 3. Optional (after first payment works)
+
+- `customers/quickstart.mdx` — vault KYC details
+- `corridors/overview.mdx` — discovery endpoints + USDC/USDT assets
+- `customers/conversions.mdx` — ledger fiat↔fiat FX (**not** corridor ramps)
+- `customers/payouts.mdx` — external bank payouts (banking product)
+- `postman/Element-Pay-Partner-API.postman_collection.json` — importable curls
+
+## 4. Do not treat as source of truth alone
+
+- Mintlify-rendered pages without checking `openapi.yaml`
+- Hardcoded `network_id` UUIDs from guides — always fetch from **your** sandbox `GET /partner/catalog`
+- Inline `customer` on quote (deprecated; use vault `customer_id`)
+
+## Base URLs
+
+| Env | Base |
+|-----|------|
+| Sandbox | `https://sandbox.elementpay.net/api/v1` |
+| Production | `https://api.elementpay.net/api/v1` |
+
+Partner routes: `{BASE}/partner/*`
