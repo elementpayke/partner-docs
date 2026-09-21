@@ -12,7 +12,7 @@ Self-contained Mintlify site for B2B partners (African fiat corridors: mobile mo
 | [`AGENTS.md`](AGENTS.md) / [`docs/agents.md`](docs/agents.md) | Auth, sandbox OnRamp happy path, webhooks, pitfalls |
 | [`openapi.yaml`](openapi.yaml) | OpenAPI 3.1 — servers, `X-API-Key`, all `/partner/*` paths, webhook schemas |
 | [`docs/integration-fiat-stablecoin.md`](docs/integration-fiat-stablecoin.md) | Local fiat ↔ USDC/USDT (OnRamp + OffRamp) |
-| [`docs/KNOWN_GAPS.md`](docs/KNOWN_GAPS.md) | Conflicts and TODO stubs (no guessed behavior) |
+| [`docs/KNOWN_GAPS.md`](docs/KNOWN_GAPS.md) | Conflicts and undocumented areas (no guessed behavior) |
 
 Mintlify Try-it still uses [`api-reference/openapi.json`](api-reference/openapi.json) (kept in sync with root `openapi.json` / `openapi.yaml`).
 
@@ -57,7 +57,7 @@ Lives **in this repo**. Prefer **`openapi.yaml`** for agents; JSON copies feed M
   python scripts/enrich_openapi_for_mintlify.py
   ```
 
-  Then re-apply sandbox + production `servers` and the `webhooks` section (see `docs/KNOWN_GAPS.md` if automation drops them). Restart `mint dev` to see updated Try-it examples.
+  After syncing from the aggregator, confirm `servers` (sandbox + production) and the `webhooks` section are still present (see `docs/KNOWN_GAPS.md`). Restart `mint dev` to see updated Try-it examples.
 
 - Keep examples provider-neutral (no upstream PSP names in messages or error blobs).
 
