@@ -26,7 +26,7 @@ Where this repo’s guides and OpenAPI disagree, or behavior is not documented y
 | Production IP allowlisting details | Mentioned in onboarding checklist | **TODO:** document if required for your key |
 | USDC minor-unit API field | API returns decimals | Integrators convert ×10⁶ locally — **not** an API contract field |
 | Hosted Mintlify public URL | README placeholder | Set in partner handoff |
-| OpenAPI sync vs agent extras | Aggregator export may omit dual `servers` / `webhooks` | After sync, keep sandbox+production servers and webhook schemas in `openapi.yaml` / JSON copies |
+| OpenAPI sync vs agent extras | Aggregator export may omit dual `servers`; Mintlify may reject OpenAPI `webhooks` | Keep sandbox+production `servers` in JSON for Try-it; keep webhook schemas in `openapi.yaml` only (agents). Do not put `webhooks` / invalid status codes like `2xx` in Mintlify JSON. |
 
 ## Dual products easy to confuse
 

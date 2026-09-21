@@ -40,7 +40,7 @@ Opens at `http://localhost:3000`. **No other repo or scripts required.**
 
 ## OpenAPI
 
-Lives **in this repo**. Prefer **`openapi.yaml`** for agents; JSON copies feed Mintlify.
+Lives **in this repo**. Prefer **`openapi.yaml`** for agents (includes webhook schemas). Mintlify Try-it uses **`api-reference/openapi.json`** only (no `webhooks` key — Mintlify can fail builds on that).
 
 - Edit or replace the spec when the partner API contract changes; keep YAML and both JSON files aligned.
 - **Response examples** (200 / 400 / 422 / 502) are sourced from the aggregator OpenAPI export. After changing partner routes or `app/docs/responses/*` in `element-pay-aggregator`:

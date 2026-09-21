@@ -7018,5 +7018,5 @@ webhooks:
                     deposit_account:
                       status: ready
       responses:
-        2xx:
+        '200':
           description: Acknowledge receipt. Return any 2xx quickly; process asynchronously if needed.
