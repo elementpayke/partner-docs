@@ -174,18 +174,73 @@ Order events: `order.processing` → `order.settled` | `order.failed` | `order.r
 
 Corridor quotes do **not** take an `idempotency_key` on quote/accept.
 
+## Banking (optional) — customers + accounts
+
+Corridor ramps need **vault KYC only** (`status=approved`). **Accounts** are a separate product: EUR/USD IBAN, stablecoin ledger, deposit instructions, sends, book transfers, conversions, payouts. Full map: `customers/route-cheat-sheet.mdx` · guide: `customers/accounts.mdx`.
+
+| Gate | Field | Unlocks |
+|------|-------|---------|
+| Quote / accept | `status=approved` | `customer_id` on ramps |
+| Banking | `products.deposit_account.status=ready` | Account open / list / money movement |
+
+`approved` alone does **not** unlock accounts. Calling account routes before `ready` → **409** (`Deposit account is not ready`). Prefer webhook `customer.deposit_account.updated`; poll `GET /partner/customers/{customer_id}` as backup.
+
+### Sequence
+
+1. Wait until `products.deposit_account.status` is `ready`
+2. `POST /partner/customers/{customer_id}/accounts` (open fiat or stablecoin rail; idempotent on rail tuple)
+3. `GET /partner/customers/{customer_id}/accounts` → save `account_id`
+4. `GET …/accounts/{account_id}/deposit-instructions` when you need bank details or a deposit wallet
+5. Money movement (each has its own guide; confirm uses `idempotency_key`):
+   - Stablecoin sends: `…/sends/preview` → `…/sends`
+   - Book transfers (same currency): `…/book-transfers/preview` → `…/book-transfers`
+   - Conversions (cross-currency, same `pcus_*`): `…/conversions/preview` → `…/conversions`
+   - External bank payouts: `…/payout-methods` → `…/payout-banks` → `…/payouts/preview` → `…/payouts`
+
+### Open examples (sandbox)
+
+```bash
+# Fiat rail (e.g. EUR IBAN) — after deposit_account.status=ready
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{"asset_type": "fiat", "currency": "EUR"}' | jq '.data'
+
+# Stablecoin rail (Base USDC) — network casing per accounts guide
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{
+    "asset_type": "stablecoin",
+    "currency": "USDC",
+    "network": "Base"
+  }' | jq '.data'
+
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/accounts" \
+  -H "X-API-Key: $API_KEY" | jq '.data'
+```
+
+**Notes from existing guides (do not invent beyond these):**
+
+- Sandbox outbound sends/conversions/payouts may need an Element Pay sandbox credit (`customers/deposit-instructions.mdx`).
+- USD fiat open is **not** available for Kenya **individuals** (`unsupported_region`) — see `customers/accounts.mdx`.
+- Card routes are documented in `customers/cards.mdx` but **not** in `openapi.yaml` yet (`docs/KNOWN_GAPS.md`).
+
+Account webhooks: `account.opened`, `account.ready`, `account.credited`, `account.send.completed`, `account.send.failed`.
+
 ## Common pitfalls
 
 1. Quoting before vault `status=approved` → `422`
-2. Hardcoding `network_id` from docs instead of **your** catalog
-3. Using sandbox success phones on **production**
-4. Treating `GET /partner/rates/indicative` as the binding FX (it is **not**; use quote `amounts.rate`)
-5. Confusing corridor OnRamp with ledger `…/conversions` (fiat↔fiat on banking accounts only)
-6. Crediting the user ledger on accept/`order.processing` instead of **`order.settled`**
-7. Missing webhook signature check or clock skew / replay beyond 5 minutes
-8. Reusing OffRamp crypto deposit addresses across orders (per-order in production)
+2. Calling **accounts** before `deposit_account.status=ready` → **409**
+3. Hardcoding `network_id` from docs instead of **your** catalog
+4. Using sandbox success phones on **production**
+5. Treating `GET /partner/rates/indicative` as the binding FX (it is **not**; use quote `amounts.rate`)
+6. Confusing corridor OnRamp with ledger `…/conversions` (fiat↔fiat on banking accounts only)
+7. Crediting the user ledger on accept/`order.processing` instead of **`order.settled`**
+8. Missing webhook signature check or clock skew / replay beyond 5 minutes
+9. Reusing OffRamp crypto deposit addresses across orders (per-order in production)
 
-## OpenAPI path map (this happy path)
+## OpenAPI path map
+
+### Ramp happy path
 
 | Step | Method | Path |
 |------|--------|------|
@@ -200,4 +255,17 @@ Corridor quotes do **not** take an `idempotency_key` on quote/accept.
 | Poll order | `GET` | `/partner/orders/{order_id}` |
 | Indicative FX (UI only) | `GET` | `/partner/rates/indicative` |
 
-All listed under `paths` in `openapi.yaml`.
+### Banking (after `deposit_account.status=ready`)
+
+| Step | Method | Path |
+|------|--------|------|
+| Open account | `POST` | `/partner/customers/{customer_id}/accounts` |
+| List / get | `GET` | `/partner/customers/{customer_id}/accounts` · `…/{account_id}` |
+| Deposit instructions | `GET` | `…/accounts/{account_id}/deposit-instructions` |
+| Sends | `POST` | `…/sends/preview` · `…/sends` · `GET …/sends/{send_id}` |
+| Book transfers | `POST` | `…/book-transfers/preview` · `…/book-transfers` |
+| Conversions | `POST` | `…/conversions/preview` · `…/conversions` |
+| Payouts | `GET` | `…/payout-methods` · `…/payout-banks` |
+| | `POST` | `…/payouts/preview` · `…/payouts` · `GET …/payouts/{payout_id}` |
+
+All listed under `paths` in `openapi.yaml` (except cards — see `KNOWN_GAPS.md`).

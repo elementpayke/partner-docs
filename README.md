@@ -9,7 +9,7 @@ Self-contained Mintlify site for B2B partners (African fiat corridors: mobile mo
 | File | Purpose |
 |------|---------|
 | [`llms.txt`](llms.txt) | Ordered list of canonical paths to read first |
-| [`AGENTS.md`](AGENTS.md) / [`docs/agents.md`](docs/agents.md) | Auth, sandbox OnRamp happy path, webhooks, pitfalls |
+| [`AGENTS.md`](AGENTS.md) / [`docs/agents.md`](docs/agents.md) | Auth, OnRamp path, optional banking/accounts, webhooks, pitfalls |
 | [`openapi.yaml`](openapi.yaml) | OpenAPI 3.1 — servers, `X-API-Key`, all `/partner/*` paths, webhook schemas |
 | [`docs/integration-fiat-stablecoin.md`](docs/integration-fiat-stablecoin.md) | Local fiat ↔ USDC/USDT (OnRamp + OffRamp) |
 | [`docs/KNOWN_GAPS.md`](docs/KNOWN_GAPS.md) | Conflicts and undocumented areas (no guessed behavior) |

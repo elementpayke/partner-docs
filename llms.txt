@@ -5,7 +5,7 @@ Read these paths **in order** before implementing. Prefer Markdown + OpenAPI ove
 ## 1. Must read first
 
 - `AGENTS.md` — one-page pointer
-- `docs/agents.md` — install, auth, sandbox OnRamp happy path, webhooks, pitfalls
+- `docs/agents.md` — install, auth, OnRamp happy path, optional banking, webhooks, pitfalls
 - `openapi.yaml` — machine-readable contract (servers, security, paths, webhook schemas)
 - `docs/integration-fiat-stablecoin.md` — local fiat ↔ USDC/USDT (OnRamp + OffRamp)
 
@@ -20,12 +20,17 @@ Read these paths **in order** before implementing. Prefer Markdown + OpenAPI ove
 - `sandbox/success-failure.mdx` — **sandbox-only** success/failure triggers
 - `docs/KNOWN_GAPS.md` — conflicts, TODOs, undocumented surfaces
 
-## 3. Optional (after first payment works)
+## 3. Customers + banking (after ramps, or if you need ledger/IBAN)
 
 - `customers/quickstart.mdx` — vault KYC details
-- `corridors/overview.mdx` — discovery endpoints + USDC/USDT assets
+- `customers/route-cheat-sheet.mdx` — all customer/account route table + gates
+- `customers/accounts.mdx` — open/list accounts after `deposit_account.status=ready`
+- `customers/deposit-instructions.mdx` — bank coords / deposit wallet
+- `customers/stablecoin-sends.mdx` — outbound sends + `idempotency_key`
+- `customers/book-transfers.mdx` — same-currency ledger moves
 - `customers/conversions.mdx` — ledger fiat↔fiat FX (**not** corridor ramps)
-- `customers/payouts.mdx` — external bank payouts (banking product)
+- `customers/payouts.mdx` — external bank payouts
+- `corridors/overview.mdx` — discovery endpoints + USDC/USDT assets
 - `postman/Element-Pay-Partner-API.postman_collection.json` — importable curls
 
 ## 4. Do not treat as source of truth alone
