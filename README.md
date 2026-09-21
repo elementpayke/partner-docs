@@ -1,8 +1,20 @@
 # Element Pay Partner API — documentation
 
-Self-contained Mintlify site for B2B partners (African fiat corridors: mobile money and bank).
+Self-contained Mintlify site for B2B partners (African fiat corridors: mobile money and bank), plus **agent-readable** OpenAPI and Markdown entrypoints.
 
 **API runtime:** Element Pay aggregator — `https://sandbox.elementpay.net/api/v1/partner/*` (sandbox) and `https://api.elementpay.net/api/v1/partner/*` (production).
+
+## Start here (agents + humans)
+
+| File | Purpose |
+|------|---------|
+| [`llms.txt`](llms.txt) | Ordered list of canonical paths to read first |
+| [`AGENTS.md`](AGENTS.md) / [`docs/agents.md`](docs/agents.md) | Auth, OnRamp path, optional banking/accounts, webhooks, pitfalls |
+| [`openapi.yaml`](openapi.yaml) | OpenAPI 3.1 — servers, `X-API-Key`, all `/partner/*` paths, webhook schemas |
+| [`docs/integration-fiat-stablecoin.md`](docs/integration-fiat-stablecoin.md) | Local fiat ↔ USDC/USDT (OnRamp + OffRamp) |
+| [`docs/KNOWN_GAPS.md`](docs/KNOWN_GAPS.md) | Conflicts and undocumented areas (no guessed behavior) |
+
+Mintlify Try-it still uses [`api-reference/openapi.json`](api-reference/openapi.json) (kept in sync with root `openapi.json` / `openapi.yaml`).
 
 ## Local preview
 
@@ -19,16 +31,18 @@ Opens at `http://localhost:3000`. **No other repo or scripts required.**
 | File | Purpose |
 |------|---------|
 | `docs.json` | Mintlify config (Guides + API Reference tabs) |
-| `api-reference/openapi.json` | OpenAPI spec — auto-generates Try-it endpoint pages |
+| `openapi.yaml` / `openapi.json` | Partner API contract (agent + sync source) |
+| `api-reference/openapi.json` | Same spec for Mintlify API Reference |
 | `postman/` | Postman collection import |
 | `*.mdx` | Guides, corridors, sandbox playbooks |
-| `favicon.svg`, `logo/` | Branding (from edocs) |
+| `docs/*.md` | Agent / integrator Markdown (not Mintlify-only) |
+| `favicon.svg`, `logo/` | Branding |
 
-## `openapi.json`
+## OpenAPI
 
-Lives **in this repo only**. Mintlify reads it for the API Reference tab.
+Lives **in this repo**. Prefer **`openapi.yaml`** for agents; JSON copies feed Mintlify.
 
-- Edit or replace `openapi.json` here when the partner API contract changes.
+- Edit or replace the spec when the partner API contract changes; keep YAML and both JSON files aligned.
 - **Response examples** (200 / 400 / 422 / 502) are sourced from the aggregator OpenAPI export. After changing partner routes or `app/docs/responses/*` in `element-pay-aggregator`:
 
   ```bash
@@ -38,12 +52,12 @@ Lives **in this repo only**. Mintlify reads it for the API Reference tab.
   # sync also runs scripts/enrich_openapi_for_mintlify.py (formatted guides + response examples)
 
   # or from partner-docs
-  python scripts/sync-openapi-responses.py \\
+  python scripts/sync-openapi-responses.py \
     ../element-pay-aggregator/app/docs/partner/openapi.snapshot.json
   python scripts/enrich_openapi_for_mintlify.py
   ```
 
-  Restart `mint dev` to see updated Try-it examples.
+  After syncing from the aggregator, confirm `servers` (sandbox + production) and the `webhooks` section are still present (see `docs/KNOWN_GAPS.md`). Restart `mint dev` to see updated Try-it examples.
 
 - Keep examples provider-neutral (no upstream PSP names in messages or error blobs).
 
@@ -52,11 +66,11 @@ Lives **in this repo only**. Mintlify reads it for the API Reference tab.
 ## Deploy (Mintlify)
 
 1. Connect **this** repo in [Mintlify](https://mintlify.com).
-2. Docs directory = **repository root** (where `mint.json` is).
+2. Docs directory = **repository root** (where `docs.json` is).
 3. Push to `main` → Mintlify deploys. Independent of API server deploys.
 
 ## Partner handoff
 
 - Hosted Mintlify URL
-- Sandbox `is_test_…` API key + webhook secret
+- Sandbox `is_test_…` API key + webhook secret (never commit real secrets — use placeholders like `YOUR_API_KEY`)
 - Email template: `sandbox/onboarding.mdx`

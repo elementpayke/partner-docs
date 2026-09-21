@@ -46,7 +46,15 @@ Settlement: webhooks `order.processing`, `order.settled`, `order.failed`. See [W
 
 ## Where to start
 
+For coding agents: read `llms.txt` at the docs repo root, then [Agent quickstart](/docs/agents), then `openapi.yaml`.
+
 <CardGroup cols={2}>
+  <Card title="Agent quickstart" icon="robot" href="/docs/agents">
+    Auth, OnRamp path, optional banking/accounts, webhooks, pitfalls.
+  </Card>
+  <Card title="Local fiat ↔ stablecoin" icon="arrows-rotate" href="/docs/integration-fiat-stablecoin">
+    OnRamp + OffRamp: what changes per corridor, rate lock, finality.
+  </Card>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     KYC → approved → first KE OnRamp quote → accept.
   </Card>
