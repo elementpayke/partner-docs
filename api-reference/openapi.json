@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Element Pay Partner API",
-    "description": "Provider-neutral fiat ↔ crypto ramps for partners. Discover corridors, create a binding quote, accept it, and receive webhooks. African local fiat (mobile money and bank) is auto-routed by corridor.\n\n## Agent / integrator notes\n\n- Canonical machine-readable contract: `openapi.yaml` (this document) and `openapi.json`.\n- Human/agent quickstart: `docs/agents.md` · local fiat ↔ USDC/USDT: `docs/integration-fiat-stablecoin.md` · gaps: `docs/KNOWN_GAPS.md`.\n- All partner routes are under `/partner/*` relative to the server base URL.\n- Settlement source of truth: webhooks (see `webhooks` section); poll `GET /partner/orders/{order_id}` as backup.\n",
+    "description": "Provider-neutral fiat \u2194 crypto ramps for partners. Discover corridors, create a binding quote, accept it, and receive webhooks. African local fiat (mobile money and bank) is auto-routed by corridor.\n\n## Agent / integrator notes\n\n- Canonical machine-readable contract: `openapi.yaml` (this document) and `openapi.json`.\n- Human/agent quickstart: `docs/agents.md` - local fiat <-> USDC/USDT: `docs/integration-fiat-stablecoin.md` - gaps: `docs/KNOWN_GAPS.md`.\n- All partner routes are under `/partner/*` relative to the server base URL.\n- Settlement source of truth: webhooks (see `webhooks` section); poll `GET /partner/orders/{order_id}` as backup.\n",
     "version": "1.0.0"
   },
   "paths": {
@@ -311,7 +311,7 @@
           }
         },
         "x-mint": {
-          "content": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes (corridor **fiat vs USD** tickers).\n\n<Warning>\nThese rates are **not** binding.\n\n- Corridor checkout pricing: [`POST /partner/orders/quote`](/partner/orders/quote)\n- Ledger **cross-currency** convert: use [`conversions/preview`](/customers/conversions) for the binding pair rate — do not treat these tickers as the convert price\n</Warning>\n\nResponse `data` includes `requested`, `rates`, and `fetched_at`.\n\n**Auth:** `X-API-Key` header."
+          "content": "Returns **indicative** `buy` / `sell` rates for comma-separated ISO fiat codes (corridor **fiat vs USD** tickers).\n\n<Warning>\nThese rates are **not** binding.\n\n- Corridor checkout pricing: [`POST /partner/orders/quote`](/partner/orders/quote)\n- Ledger **cross-currency** convert: use [`conversions/preview`](/customers/conversions) for the binding pair rate \u2014 do not treat these tickers as the convert price\n</Warning>\n\nResponse `data` includes `requested`, `rates`, and `fetched_at`.\n\n**Auth:** `X-API-Key` header."
         }
       }
     },
@@ -647,7 +647,7 @@
           }
         },
         "x-mint": {
-          "content": "Indicative catalog for partner checkout UI.\n\n### African markets (`african_markets`)\nLocal fiat corridors: **country**, **currency**, and **onramp** / **offramp** flags.\n\nOptional filters: `country`, `currency`, `order_type` (`OnRamp` | `OffRamp`).\n\n### International bank (`international_bank`)\nEUR/USD bank transfer **payin** — **currency only** (do not pass ISO country).\n\n<Note>\nBinding eligibility is confirmed at [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+          "content": "Indicative catalog for partner checkout UI.\n\n### African markets (`african_markets`)\nLocal fiat corridors: **country**, **currency**, and **onramp** / **offramp** flags.\n\nOptional filters: `country`, `currency`, `order_type` (`OnRamp` | `OffRamp`).\n\n### International bank (`international_bank`)\nEUR/USD bank transfer **payin** \u2014 **currency only** (do not pass ISO country).\n\n<Note>\nBinding eligibility is confirmed at [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
         }
       }
     },
@@ -1019,7 +1019,7 @@
           }
         },
         "x-mint": {
-          "content": "Single indicative catalog for partner checkout: per-country onramp/offramp, `mobile_money` and `bank` buckets with live provider lists, optional `rails` for international payout markets, and `international_bank` for EUR/USD payin.\n\n### Provider IDs\n`providers[].id` is the opaque institution UUID to send as `payment_method.network_id` on quote. Bank rows may also use [`GET /partner/banks`](/partner/banks).\n\nEach provider includes `min_amount`, `max_amount`, and `currency` for checkout validation.\n\n<Warning>\n**OnRamp and OffRamp provider lists can differ** for the same country — filter with `order_type`.\n</Warning>\n\nOptional filters: `country`, `currency`, `order_type`. Omit filters for the full tree.\n\n<Note>\nBinding eligibility: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+          "content": "Single indicative catalog for partner checkout: per-country onramp/offramp, `mobile_money` and `bank` buckets with live provider lists, optional `rails` for international payout markets, and `international_bank` for EUR/USD payin.\n\n### Provider IDs\n`providers[].id` is the opaque institution UUID to send as `payment_method.network_id` on quote. Bank rows may also use [`GET /partner/banks`](/partner/banks).\n\nEach provider includes `min_amount`, `max_amount`, and `currency` for checkout validation.\n\n<Warning>\n**OnRamp and OffRamp provider lists can differ** for the same country \u2014 filter with `order_type`.\n</Warning>\n\nOptional filters: `country`, `currency`, `order_type`. Omit filters for the full tree.\n\n<Note>\nBinding eligibility: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
         }
       }
     },
@@ -1336,7 +1336,7 @@
           }
         },
         "x-mint": {
-          "content": "Indicative payment methods for one corridor.\n\n### African corridors\n- **`country`** — required\n- **`currency`** — optional; must match the catalog when sent; response `context` always includes both\n- **`order_type`** — `OnRamp` or `OffRamp`; omit to get both `onramp` and `offramp` buckets\n\n### International bank\n- **`currency`** = EUR or USD (required)\n- Do **not** pass `country`\n- EUR/USD onramp returns `bank`\n- Offramp uses international bank when configured\n\n### International bank payout markets\nExample: FR + EUR offramp — pass `country` + `currency`. Returns rails such as `BankSepa` and `BankSwift` with `type` set to the international bank `PaymentMethodType`.\n\n### Local fiat (African)\n`mobile_money` and `bank` rows include a **`networks[]`** list (`id`, `name`, `min_amount`, `max_amount`, `currency`) for client-side amount gating.\n\n<Note>\nBinding check: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+          "content": "Indicative payment methods for one corridor.\n\n### African corridors\n- **`country`** \u2014 required\n- **`currency`** \u2014 optional; must match the catalog when sent; response `context` always includes both\n- **`order_type`** \u2014 `OnRamp` or `OffRamp`; omit to get both `onramp` and `offramp` buckets\n\n### International bank\n- **`currency`** = EUR or USD (required)\n- Do **not** pass `country`\n- EUR/USD onramp returns `bank`\n- Offramp uses international bank when configured\n\n### International bank payout markets\nExample: FR + EUR offramp \u2014 pass `country` + `currency`. Returns rails such as `BankSepa` and `BankSwift` with `type` set to the international bank `PaymentMethodType`.\n\n### Local fiat (African)\n`mobile_money` and `bank` rows include a **`networks[]`** list (`id`, `name`, `min_amount`, `max_amount`, `currency`) for client-side amount gating.\n\n<Note>\nBinding check: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
         }
       }
     },
@@ -1400,11 +1400,11 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "retail or institution — affects required customer fields on local fiat rail corridors.",
+              "description": "retail or institution \u2014 affects required customer fields on local fiat rail corridors.",
               "default": "retail",
               "title": "Customer Type"
             },
-            "description": "retail or institution — affects required customer fields on local fiat rail corridors."
+            "description": "retail or institution \u2014 affects required customer fields on local fiat rail corridors."
           },
           {
             "name": "payment_method_type",
@@ -1686,7 +1686,7 @@
           }
         },
         "x-mint": {
-          "content": "Returns partner-neutral **field name** hints before [`POST /partner/orders/quote`](/partner/orders/quote).\n\nCall after [`GET /partner/corridors`](/partner/corridors) and [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` or `OffRamp`).\n\nWhen several payout rails exist, list them with [`GET /partner/payment-methods`](/partner/payment-methods) first, then pass `payment_method_type` (e.g. `BankSepa`) on this call. Single-rail international bank corridors (e.g. GH) may omit it.\n\n### Rails\n- **`mobile_money`** or **`bank`** — both require `network_id` on quote (from catalog `providers[].id` or [`GET /partner/banks`](/partner/banks) for bank)\n- Optional **`customer_type`** (`retail` or `institution`) on local fiat corridors\n\nThis endpoint does **not** return JSON Schema, bank lists, fees, or provider labels. Bank lists and dynamic form schemas are separate partner endpoints (see [Quickstart](/quickstart)).\n\n<Note>\nBinding check: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
+          "content": "Returns partner-neutral **field name** hints before [`POST /partner/orders/quote`](/partner/orders/quote).\n\nCall after [`GET /partner/corridors`](/partner/corridors) and [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` or `OffRamp`).\n\nWhen several payout rails exist, list them with [`GET /partner/payment-methods`](/partner/payment-methods) first, then pass `payment_method_type` (e.g. `BankSepa`) on this call. Single-rail international bank corridors (e.g. GH) may omit it.\n\n### Rails\n- **`mobile_money`** or **`bank`** \u2014 both require `network_id` on quote (from catalog `providers[].id` or [`GET /partner/banks`](/partner/banks) for bank)\n- Optional **`customer_type`** (`retail` or `institution`) on local fiat corridors\n\nThis endpoint does **not** return JSON Schema, bank lists, fees, or provider labels. Bank lists and dynamic form schemas are separate partner endpoints (see [Quickstart](/quickstart)).\n\n<Note>\nBinding check: [`POST /partner/orders/quote`](/partner/orders/quote).\n</Note>"
         }
       }
     },
@@ -2001,7 +2001,7 @@
           }
         },
         "x-mint": {
-          "content": "Lists bank/network institution options for a rail chosen via [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` | `OffRamp`), and `payment_method_type`.\n\n### Rails\n- **`bank`** (local fiat) — active networks only; use returned `banks[].id` as `payment_method.network_id` on quote\n- **`mobile_money`** — returns **422**; use [`GET /partner/catalog`](/partner/catalog) `providers[].id` for momo `network_id`\n- International bank types (e.g. `BankSepa`, `BankSwift`) — best-effort enum options from upstream form schema"
+          "content": "Lists bank/network institution options for a rail chosen via [`GET /partner/payment-methods`](/partner/payment-methods).\n\n### Query\n`country`, `currency`, `order_type` (`OnRamp` | `OffRamp`), and `payment_method_type`.\n\n### Rails\n- **`bank`** (local fiat) \u2014 active networks only; use returned `banks[].id` as `payment_method.network_id` on quote\n- **`mobile_money`** \u2014 returns **422**; use [`GET /partner/catalog`](/partner/catalog) `providers[].id` for momo `network_id`\n- International bank types (e.g. `BankSepa`, `BankSwift`) \u2014 best-effort enum options from upstream form schema"
         }
       }
     },
@@ -2011,7 +2011,7 @@
           "partner"
         ],
         "summary": "Create a partner order quote",
-        "description": "Create a binding quote for a fiat ↔ crypto order.",
+        "description": "Create a binding quote for a fiat \u2194 crypto order.",
         "operationId": "partner_order_quote_partner_orders_quote_post",
         "requestBody": {
           "content": {
@@ -2021,7 +2021,7 @@
               },
               "examples": {
                 "ke_onramp_vault_customer_id": {
-                  "summary": "KE OnRamp — vault customer_id (recommended)",
+                  "summary": "KE OnRamp \u2014 vault customer_id (recommended)",
                   "description": "Use an approved pcus_* from the customer vault. Discover network_id from GET /partner/catalog?country=KE&order_type=OnRamp.",
                   "value": {
                     "order_type": "OnRamp",
@@ -2043,7 +2043,7 @@
                   }
                 },
                 "ke_offramp_vault_customer_id": {
-                  "summary": "KE OffRamp — vault customer_id",
+                  "summary": "KE OffRamp \u2014 vault customer_id",
                   "description": "Customer sends USDC; receives KES by mobile money.",
                   "value": {
                     "order_type": "OffRamp",
@@ -2065,7 +2065,7 @@
                   }
                 },
                 "ke_onramp_inline_sandbox": {
-                  "summary": "KE OnRamp — inline customer",
+                  "summary": "KE OnRamp \u2014 inline customer",
                   "description": "Inline customer object (no customer_id). Sandbox success MSISDN +2541111111111.",
                   "value": {
                     "order_type": "OnRamp",
@@ -2256,7 +2256,7 @@
           }
         ],
         "x-mint": {
-          "content": "Create a binding quote for a fiat ↔ crypto order.\n\n<Steps>\n  <Step title=\"Create quote\">\n    `POST` with corridor, customer, and payment method details.\n  </Step>\n  <Step title=\"Show pricing\">\n    Display returned amounts and **payment instructions** to the user (OnRamp).\n  </Step>\n  <Step title=\"Accept\">\n    [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.\n  </Step>\n</Steps>\n\n### Customer identity\nUse **one** of:\n\n- **`customer_id`** (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) — recommended for new integrations\n- **Inline `customer`** — still supported; pick **KE OnRamp — inline customer** in Try it or fill the `customer` object\n\nDo not send both. Corridor-specific inline shapes: [Sandbox test payloads](/sandbox/test-payloads).\n\n<Note>\nTry it omits legacy top-level fields (`provider`, `channel_id`, `destination`, `rail`, …). Omit `provider` on live calls too — Element Pay auto-routes by corridor.\n</Note>\n\n### Discovery before quote\n- [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) → rails for the corridor\n- [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` → `providers[].id` for momo/bank\n- [`GET /partner/order-requirements`](/partner/order-requirements) → exact field names (`network_id` required for momo/bank)\n- [`GET /partner/banks`](/partner/banks) → bank institution UUIDs where applicable\n\n### Payment method by rail\n**`mobile_money`**\n- `payment_method.type=mobile_money`\n- `payment_method.phone_number` (E.164)\n- `payment_method.network_id` (UUID from catalog `providers[].id`)\n\n**`bank`**\n- `payment_method.type=bank`\n- `account_number`, `account_name`\n- `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)\n\n### Quote IDs\n- OnRamp: `yc_receive_<id>`\n- OffRamp: `yc_send_<id>`\n\nThe quote expires at `data.expires_at`.",
+          "content": "Create a binding quote for a fiat \u2194 crypto order.\n\n<Steps>\n  <Step title=\"Create quote\">\n    `POST` with corridor, customer, and payment method details.\n  </Step>\n  <Step title=\"Show pricing\">\n    Display returned amounts and **payment instructions** to the user (OnRamp).\n  </Step>\n  <Step title=\"Accept\">\n    [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.\n  </Step>\n</Steps>\n\n### Customer identity\nUse **one** of:\n\n- **`customer_id`** (`pcus_*` from an **approved** [customer vault](/customers/quickstart) case) \u2014 recommended for new integrations\n- **Inline `customer`** \u2014 still supported; pick **KE OnRamp \u2014 inline customer** in Try it or fill the `customer` object\n\nDo not send both. Corridor-specific inline shapes: [Sandbox test payloads](/sandbox/test-payloads).\n\n<Note>\nTry it omits legacy top-level fields (`provider`, `channel_id`, `destination`, `rail`, \u2026). Omit `provider` on live calls too \u2014 Element Pay auto-routes by corridor.\n</Note>\n\n### Discovery before quote\n- [`GET /partner/catalog`](/partner/catalog) or [`GET /partner/payment-methods`](/partner/payment-methods) \u2192 rails for the corridor\n- [`GET /partner/catalog?order_type=OnRamp`](/partner/catalog) or `OffRamp` \u2192 `providers[].id` for momo/bank\n- [`GET /partner/order-requirements`](/partner/order-requirements) \u2192 exact field names (`network_id` required for momo/bank)\n- [`GET /partner/banks`](/partner/banks) \u2192 bank institution UUIDs where applicable\n\n### Payment method by rail\n**`mobile_money`**\n- `payment_method.type=mobile_money`\n- `payment_method.phone_number` (E.164)\n- `payment_method.network_id` (UUID from catalog `providers[].id`)\n\n**`bank`**\n- `payment_method.type=bank`\n- `account_number`, `account_name`\n- `payment_method.network_id` (from [`GET /partner/banks`](/partner/banks) or catalog)\n\n### Quote IDs\n- OnRamp: `yc_receive_<id>`\n- OffRamp: `yc_send_<id>`\n\nThe quote expires at `data.expires_at`.",
           "playground": {
             "expand": false
           }
@@ -2698,7 +2698,7 @@
                     ],
                     "products": {
                       "deposit_account": {
-                        "notes": "deposit_account.status ready means KYC approved and partner may open deposit accounts — no automatic account open."
+                        "notes": "deposit_account.status ready means KYC approved and partner may open deposit accounts \u2014 no automatic account open."
                       }
                     },
                     "notes": "Full individual package is required before submit. profile.address must include line1, city, and country. profile.id_number and profile.id_type are required. Nigeria residents must also include profile.additional_id_type (bvn) and profile.additional_id_number."
@@ -2759,7 +2759,7 @@
                         ],
                         "products": {
                           "deposit_account": {
-                            "notes": "deposit_account.status ready means KYC approved and partner may open deposit accounts — no automatic account open."
+                            "notes": "deposit_account.status ready means KYC approved and partner may open deposit accounts \u2014 no automatic account open."
                           }
                         },
                         "notes": "Full individual package is required before submit. profile.address must include line1, city, and country. profile.id_number and profile.id_type are required. Nigeria residents must also include profile.additional_id_type (bvn) and profile.additional_id_number."
@@ -2962,7 +2962,7 @@
           }
         },
         "x-mint": {
-          "content": "Return the **full KYC package** for a customer type before create/submit.\n\n### Query\n- **`type`** — `individual` (default) or `business`\n- **`country`** — optional ISO code; sharpens corridor-specific conditional fields (e.g. NG BVN, US EIN)\n\nResponse `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. For **business**, nested officer fields are under **`field_shapes.officers`** (not top-level `required_fields`). Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.\n\n<Note>\nThis is **not** the same as [`GET /partner/order-requirements`](/partner/order-requirements) (quote field hints per corridor).\n</Note>"
+          "content": "Return the **full KYC package** for a customer type before create/submit.\n\n### Query\n- **`type`** \u2014 `individual` (default) or `business`\n- **`country`** \u2014 optional ISO code; sharpens corridor-specific conditional fields (e.g. NG BVN, US EIN)\n\nResponse `data` lists `required_fields`, `required_documents`, `optional_fields`, and `conditional_fields`. For **business**, nested officer fields are under **`field_shapes.officers`** (not top-level `required_fields`). Use this to build `profile` on [`POST /partner/customers`](/partner/customers) and document uploads.\n\n<Note>\nThis is **not** the same as [`GET /partner/order-requirements`](/partner/order-requirements) (quote field hints per corridor).\n</Note>"
         }
       }
     },
@@ -2988,7 +2988,7 @@
               },
               "examples": {
                 "individual": {
-                  "summary": "Individual — retail KYC",
+                  "summary": "Individual \u2014 retail KYC",
                   "description": "Includes id_number and id_type. Upload identity + address documents, then submit when GET missing[] is empty.",
                   "value": {
                     "partner_customer_ref": "partner-cust-001",
@@ -3013,7 +3013,7 @@
                   }
                 },
                 "business": {
-                  "summary": "Business — KYB with officer",
+                  "summary": "Business \u2014 KYB with officer",
                   "description": "Each profile.officers[] entry needs person fields, identity_document (type, number, issuing_country), and address. US: include tax_id.",
                   "value": {
                     "partner_customer_ref": "partner-biz-001",
@@ -3227,7 +3227,7 @@
           }
         },
         "x-mint": {
-          "content": "Create an **incomplete** vault case (`status: incomplete`). Idempotent on `partner_customer_ref`.\n\n### Try it\nPick **Individual** or **Business** in the request body picker — each tab shows the expected `profile` shape. While incomplete, **`GET /partner/customers/{customer_id}`** returns **`missing[]`** with indexed paths (e.g. `profile.officers[0].identity_document.number`).\n\nFull walkthrough: [Customer KYC quickstart](/customers/quickstart).",
+          "content": "Create an **incomplete** vault case (`status: incomplete`). Idempotent on `partner_customer_ref`.\n\n### Try it\nPick **Individual** or **Business** in the request body picker \u2014 each tab shows the expected `profile` shape. While incomplete, **`GET /partner/customers/{customer_id}`** returns **`missing[]`** with indexed paths (e.g. `profile.officers[0].identity_document.number`).\n\nFull walkthrough: [Customer KYC quickstart](/customers/quickstart).",
           "playground": {
             "expand": false
           }
@@ -4053,7 +4053,7 @@
           "partner-customers"
         ],
         "summary": "Submit customer package for review",
-        "description": "Submit an incomplete package → pending_review, or 422 with missing[].",
+        "description": "Submit an incomplete package \u2192 pending_review, or 422 with missing[].",
         "operationId": "partner_customer_submit_partner_customers__customer_id__submit_post",
         "security": [
           {
@@ -4139,7 +4139,7 @@
             }
           },
           "422": {
-            "description": "Package incomplete — missing profile fields or documents",
+            "description": "Package incomplete \u2014 missing profile fields or documents",
             "content": {
               "application/json": {
                 "schema": {
@@ -4331,7 +4331,7 @@
             }
           },
           "409": {
-            "description": "Concurrent status change during revoke — retry the request",
+            "description": "Concurrent status change during revoke \u2014 retry the request",
             "content": {
               "application/json": {
                 "schema": {
@@ -6471,7 +6471,7 @@
                 },
                 "examples": {
                   "eur_to_ngn": {
-                    "summary": "EUR → NGN preview",
+                    "summary": "EUR \u2192 NGN preview",
                     "value": {
                       "status": "success",
                       "message": "Conversion preview",
@@ -6551,7 +6551,7 @@
           }
         },
         "x-mint": {
-          "content": "Preview a **cross-currency** conversion between two accounts owned by this customer.\n\nReturns a signed `preview_token`, `rate`, `amount_from` / `amount_to`, and `expires_at` (often only a few minutes). Confirm before expiry.\n\n<Note>\nSame-currency moves use [book transfers](/customers/book-transfers). Corridor ramps use [quote → accept](/orders/quote-and-accept).\n</Note>\n\nGuide: [Currency conversions](/customers/conversions)."
+          "content": "Preview a **cross-currency** conversion between two accounts owned by this customer.\n\nReturns a signed `preview_token`, `rate`, `amount_from` / `amount_to`, and `expires_at` (often only a few minutes). Confirm before expiry.\n\n<Note>\nSame-currency moves use [book transfers](/customers/book-transfers). Corridor ramps use [quote \u2192 accept](/orders/quote-and-accept).\n</Note>\n\nGuide: [Currency conversions](/customers/conversions)."
         }
       }
     },
@@ -6940,7 +6940,7 @@
           }
         },
         "x-mint": {
-          "content": "List **payout schemes** for this fiat account before preview.\n\n### What to use\n- `methods[].scheme` — send as `bank.scheme` (or omit when `default: true`)\n- `required_fields` / `require_one_of` / `optional_fields` / `aliases`\n\n### SWIFT\n`require_one_of` means **iban or account_number** (not both optional).\n\nFull guide: [External bank payouts](/customers/payouts)."
+          "content": "List **payout schemes** for this fiat account before preview.\n\n### What to use\n- `methods[].scheme` \u2014 send as `bank.scheme` (or omit when `default: true`)\n- `required_fields` / `require_one_of` / `optional_fields` / `aliases`\n\n### SWIFT\n`require_one_of` means **iban or account_number** (not both optional).\n\nFull guide: [External bank payouts](/customers/payouts)."
         }
       }
     },
@@ -7910,7 +7910,7 @@
               }
             ],
             "title": "Customer",
-            "description": "Provider-neutral customer details. Retail: personal KYC fields (name, dob, id_number, …). Institution (`type: institution` with top-level `customer_type: institution`): `uid`, `business_name`, `business_id` (legal registration/tax id of the paying business), and `email` — no DOB / national ID / personal name. Used to derive provider party details when provider-specific fields are omitted."
+            "description": "Provider-neutral customer details. Retail: personal KYC fields (name, dob, id_number, \u2026). Institution (`type: institution` with top-level `customer_type: institution`): `uid`, `business_name`, `business_id` (legal registration/tax id of the paying business), and `email` \u2014 no DOB / national ID / personal name. Used to derive provider party details when provider-specific fields are omitted."
           },
           "payment_method": {
             "anyOf": [
@@ -8034,7 +8034,7 @@
           "order_type"
         ],
         "title": "PartnerOrderQuoteRequest",
-        "description": "Generic partner quote request for the `quote -> accept -> webhook` flow. `provider` is optional. When omitted, the partner order router selects the route from country, currency, order type, payment method, asset, and amount. New partner integrations should use the canonical `asset`, `customer`, and `payment_method` blocks. For local fiat rail momo/bank, ``payment_method.network_id`` is required (catalog or ``GET /banks``). For mobile money MSISDN, use ``payment_method.phone_number`` only — do not fall back to ``customer.phone``. Legacy provider-specific blocks (``destination``, etc.) are still accepted and mapped to the canonical request fields.",
+        "description": "Generic partner quote request for the `quote -> accept -> webhook` flow. `provider` is optional. When omitted, the partner order router selects the route from country, currency, order type, payment method, asset, and amount. New partner integrations should use the canonical `asset`, `customer`, and `payment_method` blocks. For local fiat rail momo/bank, ``payment_method.network_id`` is required (catalog or ``GET /banks``). For mobile money MSISDN, use ``payment_method.phone_number`` only \u2014 do not fall back to ``customer.phone``. Legacy provider-specific blocks (``destination``, etc.) are still accepted and mapped to the canonical request fields.",
         "examples": [
           {
             "asset": {
@@ -8247,7 +8247,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Present when status is incomplete — fields/docs still required before submit."
+            "description": "Present when status is incomplete \u2014 fields/docs still required before submit."
           },
           "review_note": {
             "type": "string",
@@ -9004,7 +9004,7 @@
       },
       "PartnerCustomerCreateRequestTryIt": {
         "title": "PartnerCustomerCreateRequestTryIt",
-        "description": "Create body for Mintlify Try it. Pick **Individual** or **Business** — `type` and `profile` update together. Live API accepts the same shapes; see GET /partner/customers/requirements for the full package.",
+        "description": "Create body for Mintlify Try it. Pick **Individual** or **Business** \u2014 `type` and `profile` update together. Live API accepts the same shapes; see GET /partner/customers/requirements for the full package.",
         "oneOf": [
           {
             "title": "Individual",
@@ -9274,7 +9274,7 @@
               }
             ],
             "title": "Account Type",
-            "description": "USD — checking or savings"
+            "description": "USD \u2014 checking or savings"
           },
           "bank_institution_number": {
             "anyOf": [
@@ -9286,7 +9286,7 @@
               }
             ],
             "title": "Bank Institution Number",
-            "description": "CAD EFT / Interac account — 3 digits"
+            "description": "CAD EFT / Interac account \u2014 3 digits"
           },
           "transit_number": {
             "anyOf": [
@@ -9298,7 +9298,7 @@
               }
             ],
             "title": "Transit Number",
-            "description": "CAD EFT / Interac account — 5 digits"
+            "description": "CAD EFT / Interac account \u2014 5 digits"
           },
           "bank_code": {
             "anyOf": [
@@ -9310,7 +9310,7 @@
               }
             ],
             "title": "Bank Code",
-            "description": "Local bank code — NGN NIP, GHS EFT (and similar bank-code rails)"
+            "description": "Local bank code \u2014 NGN NIP, GHS EFT (and similar bank-code rails)"
           },
           "account_number": {
             "anyOf": [
@@ -9668,7 +9668,7 @@
         "properties": {
           "customer_id": {
             "type": "string",
-            "example": "pcus_…"
+            "example": "pcus_\u2026"
           },
           "partner_customer_ref": {
             "type": "string",
@@ -9842,7 +9842,7 @@
                     "$ref": "#/components/schemas/PartnerCustomerWebhookPayload"
                   }
                 ],
-                "description": "Payload shape depends on X-Webhook-Event. Account event bodies: TODO — see docs/KNOWN_GAPS.md."
+                "description": "Payload shape depends on X-Webhook-Event. Account event bodies: TODO - see docs/KNOWN_GAPS.md."
               },
               "examples": {
                 "order.settled": {
@@ -9865,7 +9865,7 @@
                 "customer.approved": {
                   "summary": "customer.approved",
                   "value": {
-                    "customer_id": "pcus_…",
+                    "customer_id": "pcus_\u2026",
                     "partner_customer_ref": "partner-cust-001",
                     "type": "individual",
                     "status": "approved",

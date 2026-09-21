@@ -7,7 +7,7 @@ info:
     ## Agent / integrator notes
 
     - Canonical machine-readable contract: `openapi.yaml` (this document) and `openapi.json`.
-    - Human/agent quickstart: `docs/agents.md` · local fiat ↔ USDC/USDT: `docs/integration-fiat-stablecoin.md` · gaps: `docs/KNOWN_GAPS.md`.
+    - Human/agent quickstart: `docs/agents.md` - local fiat <-> USDC/USDT: `docs/integration-fiat-stablecoin.md` - gaps: `docs/KNOWN_GAPS.md`.
     - All partner routes are under `/partner/*` relative to the server base URL.
     - Settlement source of truth: webhooks (see `webhooks` section); poll `GET /partner/orders/{order_id}` as backup.
   version: 1.0.0
@@ -6851,7 +6851,7 @@ components:
       required:
       - order_id
       - status
-      example:
+      example: &id001
         order_id: YC-580e04c2-a136-5cca-be54-b49fcf80970c
         status: settled
         amount_fiat: 800.0
@@ -6999,23 +6999,11 @@ webhooks:
               oneOf:
               - $ref: '#/components/schemas/PartnerOrderWebhookPayload'
               - $ref: '#/components/schemas/PartnerCustomerWebhookPayload'
-              description: 'Payload shape depends on X-Webhook-Event. Account event bodies: TODO — see docs/KNOWN_GAPS.md.'
+              description: 'Payload shape depends on X-Webhook-Event. Account event bodies: TODO - see docs/KNOWN_GAPS.md.'
             examples:
               order.settled:
                 summary: order.settled
-                value:
-                  order_id: YC-580e04c2-a136-5cca-be54-b49fcf80970c
-                  status: settled
-                  amount_fiat: 800.0
-                  currency: KES
-                  amount_crypto: 5.12
-                  exchange_rate: 156.25
-                  order_type: OnRamp
-                  wallet_address: '0x4F07419E6bfCCF8D256E8ef803Cc2653dfbB9558'
-                  phone_number: '2541111111111'
-                  settlement_transaction_hash: 0xabc...
-                  created_at: '2026-07-07T10:00:00.000000Z'
-                  updated_at: '2026-07-07T10:00:15.000000Z'
+                value: *id001
               customer.approved:
                 summary: customer.approved
                 value:
