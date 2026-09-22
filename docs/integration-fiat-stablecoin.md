@@ -126,6 +126,8 @@ curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
   -d '{}'
 ```
 
+Default empty body. If Console **Signed accepts** is on, use [`../orders/signed-accepts.mdx`](../orders/signed-accepts.mdx) instead (`signed_accept.signature`).
+
 ## What ID to store for reconciliation
 
 | ID | When available | Use |

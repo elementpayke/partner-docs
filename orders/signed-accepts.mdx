@@ -1,0 +1,269 @@
+# Customer-signed accepts
+
+Optional **EIP-712** accept: the end-customer’s wallet authorizes each accept. Default remains empty-body `{}` accept.
+
+## Mental model
+
+Two different signatures, **in order**:
+
+1. **Register once** — prove ownership of an EVM wallet for a vault customer (`pcus_…`). This creates an active signing key (`skey_…`).
+2. **Sign every accept** — after quote, the customer signs Element Pay’s quote `typed_data`; you submit that signature on accept.
+
+| Partner type | What to do |
+|--------------|------------|
+| **Custodial** (you accept on behalf of the customer) | Leave **Signed accepts** **off** — skip both steps |
+| **Non-custodial** (customer must approve in their wallet) | Turn **Signed accepts** **on** → do (1) at onboarding / wallet-connect, then (2) on each order |
+
+Register signature ≠ accept signature. Reusing either in the wrong step will fail.
+
+## 1. When to use
+
+- Customer must approve accept in their wallet → enable **Signed accepts** for that API key.
+- You accept on the customer’s behalf → leave it off; empty `{}` accept still works.
+
+## 2. Enable in Console
+
+Enablement is **per API key** in the Console **Settings** column (sandbox key ≠ live key). It is **not** toggled with `X-API-Key`.
+
+| Checkbox label | Effect when on |
+|----------------|----------------|
+| **Signed accepts** | Quote requires vault `customer_id` (`pcus_…`); accept requires `signed_accept.signature` |
+| **SMS notifications** | Same Settings column — SMS for order events when configured; see [Webhooks](/webhooks) |
+
+Rules:
+
+- Default **off** — custodial partners leave it off; quote/accept unchanged.
+- Tooltip on **Signed accepts**: “Requires customer EIP-712 signature on accept.”
+- Turn it on in [Dev Console API Keys](https://dev.elementpay.net/api-keys) (sandbox) or the live console equivalent. Element Pay can also flip the flag ops-side if needed.
+
+<Warning>
+With **Signed accepts** on, empty-body accept is rejected. Desk / accept-on-behalf also fails for that key.
+</Warning>
+
+## Auth and environment
+
+```bash
+export BASE="https://sandbox.elementpay.net/api/v1"   # live: https://api.elementpay.net/api/v1
+export API_KEY="is_test_YOUR_KEY"
+```
+
+```http
+X-API-Key: <API_KEY>
+Content-Type: application/json
+```
+
+## 3. Register a wallet (once per customer)
+
+**Prerequisite:** vault customer **approved** (`pcus_…`) — [Customer KYC](/customers/quickstart).
+
+Enrollment is API-only (no Console signing-keys UI). EVM addresses only (`0x` + 40 hex) — not Stellar `G…`.
+
+<Steps>
+  <Step title="Start challenge">
+    `POST /partner/customers/{customer_id}/signing-keys/challenge` with `{ "address": "0x…" }`
+  </Step>
+  <Step title="Customer signs">
+    Present our `typed_data` to the wallet (`eth_signTypedData_v4`) — do not rebuild it client-side
+  </Step>
+  <Step title="Complete enrollment">
+    `POST …/signing-keys/complete` with `{ "key_id", "signature" }` → key becomes **active**
+  </Step>
+  <Step title="Optional manage">
+    List keys, revoke, or re-challenge with a new address to replace a lost wallet
+  </Step>
+</Steps>
+
+### Step A — Start challenge
+
+```bash
+export CUSTOMER_ID="pcus_…"
+
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/signing-keys/challenge" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }' | tee /tmp/signing-challenge.json | jq '{key_id: .data.key_id, address: .data.address, expires_at: .data.expires_at, primaryType: .data.typed_data.primaryType}'
+```
+
+### Challenge success — what to expect
+
+```json
+{
+  "status": "success",
+  "message": "Signing key challenge created",
+  "data": {
+    "key_id": "skey_…",
+    "address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+    "expires_at": "2026-09-22T08:30:00+00:00",
+    "typed_data": {
+      "primaryType": "RegisterSigningKey",
+      "domain": { "name": "ElementPay Partner Orders", "version": "1", "chainId": 11155111 },
+      "types": {},
+      "message": {}
+    }
+  }
+}
+```
+
+| Field | Use |
+|-------|-----|
+| `data.key_id` | Pass to complete (`skey_…`) |
+| `data.expires_at` | Challenge TTL ~**10 minutes** — re-challenge if expired |
+| `data.typed_data` | Opaque EIP-712 payload — pass **as returned** to the wallet |
+
+<Note>
+EIP-712 domain differs sandbox vs live. Always use the `typed_data` from the environment you are calling. Do not forge or rebuild it.
+</Note>
+
+```bash
+export KEY_ID=$(jq -r '.data.key_id' /tmp/signing-challenge.json)
+# Pass .data.typed_data from /tmp/signing-challenge.json to eth_signTypedData_v4
+```
+
+### Step B — Customer signs in wallet
+
+Customer signs the challenge `typed_data` with the **same** address (MetaMask, WalletConnect, or equivalent → `eth_signTypedData_v4`).
+
+### Step C — Complete enrollment
+
+```bash
+export REGISTER_SIG="0x…"   # signature from the wallet over challenge typed_data
+
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/signing-keys/complete" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key_id": "'"$KEY_ID"'",
+    "signature": "'"$REGISTER_SIG"'"
+  }' | jq '{key_id: .data.key_id, address: .data.address, status: .data.status, next_nonce: .data.next_nonce}'
+```
+
+### Complete success — what to expect
+
+```json
+{
+  "status": "success",
+  "message": "Signing key activated",
+  "data": {
+    "key_id": "skey_…",
+    "address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+    "status": "active",
+    "nonce_high_water": 0,
+    "next_nonce": 1,
+    "activated_at": "2026-09-22T08:21:00+00:00"
+  }
+}
+```
+
+That wallet may now sign accepts for this customer.
+
+### Step D — Optional manage
+
+```bash
+# List keys (active key includes next_nonce)
+curl -sS "$BASE/partner/customers/$CUSTOMER_ID/signing-keys" \
+  -H "X-API-Key: $API_KEY" | jq '.data.keys[] | {key_id, address, status, next_nonce}'
+
+# Revoke a key
+curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/signing-keys/$KEY_ID/revoke" \
+  -H "X-API-Key: $API_KEY" | jq '.data | {key_id, status, revoked_at}'
+```
+
+Lost wallet: start a **new challenge** with the new address (re-challenge replaces the active enrollment path). Or revoke, then challenge again.
+
+## 4. Every order (after a wallet is registered)
+
+Only when **Signed accepts** is on for the API key **and** the customer has an active signing key.
+
+<Steps>
+  <Step title="Quote">
+    `POST /partner/orders/quote` with `customer_id` + normal quote fields
+  </Step>
+  <Step title="Customer signs quote typed_data">
+    Use `data.signing.typed_data` from the quote response (not the register typed_data)
+  </Step>
+  <Step title="Accept with signature">
+    `POST /partner/orders/{quote_id}/accept` with `signed_accept.signature`
+  </Step>
+  <Step title="Settle">
+    Deposit / settlement continues as today — webhooks unchanged
+  </Step>
+</Steps>
+
+### Quote
+
+Same as [Quote and accept](/orders/quote-and-accept). When signed accepts are required and a signer is enrolled, the quote response includes a `signing` block:
+
+```json
+{
+  "status": "success",
+  "message": "Partner order quote created",
+  "data": {
+    "quote_id": "yc_receive_…",
+    "expires_at": "2026-09-22T08:25:00.000Z",
+    "amounts": {},
+    "signing": {
+      "next_nonce": 1,
+      "key_id": "skey_…",
+      "signer_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+      "typed_data": {
+        "primaryType": "AcceptPartnerOrder",
+        "domain": {},
+        "types": {},
+        "message": {}
+      }
+    }
+  }
+}
+```
+
+Pass **`data.signing.typed_data`** to the enrolled wallet. Do not use the register/challenge signature here.
+
+### Accept
+
+```bash
+export QUOTE_ID="yc_receive_…"
+export ACCEPT_SIG="0x…"   # signature over quote signing.typed_data
+
+sleep 2
+
+curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "signed_accept": {
+      "signature": "'"$ACCEPT_SIG"'"
+    }
+  }' | jq '.data | {quote_id, status, order: .order.order_id}'
+```
+
+Accept success shape matches the empty-body path — see [Accept success](/orders/quote-and-accept#accept-success--what-to-expect).
+
+<Warning>
+If accept fails **after** signature verification, request a **new quote**. The nonce is consumed; there is no same-quote resume in v1. Idempotent retry of the **same** `quote_id` (before that failure path) still returns the existing order.
+</Warning>
+
+## 5. Constraints
+
+- **EVM only** in v1 (not Stellar)
+- **Nonce** = replay protection across quotes
+- Never forge `typed_data` — always pass Element Pay’s payload to the wallet
+- Provider-neutral: same flow for every corridor rail
+- Desk / accept-on-behalf fails when **Signed accepts** is on for that key
+
+## 6. Failure cheat-sheet
+
+| Symptom | Likely cause |
+|---------|----------------|
+| Empty-body accept rejected | **Signed accepts** on in Console |
+| Challenge `422` on address | Non-EVM / bad address |
+| Complete: challenge expired | >~10 min; re-challenge |
+| Accept: bad signature / wrong signer | Wrong wallet, forged `typed_data`, or used register sig |
+| Accept after verify still fails | Need a **new** quote |
+
+## Next
+
+- [Quote and accept](/orders/quote-and-accept) — default empty-body flow
+- [Customer KYC](/customers/quickstart) — approve `pcus_…` before enrollment
+- [Webhooks](/webhooks) — settlement events unchanged

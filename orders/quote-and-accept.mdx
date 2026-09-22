@@ -120,6 +120,10 @@ curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
   -d '{}' | jq '.'
 ```
 
+<Note>
+If **Signed accepts** is enabled on your API key in Console, see [Customer-signed accepts](/orders/signed-accepts). Empty-body accept will be rejected.
+</Note>
+
 ### Accept success — what to expect
 
 ```json
@@ -217,4 +221,5 @@ EOF
 ## Next
 
 - [Quickstart](/quickstart) — end-to-end first integration
+- [Customer-signed accepts](/orders/signed-accepts) — optional EIP-712 accept for non-custodial partners
 - [Kenya corridor](/corridors/kenya) · [Webhooks](/webhooks) · [API reference](/api-reference/partner/orders/quote)

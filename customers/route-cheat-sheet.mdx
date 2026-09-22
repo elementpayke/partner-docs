@@ -19,6 +19,17 @@ Auth: `X-API-Key`. Sandbox base: `https://sandbox.elementpay.net/api/v1`.
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
 | `POST` | `/partner/customers/{customer_id}/revoke` | Partner offboard → `suspended`; optional `reason` (audit-only) |
 
+## Signing keys (optional — customer-signed accepts)
+
+Only when Console **Signed accepts** is on for the API key. EVM wallets only. Guide: [Customer-signed accepts](/orders/signed-accepts).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/partner/customers/{customer_id}/signing-keys/challenge` | `{ "address": "0x…" }` → `typed_data` + `key_id` |
+| `POST` | `/partner/customers/{customer_id}/signing-keys/complete` | `{ "key_id", "signature" }` → active `skey_…` |
+| `GET` | `/partner/customers/{customer_id}/signing-keys` | List; active key shows `next_nonce` |
+| `POST` | `/partner/customers/{customer_id}/signing-keys/{key_id}/revoke` | Revoke |
+
 ## Accounts (banking — optional)
 
 Requires vault **`status` approved/active** **and** `products.deposit_account.status=ready`. Otherwise **409**.
