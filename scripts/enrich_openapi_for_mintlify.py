@@ -200,7 +200,7 @@ The quote expires at `data.expires_at`.
     ("post", "/partner/orders/{quote_id}/accept"): """\
 Accept a previously created quote and create the local order.
 
-Send the same customer and payment method payload shape used at quote time (see [Test payloads](/sandbox/test-payloads)).
+Default: empty body `{}`. When Console **Signed accepts** is on for this API key, send `signed_accept.signature` over quote `data.signing.typed_data` — see [Customer-signed accepts](/orders/signed-accepts).
 
 OnRamp: final payment instructions are returned after accept when applicable.
 """,

@@ -4,7 +4,7 @@ title: "Agent quickstart"
 
 # Agent quickstart — Element Pay Partner API
 
-Short path for coding agents and humans. Contract: [`../openapi.yaml`](../openapi.yaml). Standard local fiat ↔ USDC/USDT: [`integration-fiat-stablecoin.md`](integration-fiat-stablecoin.md). Gaps: [`KNOWN_GAPS.md`](KNOWN_GAPS.md).
+Short path for coding agents and humans. Contract: [`../openapi.yaml`](../openapi.yaml). Standard local fiat ↔ USDC/USDT: [`integration-fiat-stablecoin.md`](integration-fiat-stablecoin.md). Gaps: [`KNOWN_GAPS.md`](KNOWN_GAPS.md). Optional customer EIP-712 accept: [`../orders/signed-accepts.mdx`](../orders/signed-accepts.mdx).
 
 ## Install / auth
 
@@ -137,6 +137,8 @@ curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
 export ORDER_ID=$(jq -r '.data.order.order_id' /tmp/accept.json)
 ```
 
+Default is empty-body accept. If Console **Signed accepts** is on for this API key, empty `{}` is rejected — register a wallet once, then submit `signed_accept.signature` over quote `signing.typed_data`. Guide: [`../orders/signed-accepts.mdx`](../orders/signed-accepts.mdx).
+
 **5. Settle** — prefer webhook `order.settled`; backup poll:
 
 ```bash
@@ -237,6 +239,8 @@ Account webhooks: `account.opened`, `account.ready`, `account.credited`, `accoun
 7. Crediting the user ledger on accept/`order.processing` instead of **`order.settled`**
 8. Missing webhook signature check or clock skew / replay beyond 5 minutes
 9. Reusing OffRamp crypto deposit addresses across orders (per-order in production)
+10. Empty-body accept when Console **Signed accepts** is on → use `orders/signed-accepts.mdx`
+11. Forging EIP-712 `typed_data` or reusing the register signature on accept
 
 ## OpenAPI path map
 
@@ -254,6 +258,18 @@ Account webhooks: `account.opened`, `account.ready`, `account.credited`, `accoun
 | Accept | `POST` | `/partner/orders/{quote_id}/accept` |
 | Poll order | `GET` | `/partner/orders/{order_id}` |
 | Indicative FX (UI only) | `GET` | `/partner/rates/indicative` |
+
+### Customer-signed accepts (optional — Console **Signed accepts** on)
+
+| Step | Method | Path |
+|------|--------|------|
+| Challenge | `POST` | `/partner/customers/{customer_id}/signing-keys/challenge` |
+| Complete | `POST` | `/partner/customers/{customer_id}/signing-keys/complete` |
+| List | `GET` | `/partner/customers/{customer_id}/signing-keys` |
+| Revoke | `POST` | `/partner/customers/{customer_id}/signing-keys/{key_id}/revoke` |
+| Accept | `POST` | `/partner/orders/{quote_id}/accept` with `signed_accept.signature` |
+
+Guide: [`../orders/signed-accepts.mdx`](../orders/signed-accepts.mdx). Enablement is Console-only (per API key); not via partner `X-API-Key`.
 
 ### Banking (after `deposit_account.status=ready`)
 

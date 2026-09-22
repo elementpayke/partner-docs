@@ -9,6 +9,7 @@ Banking (IBAN / ledger) is optional and comes later — see [Accounts](/customer
 - Sandbox API key (`is_test_…`) from Element Pay
 - `webhook_url` on that key (recommended)
 - `curl` and `jq`
+- Non-custodial partners who need the customer wallet to authorize accept: enable **Signed accepts** in Console and follow [Customer-signed accepts](/orders/signed-accepts) (this quickstart uses empty-body accept)
 
 ## 1. Environment
 
@@ -134,6 +135,8 @@ curl -sS -X POST "$BASE/partner/orders/$QUOTE_ID/accept" \
   -d '{}' | jq '.data | {quote_id, status, order: .order.order_id, payment_instructions}'
 ```
 
+If **Signed accepts** is on for this API key, empty `{}` is rejected — use [Customer-signed accepts](/orders/signed-accepts).
+
 ## 6. Webhooks
 
 Configure `webhook_url` on your API key:
@@ -157,5 +160,6 @@ Sandbox inline examples: [Quote and accept — deprecated](/orders/quote-and-acc
 
 - [Customer KYC](/customers/quickstart) — business KYB, revoke, ref lookup
 - [Quote and accept](/orders/quote-and-accept) — OffRamp, errors, response fields
+- [Customer-signed accepts](/orders/signed-accepts) — optional EIP-712 accept (non-custodial)
 - [Sandbox success & failure](/sandbox/success-failure) — sandbox phone/account triggers
 - [Banking / accounts](/customers/accounts) — optional, after `deposit_account.status=ready`

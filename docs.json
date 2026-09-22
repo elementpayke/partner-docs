@@ -39,6 +39,7 @@
               "docs/KNOWN_GAPS",
               "quickstart",
               "orders/quote-and-accept",
+              "orders/signed-accepts",
               "authentication",
               "webhooks",
               "errors"

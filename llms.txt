@@ -16,6 +16,7 @@ Read these paths **in order** before implementing. Prefer Markdown + OpenAPI ove
 - `errors.mdx` — envelope + HTTP statuses
 - `quickstart.mdx` — KYC → KE OnRamp quote → accept
 - `orders/quote-and-accept.mdx` — binding quote fields and examples
+- `orders/signed-accepts.mdx` — optional customer EIP-712 accept (Console **Signed accepts**; register wallet → sign quote → accept)
 - `corridors/kenya.mdx` — KES momo/bank discovery + sandbox phones
 - `sandbox/success-failure.mdx` — **sandbox-only** success/failure triggers
 - `docs/KNOWN_GAPS.md` — conflicts, TODOs, undocumented surfaces

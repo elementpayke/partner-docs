@@ -1747,7 +1747,7 @@ paths:
       tags:
       - partner
       summary: Accept a partner order quote
-      description: Accept a previously created quote and create the local order.
+      description: Accept a previously created quote and create the local order. When Console **Signed accepts** is on for the API key, send ``signed_accept.signature`` over the quote ``signing.typed_data`` instead of an empty body.
       operationId: partner_order_accept_partner_orders__quote_id__accept_post
       security:
       - APIKeyHeader: []
@@ -1771,8 +1771,14 @@ paths:
             examples:
               empty:
                 summary: Accept quote
-                description: Most callers can send an empty object; provider is inferred from quote_id.
+                description: Most callers can send an empty object; provider is inferred from quote_id. Rejected when Console Signed accepts is on for this API key.
                 value: {}
+              signed_accept:
+                summary: Accept with customer EIP-712 signature
+                description: Required when Console Signed accepts is enabled. Signature over quote response signing.typed_data.
+                value:
+                  signed_accept:
+                    signature: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
               provider_assertion:
                 summary: Accept quote with provider assertion
                 value:
@@ -1881,7 +1887,7 @@ paths:
         content: |-
           Accept a previously created quote and create the local order.
 
-          Send the same customer and payment method payload shape used at quote time (see [Test payloads](/sandbox/test-payloads)).
+          Default: empty body `{}`. When Console **Signed accepts** is on for this API key, send `signed_accept.signature` over quote `data.signing.typed_data` — see [Customer-signed accepts](/orders/signed-accepts).
 
           OnRamp: final payment instructions are returned after accept when applicable.
   /partner/customers/requirements:
@@ -3183,6 +3189,292 @@ paths:
                 message: Validation error
                 data:
                   field: reason
+  /partner/customers/{customer_id}/signing-keys:
+    get:
+      tags:
+      - partner-customers
+      summary: List signing keys for a customer
+      description: |-
+        List EIP-712 signing keys enrolled for a vault customer. Active keys include
+        ``next_nonce`` for accept replay protection. Used with Console **Signed accepts**.
+        See the Customer-signed accepts guide.
+      operationId: partner_customer_signing_keys_list
+      security:
+      - APIKeyHeader: []
+      parameters:
+      - name: customer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: Public customer id returned on create
+          examples:
+          - pcus_a1b2c3d4e5f6
+          title: Customer Id
+          example: pcus_a1b2c3d4e5f6
+        description: Public customer id returned on create
+        example: pcus_a1b2c3d4e5f6
+      responses:
+        '200':
+          description: Signing keys listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerSuccessEnvelope'
+              example:
+                status: success
+                message: Signing keys
+                data:
+                  keys:
+                  - key_id: skey_a1b2c3d4e5f6
+                    address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+                    status: active
+                    nonce_high_water: 0
+                    next_nonce: 1
+                    activated_at: '2026-09-22T08:21:00+00:00'
+                    revoked_at: null
+                    created_at: '2026-09-22T08:20:00+00:00'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Customer not found
+                data:
+                  field: customer_id
+  /partner/customers/{customer_id}/signing-keys/challenge:
+    post:
+      tags:
+      - partner-customers
+      summary: Start signing-key enrollment challenge
+      description: |-
+        Start EIP-712 enrollment for an EVM wallet (``0x`` + 40 hex). Returns
+        ``key_id``, ``expires_at`` (~10 minutes), and ``typed_data`` (primaryType
+        ``RegisterSigningKey``). Pass **our** ``typed_data`` to the wallet — do not
+        rebuild it. Domain differs sandbox vs live.
+      operationId: partner_customer_signing_keys_challenge
+      security:
+      - APIKeyHeader: []
+      parameters:
+      - name: customer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: Public customer id returned on create
+          examples:
+          - pcus_a1b2c3d4e5f6
+          title: Customer Id
+          example: pcus_a1b2c3d4e5f6
+        description: Public customer id returned on create
+        example: pcus_a1b2c3d4e5f6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigningKeyChallengeRequest'
+            example:
+              address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+      responses:
+        '201':
+          description: Signing key challenge created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerSuccessEnvelope'
+              example:
+                status: success
+                message: Signing key challenge created
+                data:
+                  key_id: skey_a1b2c3d4e5f6
+                  address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+                  expires_at: '2026-09-22T08:30:00+00:00'
+                  typed_data:
+                    primaryType: RegisterSigningKey
+                    domain:
+                      name: ElementPay Partner Orders
+                      version: '1'
+                      chainId: 11155111
+                      verifyingContract: '0x0000000000000000000000000000000000000000'
+                    types:
+                      RegisterSigningKey:
+                      - name: customerId
+                        type: string
+                      - name: address
+                        type: address
+                      - name: challenge
+                        type: string
+                      - name: expiresAt
+                        type: uint256
+                    message:
+                      customerId: pcus_a1b2c3d4e5f6
+                      address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+                      challenge: abcd1234ef567890abcd1234ef567890
+                      expiresAt: 1727094600
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Customer not found
+                data:
+                  field: customer_id
+        '422':
+          description: Invalid address (non-EVM or malformed)
+          content:
+            application/json:
+              example:
+                status: error
+                message: Only EVM signing keys are supported
+                data:
+                  field: address
+  /partner/customers/{customer_id}/signing-keys/complete:
+    post:
+      tags:
+      - partner-customers
+      summary: Complete signing-key enrollment
+      description: |-
+        Submit the customer's EIP-712 signature over the challenge ``typed_data``.
+        On success the key becomes ``active`` and may sign quote accepts for this customer.
+      operationId: partner_customer_signing_keys_complete
+      security:
+      - APIKeyHeader: []
+      parameters:
+      - name: customer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: Public customer id returned on create
+          examples:
+          - pcus_a1b2c3d4e5f6
+          title: Customer Id
+          example: pcus_a1b2c3d4e5f6
+        description: Public customer id returned on create
+        example: pcus_a1b2c3d4e5f6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigningKeyCompleteRequest'
+            example:
+              key_id: skey_a1b2c3d4e5f6
+              signature: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+      responses:
+        '200':
+          description: Signing key activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerSuccessEnvelope'
+              example:
+                status: success
+                message: Signing key activated
+                data:
+                  key_id: skey_a1b2c3d4e5f6
+                  address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+                  status: active
+                  nonce_high_water: 0
+                  next_nonce: 1
+                  activated_at: '2026-09-22T08:21:00+00:00'
+                  revoked_at: null
+                  created_at: '2026-09-22T08:20:00+00:00'
+        '404':
+          description: Challenge not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Signing key challenge not found
+                data:
+                  field: key_id
+        '422':
+          description: Challenge expired or invalid signature
+          content:
+            application/json:
+              examples:
+                expired:
+                  summary: Challenge expired
+                  value:
+                    status: error
+                    message: Signing key challenge expired
+                    data:
+                      field: key_id
+                bad_signature:
+                  summary: Invalid signature
+                  value:
+                    status: error
+                    message: Invalid signature
+                    data:
+                      field: signature
+  /partner/customers/{customer_id}/signing-keys/{key_id}/revoke:
+    post:
+      tags:
+      - partner-customers
+      summary: Revoke a signing key
+      description: |-
+        Revoke an enrolled signing key. Idempotent when already revoked. Start a new
+        challenge with a new address to replace a lost wallet.
+      operationId: partner_customer_signing_keys_revoke
+      security:
+      - APIKeyHeader: []
+      parameters:
+      - name: customer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: Public customer id returned on create
+          examples:
+          - pcus_a1b2c3d4e5f6
+          title: Customer Id
+          example: pcus_a1b2c3d4e5f6
+        description: Public customer id returned on create
+        example: pcus_a1b2c3d4e5f6
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: Public signing key id (skey_…)
+          examples:
+          - skey_a1b2c3d4e5f6
+          title: Key Id
+          example: skey_a1b2c3d4e5f6
+        description: Public signing key id (skey_…)
+        example: skey_a1b2c3d4e5f6
+      responses:
+        '200':
+          description: Signing key revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerSuccessEnvelope'
+              example:
+                status: success
+                message: Signing key revoked
+                data:
+                  key_id: skey_a1b2c3d4e5f6
+                  address: '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+                  status: revoked
+                  nonce_high_water: 0
+                  next_nonce: 1
+                  activated_at: '2026-09-22T08:21:00+00:00'
+                  revoked_at: '2026-09-22T09:00:00+00:00'
+                  created_at: '2026-09-22T08:20:00+00:00'
+        '404':
+          description: Signing key or customer not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Signing key not found
+                data:
+                  field: key_id
   /partner/customers/{customer_id}/deposit-account/retry:
     post:
       tags:
@@ -5457,13 +5749,78 @@ components:
           title: Payment Method
           description: |-
             Required for international bank OffRamp: form fields from the corridor's ``form_schema`` (returned in the quote response). Keys match the international bank FormSchema properties e.g. ``BankDetails``, ``AccountHolderName``, ``PaymentPurpose``.
+        signed_accept:
+          anyOf:
+          - $ref: '#/components/schemas/SignedAcceptPayload'
+          - type: 'null'
+          title: Signed Accept
+          description: |-
+            Required when Console **Signed accepts** is enabled for this API key.
+            Include ``signature`` over the EIP-712 ``typed_data`` returned on quote under ``data.signing``.
       additionalProperties: false
       type: object
       title: PartnerOrderAcceptRequest
-      description: Accept a partner quote. Empty body is supported when quote_id identifies the route.
+      description: |-
+        Accept a partner quote. Empty body is supported when quote_id identifies the route
+        and Signed accepts is off. When Signed accepts is on, send ``signed_accept.signature``.
       examples:
       - {}
+      - signed_accept:
+          signature: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
       - rail: local_fiat
+    SigningKeyChallengeRequest:
+      type: object
+      required:
+      - address
+      additionalProperties: false
+      properties:
+        address:
+          type: string
+          minLength: 42
+          maxLength: 42
+          title: Address
+          description: EVM address (0x + 40 hex) to register as the customer's signing key.
+          examples:
+          - '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe'
+      title: SigningKeyChallengeRequest
+    SigningKeyCompleteRequest:
+      type: object
+      required:
+      - key_id
+      - signature
+      additionalProperties: false
+      properties:
+        key_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+          title: Key Id
+          description: Id returned by challenge (skey_…)
+        signature:
+          type: string
+          minLength: 130
+          maxLength: 200
+          title: Signature
+          description: EIP-712 signature over the challenge typed_data
+      title: SigningKeyCompleteRequest
+    SignedAcceptPayload:
+      type: object
+      required:
+      - signature
+      additionalProperties: false
+      properties:
+        signature:
+          type: string
+          title: Signature
+          description: EIP-712 signature over quote ``data.signing.typed_data`` from the enrolled wallet
+        nonce:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Nonce
+          description: Optional; server uses the nonce bound on the quote when omitted
+      title: SignedAcceptPayload
+      description: Customer-signed accept envelope when Console Signed accepts is enabled.
     PartnerOrderQuoteRequest:
       properties:
         provider:
