@@ -47,6 +47,7 @@ Submit with an incomplete package:
 | Situation | Action |
 |-----------|--------|
 | `missing[]` on submit | `PATCH` profile / upload documents per [Customer KYC](/customers/quickstart). Business: check **`field_shapes.officers`** on requirements and indexed paths like `profile.officers[0].…` |
+| `Too many documents for this category` | Individual caps (`address` max 1, `identity` max 2). **`PUT …/documents/{document_id}`** to replace in place — do not re-`POST` the same category |
 | Quote with `customer_id` not approved | Wait for `customer.approved` or poll GET customer |
 | `deposit_account` not ready on account APIs | **409** — banking gate; KYC may already be done |
 

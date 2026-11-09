@@ -3862,7 +3862,7 @@
           "partner-customers"
         ],
         "summary": "Upload a customer document",
-        "description": "Upload a base64 document into the vault (off-host store + DB metadata). A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
+        "description": "Upload a base64 document into the vault (off-host store + DB metadata). Individuals are capped per category (``identity`` max 2, ``address`` max 1) \u2014 re-POST when at the cap returns 400; use ``PUT \u2026/documents/{document_id}`` to replace. A correction after failed deposit-account KYC invalidates prior approval and returns the customer to ``incomplete`` for resubmission and re-review.",
         "operationId": "partner_customer_upload_document_partner_customers__customer_id__documents_post",
         "security": [
           {
@@ -4049,6 +4049,612 @@
                   "status": "error",
                   "message": "Unauthorized",
                   "data": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Too many documents for this category (individual caps), or invalid content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Too many documents for this category",
+                  "data": {
+                    "field": "category",
+                    "category": "address",
+                    "max": 1
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Customer can no longer be modified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Customer can no longer be modified",
+                  "data": {
+                    "status": "approved"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/partner/customers/{customer_id}/documents/{document_id}": {
+      "put": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Replace a customer document",
+        "description": "Overwrite file bytes for an existing vault document (same ``id`` and ``category``). Use this to correct a document without creating a second slot \u2014 individuals are capped (e.g. ``address`` max 1; re-POST of the same category returns 400). Editable while ``incomplete`` or ``rejected``, or after failed deposit-account KYC (approved/active + deposit_account failed \u2192 demoted to incomplete). Approved + deposit_account ready stays locked (409); ops/admin only.",
+        "operationId": "partner_customer_replace_document_partner_customers__customer_id__documents__document_id__put",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Public document id from GET customer or upload response",
+              "examples": [
+                "pdoc_a1b2c3d4e5f6"
+              ],
+              "title": "Document Id",
+              "example": "pdoc_a1b2c3d4e5f6"
+            },
+            "description": "Public document id from GET customer or upload response (`pdoc_*`)",
+            "example": "pdoc_a1b2c3d4e5f6"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCustomerDocumentReplaceRequest"
+              },
+              "examples": {
+                "default": {
+                  "summary": "Replace proof of address",
+                  "value": {
+                    "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
+                    "content_type": "application/pdf",
+                    "file_name": "utility_bill.pdf"
+                  }
+                }
+              },
+              "example": {
+                "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
+                "content_type": "application/pdf",
+                "file_name": "utility_bill.pdf"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document bytes replaced; same document id and category.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerDocumentReplaceSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Document replaced",
+                  "data": {
+                    "document": {
+                      "id": "pdoc_a1b2c3d4e5f6",
+                      "category": "address",
+                      "content_type": "application/pdf",
+                      "created_at": "2026-08-01T12:00:00+00:00"
+                    },
+                    "customer": {
+                      "id": "pcus_a1b2c3d4e5f6",
+                      "partner_customer_ref": "cust-ke-001",
+                      "type": "individual",
+                      "status": "incomplete",
+                      "profile": {
+                        "first_name": "Jane",
+                        "last_name": "Doe",
+                        "email": "jane@example.com",
+                        "date_of_birth": "1990-01-15",
+                        "country_of_residence": "GB",
+                        "phone": "+447700900123",
+                        "gender": "f",
+                        "address": {
+                          "line1": "1 Example Street",
+                          "city": "London",
+                          "country": "GB",
+                          "postal_code": "E1 6AN"
+                        }
+                      },
+                      "documents": [
+                        {
+                          "id": "pdoc_a1b2c3d4e5f6",
+                          "category": "address",
+                          "content_type": "application/pdf",
+                          "created_at": "2026-08-01T12:00:00+00:00"
+                        }
+                      ],
+                      "products": {
+                        "deposit_account": {
+                          "status": "none"
+                        }
+                      },
+                      "missing": [],
+                      "created_at": "2026-08-01T11:55:00+00:00",
+                      "updated_at": "2026-08-01T12:05:00+00:00",
+                      "submitted_at": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid content_type or content_base64",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "content_type is required",
+                  "data": {
+                    "field": "content_type",
+                    "allowed": [
+                      "application/pdf",
+                      "image/jpeg",
+                      "image/jpg",
+                      "image/png"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Document or customer not found for this API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Document not found",
+                  "data": null
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Customer can no longer be modified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Customer can no longer be modified",
+                  "data": {
+                    "status": "approved"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Validation error",
+                  "data": null
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "partner-customers"
+        ],
+        "summary": "Delete a customer document",
+        "description": "Remove a document from an editable package. Prefer ``PUT \u2026/documents/{document_id}`` when replacing a file in place. Same mutability as upload/replace: drafts and rejected; approved only after failed deposit-account KYC.",
+        "operationId": "partner_customer_delete_document_partner_customers__customer_id__documents__document_id__delete",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Public customer id returned on create",
+              "examples": [
+                "pcus_a1b2c3d4e5f6"
+              ],
+              "title": "Customer Id",
+              "example": "pcus_a1b2c3d4e5f6"
+            },
+            "description": "Public customer id returned on create",
+            "example": "pcus_a1b2c3d4e5f6"
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Public document id from GET customer or upload response",
+              "examples": [
+                "pdoc_a1b2c3d4e5f6"
+              ],
+              "title": "Document Id",
+              "example": "pdoc_a1b2c3d4e5f6"
+            },
+            "description": "Public document id from GET customer or upload response (`pdoc_*`)",
+            "example": "pdoc_a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document deleted; returns deleted id and updated customer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCustomerDocumentDeleteSuccessResponse"
+                },
+                "example": {
+                  "status": "success",
+                  "message": "Document deleted",
+                  "data": {
+                    "deleted": "pdoc_a1b2c3d4e5f6",
+                    "customer": {
+                      "id": "pcus_a1b2c3d4e5f6",
+                      "partner_customer_ref": "cust-ke-001",
+                      "type": "individual",
+                      "status": "incomplete",
+                      "profile": {
+                        "first_name": "Jane",
+                        "last_name": "Doe"
+                      },
+                      "documents": [],
+                      "products": {
+                        "deposit_account": {
+                          "status": "none"
+                        }
+                      },
+                      "missing": [
+                        "document.address"
+                      ],
+                      "created_at": "2026-08-01T11:55:00+00:00",
+                      "updated_at": "2026-08-01T12:05:00+00:00",
+                      "submitted_at": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Unauthorized",
+                  "data": null
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Document or customer not found for this API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Document not found",
+                  "data": null
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Customer can no longer be modified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "message": "Customer can no longer be modified",
+                  "data": {
+                    "status": "approved"
+                  }
                 }
               }
             }
@@ -10227,6 +10833,128 @@
         },
         "title": "SignedAcceptPayload",
         "description": "Customer-signed accept envelope when Console Signed accepts is enabled."
+      },
+      "PartnerCustomerDocumentReplaceRequest": {
+        "properties": {
+          "content_base64": {
+            "type": "string",
+            "maxLength": 12000000,
+            "minLength": 1,
+            "title": "Content Base64",
+            "description": "Base64-encoded file bytes (max ~8 MiB decoded).",
+            "example": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo="
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type",
+            "description": "MIME type. Required: image/jpeg, image/png, or application/pdf.",
+            "examples": [
+              "image/jpeg",
+              "application/pdf"
+            ],
+            "example": "application/pdf"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name",
+            "description": "Optional original filename for the partner only; not stored in object keys.",
+            "example": "utility_bill.pdf"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content_base64"
+        ],
+        "title": "PartnerCustomerDocumentReplaceRequest",
+        "description": "Replace bytes for an existing vault document (same id + category).",
+        "example": {
+          "content_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PmVuZG9iagoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMC9LaWRzW10+PmVuZG9iagp4cmVmCjAgMwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMy9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjEyMQolJUVPRgo=",
+          "content_type": "application/pdf",
+          "file_name": "utility_bill.pdf"
+        }
+      },
+      "PartnerCustomerDocumentReplaceSuccessResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "data"
+        ],
+        "title": "PartnerCustomerDocumentReplaceSuccessResponse",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ],
+            "example": "success"
+          },
+          "message": {
+            "type": "string",
+            "example": "Document replaced"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PartnerCustomerDocumentUploadData"
+          }
+        }
+      },
+      "PartnerCustomerDocumentDeleteData": {
+        "type": "object",
+        "title": "PartnerCustomerDocumentDeleteData",
+        "required": [
+          "deleted",
+          "customer"
+        ],
+        "properties": {
+          "deleted": {
+            "type": "string",
+            "description": "Deleted document public id",
+            "example": "pdoc_a1b2c3d4e5f6"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/PartnerCustomerVaultRow"
+          }
+        }
+      },
+      "PartnerCustomerDocumentDeleteSuccessResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "data"
+        ],
+        "title": "PartnerCustomerDocumentDeleteSuccessResponse",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ],
+            "example": "success"
+          },
+          "message": {
+            "type": "string",
+            "example": "Document deleted"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PartnerCustomerDocumentDeleteData"
+          }
+        }
       }
     },
     "securitySchemes": {
