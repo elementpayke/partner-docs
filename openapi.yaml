@@ -6025,7 +6025,7 @@ components:
           description: >-
             Customer return URL after completing a hosted pay-in (http or https).
             Required on quote for OnRamp in CI and ZA; optional on other corridors.
-            After accept, show payment_instructions.payment_link when present.
+            After accept, show data.accepted.payment_instructions.payment_link when present.
       type: object
       required:
       - order_type
@@ -6593,9 +6593,13 @@ components:
           type: string
           description: 'OffRamp: refund wallet if payout fails.'
           example: '0x3333333333333333333333333333333333333333'
+        redirect_url:
+          type: string
+          description: Customer return URL after hosted pay-in (http or https). Required on OnRamp quote for CI and ZA; optional elsewhere.
+          example: https://your-app.example/orders/return
       title: PartnerOrderQuoteRequestTryIt
       description: |-
-        Quote body for Mintlify Try it. Includes customer_id **or** inline customer, asset, and payment_method only. Not shown here (still accepted on live API if needed): provider, channel_id, channel_type, sequence_id, destination, source, sender, recipient, rail, token top-level alias, crypto_currency/crypto_network hints.
+        Quote body for Mintlify Try it. Includes customer_id **or** inline customer, asset, payment_method, and redirect_url (CI/ZA OnRamp). Not shown here (still accepted on live API if needed): provider, channel_id, channel_type, sequence_id, destination, source, sender, recipient, rail, token top-level alias, crypto_currency/crypto_network hints.
       example:
         order_type: OnRamp
         currency: KES

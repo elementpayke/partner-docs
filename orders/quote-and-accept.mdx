@@ -140,12 +140,18 @@ If **Signed accepts** is enabled on your API key in Console, see [Customer-signe
       "amount_fiat": 800,
       "amount_crypto": 5.94999,
       "currency": "KES"
+    },
+    "accepted": {
+      "payment_instructions": {
+        "type": "momo",
+        "source": { "accountNumber": "+2541111111111" }
+      }
     }
   }
 }
 ```
 
-OnRamp: read **`data.payment_instructions`** (when present) for what the customer must do on the fiat rail. OffRamp live: **`crypto_deposit`** tells the customer where to send stablecoin.
+OnRamp: read **`data.accepted.payment_instructions`** (when present) for what the customer must do on the fiat rail — e.g. momo STK, bank transfer details, or **`payment_link`** for hosted pay-in (CI/ZA). OffRamp live: look for **`type`: `crypto_deposit`** in the same object for where to send stablecoin.
 
 ## Hosted pay-in (CI, ZA OnRamp)
 
