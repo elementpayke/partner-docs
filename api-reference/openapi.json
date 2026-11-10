@@ -8464,7 +8464,8 @@
                 "type": "null"
               }
             ],
-            "title": "Redirect Url"
+            "title": "Redirect Url",
+            "description": "Customer return URL after completing a hosted pay-in (http or https). Required on quote for OnRamp in CI and ZA; optional on other corridors. After accept, show payment_instructions.payment_link when present."
           }
         },
         "type": "object",

@@ -24,6 +24,10 @@ Always run discovery on **your** environment — `network_id` UUIDs are not port
 
 Provider lists in catalog **differ by direction** — filter with `?order_type=OnRamp` or `OffRamp`.
 
+## Hosted pay-in return URL (CI, ZA OnRamp)
+
+For **Côte d’Ivoire** and **South Africa** OnRamp, include **`redirect_url`** on quote (required). After accept, use **`payment_instructions.payment_link`** when the response includes it. Details: [Quote and accept — hosted pay-in](/orders/quote-and-accept#hosted-pay-in-ci-za-onramp).
+
 ## Payment rails
 
 ### Mobile money

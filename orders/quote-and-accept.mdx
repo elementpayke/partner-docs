@@ -147,6 +147,32 @@ If **Signed accepts** is enabled on your API key in Console, see [Customer-signe
 
 OnRamp: read **`data.payment_instructions`** (when present) for what the customer must do on the fiat rail. OffRamp live: **`crypto_deposit`** tells the customer where to send stablecoin.
 
+## Hosted pay-in (CI, ZA OnRamp)
+
+Some OnRamp corridors return a **hosted payment page** instead of static bank-only instructions. For **Côte d’Ivoire (`CI`)** and **South Africa (`ZA`)**:
+
+1. Include **`redirect_url`** on **`POST /partner/orders/quote`** — an `http://` or `https://` URL where the customer should land after they finish payment on the hosted page (your app deep link or return route).
+2. After **accept**, read **`data.accepted.payment_instructions`**. When **`payment_link`** is present, open it for the customer (in-app browser / WebView). Do not rely on manual bank transfer alone.
+3. **`GET /partner/order-requirements`** for `country=CI` or `ZA` and `order_type=OnRamp` lists `redirect_url` under required onramp fields.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "country": "CI",
+    "currency": "XOF",
+    "local_amount": 5000,
+    "redirect_url": "https://your-app.example/orders/return",
+    "customer_id": "'"$CUSTOMER_ID"'",
+    "asset": { "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913", "currency": "USDC", "network": "BASE" },
+    "payment_method": { "type": "mobile_money", "phone_number": "+2251111111111", "network_id": "FROM_CATALOG" },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }'
+```
+
+Missing or invalid `redirect_url` returns **422** with `data.field: redirect_url`.
+
 ## Request checklist
 
 | Field | OnRamp momo | OffRamp momo |
@@ -160,6 +186,7 @@ OnRamp: read **`data.payment_instructions`** (when present) for what the custome
 | `payment_method.phone_number` | E.164 MSISDN | payout MSISDN |
 | `payment_method.network_id` | from catalog | from catalog (same `order_type`) |
 | `wallet_address` | **required** (receive crypto) | omit |
+| `redirect_url` | **required** for **CI** and **ZA** OnRamp; optional elsewhere | omit |
 | `refund_address` | omit | **required** (OffRamp) |
 
 Field hints per corridor: `GET /partner/order-requirements`. Copy-paste payloads: [Sandbox test payloads](/sandbox/test-payloads).
