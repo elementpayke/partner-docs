@@ -1,0 +1,108 @@
+# Côte d'Ivoire (CI / XOF)
+
+CI OnRamp is **mobile money** (no bank OnRamp in catalog today). **`redirect_url`** is **required** on quote.
+
+## Discovery
+
+Use **`providers[].id`** from catalog as `payment_method.network_id` (not `networks[0].id` — momo providers expose `id` on each provider row).
+
+```bash
+curl -sS "$BASE/partner/catalog?country=CI&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" \
+  | jq '.data.onramp.countries.CI.payment_methods.mobile_money.providers[] | {name, id, min_amount, max_amount}'
+
+curl -sS "$BASE/partner/order-requirements?country=CI&currency=XOF&order_type=OnRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data.order_requirements.onramp.required'
+```
+
+## Quote → accept
+
+Full flow: [Quote and accept](/orders/quote-and-accept#hosted-pay-in-ci-za-onramp). Minimum fields:
+
+- `country`: `CI`, `currency`: `XOF`, `order_type`: `OnRamp`
+- `redirect_url`: `https://…` return route after hosted checkout (when a link is returned)
+- `customer_id` from an **approved** vault customer with **CI** profile and a **first + last** legal name (two or more words)
+- `payment_method.type`: `mobile_money`, `phone_number` (E.164), `network_id` from catalog
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "country": "CI",
+    "currency": "XOF",
+    "local_amount": 5000,
+    "redirect_url": "https://your-app.example/payments/return",
+    "customer_id": "'"$CUSTOMER_ID"'",
+    "asset": {
+      "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+      "currency": "USDC",
+      "network": "BASE"
+    },
+    "payment_method": {
+      "type": "mobile_money",
+      "phone_number": "+2251111111111",
+      "network_id": "FROM_CATALOG_ORANGE_OR_WAVE",
+      "account_name": "Jane Doe"
+    },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }'
+```
+
+Accept within a few minutes: `POST /partner/orders/{quote_id}/accept` with `{}`.
+
+## Payment instructions after accept (by operator)
+
+What you show the end-user depends on **`data.accepted.payment_instructions`** — not every operator returns a hosted link.
+
+| Operator (catalog name) | Typical `payment_instructions` | What the customer does |
+|-------------------------|--------------------------------|-------------------------|
+| **Orange** | `payment_link` present (`type` may be `bank` on the wire) | Open **`payment_link`** (WebView / browser). After payment, they return via your **`redirect_url`**. |
+| **Wave**, **Moov**, **MTN** | `type`: `momo`, `source.networkName` + `source.accountNumber` | Pay inside the **operator wallet app** on that MSISDN (STK / in-app approval). **No** payment link. |
+
+<Tip>
+Branch UI logic on **`payment_instructions.payment_link`** first. If set → hosted checkout. Else if `type === momo` → show operator name + phone and in-app payment copy.
+</Tip>
+
+### Orange (hosted link example)
+
+After accept, you may see:
+
+```json
+{
+  "type": "bank",
+  "payment_link": "https://…",
+  "bank_info": { "paymentLink": "https://…" }
+}
+```
+
+Treat this as **hosted pay-in**, not a manual EFT: open `payment_link` for the customer.
+
+### Wave / Moov / MTN (momo example)
+
+```json
+{
+  "type": "momo",
+  "source": {
+    "accountNumber": "+225…",
+    "networkName": "Wave",
+    "networkId": "…"
+  }
+}
+```
+
+## Common errors
+
+| Message | Fix |
+|---------|-----|
+| `Customer name must include first and last name` | Vault / inline `customer.name` needs two+ words |
+| `Customer name is invalid for live transactions` | Use a realistic full name on **live** keys; fix vault profile |
+| Missing `redirect_url` | Required for CI OnRamp — **422** |
+| Accept **409** + `retry_accept: true` | Accept again soon with the same `quote_id` (e.g. after upstream timeout) |
+| Quote expired | New quote; do not reuse old `quote_id` |
+
+## Customer copy (short)
+
+**Orange:** “Tap Pay to open the secure payment page. When you’re done, you’ll return to the app.”
+
+**Wave / Moov / MTN:** “Approve the payment in your {operator} app using the phone number on this screen.”
