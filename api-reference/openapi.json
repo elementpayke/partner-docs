@@ -3023,7 +3023,7 @@
                 },
                 "business": {
                   "summary": "Business \u2014 KYB with officer",
-                  "description": "Each profile.officers[] entry needs person fields, identity_document (type, number, issuing_country), and address. US: include tax_id.",
+                  "description": "Each profile.officers[] entry needs person fields, is_control_person, is_beneficial_owner, identity_document (type, number, issuing_country), and address. US: include tax_id.",
                   "value": {
                     "partner_customer_ref": "partner-biz-001",
                     "type": "business",
@@ -3067,6 +3067,8 @@
                           "date_of_birth": "1990-01-15",
                           "email": "ada@acme.example",
                           "nationality": "US",
+                          "is_control_person": true,
+                          "is_beneficial_owner": true,
                           "identity_document": {
                             "type": "passport",
                             "number": "A1234567",
@@ -9533,7 +9535,7 @@
               },
               "profile": {
                 "type": "object",
-                "description": "Business profile including complete profile.officers[] (person + identity_document + address per officer).",
+                "description": "Business profile including complete profile.officers[] (person + is_control_person + is_beneficial_owner + identity_document + address per officer).",
                 "example": {
                   "legal_name": "Acme Payments Ltd",
                   "email": "ops@acme.example",
@@ -9574,6 +9576,8 @@
                       "date_of_birth": "1990-01-15",
                       "email": "ada@acme.example",
                       "nationality": "US",
+                      "is_control_person": true,
+                      "is_beneficial_owner": true,
                       "identity_document": {
                         "type": "passport",
                         "number": "A1234567",
@@ -9635,6 +9639,8 @@
                     "date_of_birth": "1990-01-15",
                     "email": "ada@acme.example",
                     "nationality": "US",
+                    "is_control_person": true,
+                    "is_beneficial_owner": true,
                     "identity_document": {
                       "type": "passport",
                       "number": "A1234567",

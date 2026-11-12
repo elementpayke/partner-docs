@@ -96,8 +96,11 @@ Collect the returned `required_fields`, `required_documents`, and any `condition
 | Area | Fields |
 |------|--------|
 | Person | `first_name`, `last_name`, `date_of_birth`, `email`, `nationality`, `role` or `job_title` |
+| KYB roles | `is_control_person`, `is_beneficial_owner` (required booleans — omit either → `missing[]` / submit **422**) |
 | Identity | `identity_document.type`, `identity_document.number`, `identity_document.issuing_country` |
 | Address | `address.line1`, `address.city`, `address.country` |
+
+These role flags live under **`field_shapes.officers.item_shape`** on requirements. Set each to `true` or `false` for every officer (at least one control person and one beneficial owner is typical when a single officer fills both).
 
 Uploading officer **`identity`** and **`address`** document files is required, but **does not replace** the ID number and address in profile JSON. **`profile.industry`** must be plain language (e.g. `Payment services`, `fintech`) — not a numeric category code like `7372`.
 
@@ -142,7 +145,7 @@ curl -sS -X POST "$BASE/partner/customers" \
 
 ### Business
 
-Illustrative shape — treat requirements and **`missing[]`** as source of truth. US-incorporated businesses also need `tax_id` (EIN). Each officer must be complete in profile JSON before submit (see table in [Requirements](#1-requirements)). This is **not** a full UBO/shareholder program — at least one complete officer is required; if you send multiple officers, validate each.
+Illustrative shape — treat requirements and **`missing[]`** as source of truth. US-incorporated businesses also need `tax_id` (EIN). Each officer must be complete in profile JSON before submit (see table in [Requirements](#1-requirements)), including **`is_control_person`** and **`is_beneficial_owner`**. This is **not** a full UBO/shareholder cap table — at least one complete officer is required; if you send multiple officers, validate each.
 
 **Quote / accept note:** when you pass `customer_id` on quote for a **business**, we hydrate **company** fields only (`legal_name` → `business_name`, `registration_number` → `business_id`, `email`, country). Officer details are for **vault KYC / deposit banking**, not corridor quote party building.
 
@@ -191,6 +194,8 @@ curl -sS -X POST "$BASE/partner/customers" \
           "date_of_birth": "1990-01-15",
           "email": "ada@acme.example",
           "nationality": "US",
+          "is_control_person": true,
+          "is_beneficial_owner": true,
           "identity_document": {
             "type": "passport",
             "number": "A1234567",
@@ -367,7 +372,7 @@ OnRamp quote ids are typically `yc_receive_…`. Use `asset: { token, currency, 
 
 | Situation | Typical | Action |
 |-----------|---------|--------|
-| Missing profile/docs on submit | `422` + `missing[]` (e.g. `profile.id_type`, `profile.id_number`, `profile.officers[0].identity_document.number`, `document.identity`) | PATCH / upload until `GET` shows empty `missing[]`, then resubmit |
+| Missing profile/docs on submit | `422` + `missing[]` (e.g. `profile.id_type`, `profile.id_number`, `profile.officers[0].is_control_person`, `profile.officers[0].identity_document.number`, `document.identity`) | PATCH / upload until `GET` shows empty `missing[]`, then resubmit |
 | Quote with unapproved / suspended `customer_id` | `422` | Wait for `approved` or use another customer |
 | Revoke after offboard | `409` on PATCH | Expected — customer is terminal for edits |
 | Unknown / other-tenant id | `404` | Use id from this API key |
