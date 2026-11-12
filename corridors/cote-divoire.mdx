@@ -20,8 +20,11 @@ curl -sS "$BASE/partner/order-requirements?country=CI&currency=XOF&order_type=On
 Full flow: [Quote and accept](/orders/quote-and-accept#hosted-pay-in-ci-za-onramp). Minimum fields:
 
 - `country`: `CI`, `currency`: `XOF`, `order_type`: `OnRamp`
+- `local_amount`: fiat amount the customer pays (XOF)
 - `redirect_url`: `https://…` return route after hosted checkout (when a link is returned)
 - `customer_id` from an **approved** vault customer with **CI** profile and a **first + last** legal name (two or more words)
+- `asset`: `{ token, currency, network }` (e.g. USDC on BASE)
+- `wallet_address`: destination for credited stablecoin
 - `payment_method.type`: `mobile_money`, `phone_number` (E.164), `network_id` from catalog
 
 ```bash

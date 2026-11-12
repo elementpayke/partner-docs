@@ -155,10 +155,13 @@ Create a binding quote for a fiat ↔ crypto order.
     `POST` with corridor, customer, and payment method details.
   </Step>
   <Step title="Show pricing">
-    Display returned amounts and **payment instructions** to the user (OnRamp).
+    Display returned amounts to the user.
   </Step>
   <Step title="Accept">
     [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.
+  </Step>
+  <Step title="Show payment instructions">
+    OnRamp: display `data.accepted.payment_instructions` when present (e.g. `payment_link` or momo details).
   </Step>
 </Steps>
 
