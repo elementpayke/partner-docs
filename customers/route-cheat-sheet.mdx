@@ -14,8 +14,10 @@ Auth: `X-API-Key`. Sandbox base: `https://sandbox.elementpay.net/api/v1`.
 | `POST` | `/partner/customers` | `partner_customer_ref`, `type`, `profile` |
 | `GET` | `/partner/customers` | Optional `status`, `limit`, or `partner_customer_ref` |
 | `GET` | `/partner/customers/{customer_id}` | Read `status` |
-| `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while incomplete |
-| `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements |
+| `PATCH` | `/partner/customers/{customer_id}` | `{ "profile": { … } }` while `incomplete` / `rejected` (or after failed deposit KYC) |
+| `POST` | `/partner/customers/{customer_id}/documents` | Base64; `category` from requirements (individuals capped — e.g. `address` max 1) |
+| `PUT` | `/partner/customers/{customer_id}/documents/{document_id}` | Replace file bytes in place (same id + category); use instead of re-POST when at cap |
+| `DELETE` | `/partner/customers/{customer_id}/documents/{document_id}` | Remove a slot; prefer `PUT` when correcting a file |
 | `POST` | `/partner/customers/{customer_id}/submit` | Incomplete → `422` + `missing[]` |
 | `POST` | `/partner/customers/{customer_id}/revoke` | Partner offboard → `suspended`; optional `reason` (audit-only) |
 

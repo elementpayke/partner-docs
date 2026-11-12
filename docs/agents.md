@@ -251,6 +251,8 @@ Account webhooks: `account.opened`, `account.ready`, `account.credited`, `accoun
 | Requirements | `GET` | `/partner/customers/requirements` |
 | Create customer | `POST` | `/partner/customers` |
 | Upload docs | `POST` | `/partner/customers/{customer_id}/documents` |
+| Replace doc | `PUT` | `/partner/customers/{customer_id}/documents/{document_id}` |
+| Delete doc | `DELETE` | `/partner/customers/{customer_id}/documents/{document_id}` |
 | Submit | `POST` | `/partner/customers/{customer_id}/submit` |
 | Get customer | `GET` | `/partner/customers/{customer_id}` |
 | Catalog | `GET` | `/partner/catalog` |

@@ -557,6 +557,8 @@ CUSTOMER_CREATE_BUSINESS_VALUE: dict[str, Any] = {
                 "date_of_birth": "1990-01-15",
                 "email": "ada@acme.example",
                 "nationality": "US",
+                "is_control_person": True,
+                "is_beneficial_owner": True,
                 "identity_document": {
                     "type": "passport",
                     "number": "A1234567",
@@ -630,7 +632,8 @@ PARTNER_CUSTOMER_CREATE_TRY_IT_SCHEMA: dict[str, Any] = {
                     "type": "object",
                     "description": (
                         "Business profile including complete profile.officers[] "
-                        "(person + identity_document + address per officer)."
+                        "(person + is_control_person + is_beneficial_owner + "
+                        "identity_document + address per officer)."
                     ),
                     "example": CUSTOMER_CREATE_BUSINESS_VALUE["profile"],
                     "additionalProperties": True,
@@ -653,7 +656,8 @@ CUSTOMER_CREATE_TRY_IT_EXAMPLES: dict[str, Any] = {
     "business": {
         "summary": "Business — KYB with officer",
         "description": (
-            "Each profile.officers[] entry needs person fields, identity_document "
+            "Each profile.officers[] entry needs person fields, is_control_person, "
+            "is_beneficial_owner, identity_document "
             "(type, number, issuing_country), and address. US: include tax_id."
         ),
         "value": CUSTOMER_CREATE_BUSINESS_VALUE,

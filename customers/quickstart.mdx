@@ -253,6 +253,24 @@ curl -sS -X POST "$BASE/partner/customers/$CUSTOMER_ID/documents" \
   }' | jq '.data'
 ```
 
+Individuals are capped per category (`identity` max **2**, `address` max **1**). Re-`POST` of the same category when at the cap returns **400** (`Too many documents for this category`). To correct a file on an editable package (`incomplete` / `rejected`, or after failed deposit-account KYC), use **`PUT`** with the existing `document_id` from `GET /partner/customers/{customer_id}` — same id and category, new bytes. Profile field fixes stay on **`PATCH`**. Approved + `deposit_account=ready` stays partner-locked (**409**).
+
+```bash
+# From GET customer → data.documents[].id for the slot to replace
+export DOCUMENT_ID="pdoc_…"
+
+curl -sS -X PUT "$BASE/partner/customers/$CUSTOMER_ID/documents/$DOCUMENT_ID" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file_name": "utility_bill_v2.pdf",
+    "content_type": "application/pdf",
+    "content_base64": "<BASE64>"
+  }' | jq '.data.document'
+```
+
+Prefer `PUT` over `DELETE` + `POST` when swapping a file. Use `DELETE …/documents/{document_id}` only when you need to remove a slot entirely.
+
 ## 4. Submit
 
 ```bash
@@ -373,6 +391,8 @@ OnRamp quote ids are typically `yc_receive_…`. Use `asset: { token, currency, 
 | Situation | Typical | Action |
 |-----------|---------|--------|
 | Missing profile/docs on submit | `422` + `missing[]` (e.g. `profile.id_type`, `profile.id_number`, `profile.officers[0].is_control_person`, `profile.officers[0].identity_document.number`, `document.identity`) | PATCH / upload until `GET` shows empty `missing[]`, then resubmit |
+| Re-POST doc at category cap | `400` + `category` / `max` (e.g. `address` max 1) | `PUT …/documents/{document_id}` with new bytes (or DELETE then POST) |
+| Edit locked package | `409` on PATCH / PUT / DELETE | Expected for `pending_review` or approved + `deposit_account=ready` |
 | Quote with unapproved / suspended `customer_id` | `422` | Wait for `approved` or use another customer |
 | Revoke after offboard | `409` on PATCH | Expected — customer is terminal for edits |
 | Unknown / other-tenant id | `404` | Use id from this API key |
