@@ -140,12 +140,51 @@ If **Signed accepts** is enabled on your API key in Console, see [Customer-signe
       "amount_fiat": 800,
       "amount_crypto": 5.94999,
       "currency": "KES"
+    },
+    "accepted": {
+      "payment_instructions": {
+        "type": "momo",
+        "source": { "accountNumber": "+2541111111111" }
+      }
     }
   }
 }
 ```
 
-OnRamp: read **`data.payment_instructions`** (when present) for what the customer must do on the fiat rail. OffRamp live: **`crypto_deposit`** tells the customer where to send stablecoin.
+OnRamp: read **`data.accepted.payment_instructions`** (when present) for what the customer must do on the fiat rail — e.g. momo STK, bank transfer details, or **`payment_link`** for hosted pay-in (CI/ZA). OffRamp live: look for **`type`: `crypto_deposit`** in the same object for where to send stablecoin.
+
+## Hosted pay-in (CI, ZA OnRamp)
+
+**`redirect_url`** is **required** on quote for **CI** and **ZA** OnRamp (`http://` or `https://` — where the customer lands after a hosted checkout). Missing value → **422** (`data.field`: `redirect_url`).
+
+After **accept**, branch on **`data.accepted.payment_instructions`**:
+
+| Signal | UX |
+|--------|-----|
+| **`payment_link` set** | Open link (WebView / browser). User returns via your `redirect_url`. |
+| **`type`: `momo`** with `source` | No link — customer pays in the **wallet app** for `source.networkName` on `source.accountNumber`. |
+
+On **CI**, **Orange** commonly returns a **`payment_link`** (instructions `type` may still be `bank` on the payload). **Wave**, **Moov**, and **MTN** typically return **momo-only** instructions. Operator matrix and curls: [Côte d’Ivoire](/corridors/cote-divoire).
+
+`GET /partner/order-requirements?country=CI&currency=XOF&order_type=OnRamp` (and ZA when OnRamp is enabled on your key) lists required fields including `redirect_url`.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OnRamp",
+    "country": "CI",
+    "currency": "XOF",
+    "local_amount": 5000,
+    "redirect_url": "https://your-app.example/orders/return",
+    "customer_id": "'"$CUSTOMER_ID"'",
+    "asset": { "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913", "currency": "USDC", "network": "BASE" },
+    "payment_method": { "type": "mobile_money", "phone_number": "+2251111111111", "network_id": "FROM_CATALOG" },
+    "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
+  }'
+```
+
+Missing or invalid `redirect_url` returns **422** with `data.field: redirect_url`.
 
 ## Request checklist
 
@@ -160,6 +199,7 @@ OnRamp: read **`data.payment_instructions`** (when present) for what the custome
 | `payment_method.phone_number` | E.164 MSISDN | payout MSISDN |
 | `payment_method.network_id` | from catalog | from catalog (same `order_type`) |
 | `wallet_address` | **required** (receive crypto) | omit |
+| `redirect_url` | **required** for **CI** and **ZA** OnRamp; optional elsewhere | omit |
 | `refund_address` | omit | **required** (OffRamp) |
 
 Field hints per corridor: `GET /partner/order-requirements`. Copy-paste payloads: [Sandbox test payloads](/sandbox/test-payloads).

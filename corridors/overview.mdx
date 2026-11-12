@@ -24,6 +24,10 @@ Always run discovery on **your** environment — `network_id` UUIDs are not port
 
 Provider lists in catalog **differ by direction** — filter with `?order_type=OnRamp` or `OffRamp`.
 
+## Hosted pay-in return URL (CI, ZA OnRamp)
+
+For **Côte d’Ivoire** and **South Africa** OnRamp, include **`redirect_url`** on quote (required). After accept: open **`payment_link`** when present (e.g. **Orange CI**); otherwise show **momo** in-app payment for Wave/Moov/MTN. See [CI corridor](/corridors/cote-divoire) and [Quote and accept — hosted pay-in](/orders/quote-and-accept#hosted-pay-in-ci-za-onramp).
+
 ## Payment rails
 
 ### Mobile money
@@ -73,6 +77,7 @@ Catalog shape (local African): under `onramp.countries` / `offramp.countries`, e
 | RW | RWF | Per catalog |
 | MW | MWK | Per catalog |
 | BW | BWP | Per catalog |
+| CI | XOF | Mobile money — Orange (hosted link) vs Wave/Moov/MTN (momo); [CI guide](/corridors/cote-divoire) |
 
 OnRamp/OffRamp flags and exact providers (Safaricom, banks, etc.) come from **`GET /partner/catalog?order_type=…`**.
 
