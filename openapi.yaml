@@ -2208,7 +2208,7 @@ paths:
               business:
                 summary: Business — KYB with officer
                 description: |-
-                  Each profile.officers[] entry needs person fields, identity_document (type, number, issuing_country), and address. US: include tax_id.
+                  Each profile.officers[] entry needs person fields, is_control_person, is_beneficial_owner, identity_document (type, number, issuing_country), and address. US: include tax_id.
                 value:
                   partner_customer_ref: partner-biz-001
                   type: business
@@ -2248,6 +2248,8 @@ paths:
                       date_of_birth: '1990-01-15'
                       email: ada@acme.example
                       nationality: US
+                      is_control_person: true
+                      is_beneficial_owner: true
                       identity_document:
                         type: passport
                         number: A1234567
@@ -7328,7 +7330,7 @@ components:
             example: business
           profile:
             type: object
-            description: Business profile including complete profile.officers[] (person + identity_document + address per
+            description: Business profile including complete profile.officers[] (person + is_control_person + is_beneficial_owner + identity_document + address per
               officer).
             example:
               legal_name: Acme Payments Ltd
@@ -7366,6 +7368,8 @@ components:
                 date_of_birth: '1990-01-15'
                 email: ada@acme.example
                 nationality: US
+                is_control_person: true
+                is_beneficial_owner: true
                 identity_document:
                   type: passport
                   number: A1234567
@@ -7416,6 +7420,8 @@ components:
               date_of_birth: '1990-01-15'
               email: ada@acme.example
               nationality: US
+              is_control_person: true
+              is_beneficial_owner: true
               identity_document:
                 type: passport
                 number: A1234567
