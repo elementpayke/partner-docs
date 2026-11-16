@@ -24,7 +24,9 @@ Where this repo’s guides and OpenAPI disagree, or behavior is not documented y
 | Account webhook body schemas | `account.*` events listed; no full JSON examples in `webhooks.mdx` | **TODO:** add examples; OpenAPI webhook `oneOf` notes this |
 | Card charge OpenAPI | Cards guide without OpenAPI | **TODO:** export card paths into OpenAPI when stable |
 | Production IP allowlisting details | Mentioned in onboarding checklist | **TODO:** document if required for your key |
-| USDC minor-unit API field | API returns decimals | Integrators convert ×10⁶ locally — **not** an API contract field |
+| USDC minor-unit API field | API returns decimals | Integrators convert locally — **not** an API contract field. ×10⁶ on Base/Polygon, **×10⁷ on Stellar** |
+| Stellar KE OffRamp availability | Enabled per environment; `asset.network=STELLAR` returns `422` and the catalog omits the Stellar row while off | Probe `GET /partner/catalog?country=KE&order_type=OffRamp` → `crypto_assets` before integrating; confirm rollout with EP |
+| Stellar deposit recovery | Shared deposit address keyed by `memo`; a missing/incorrect memo cannot be auto-matched | Always forward the accept `memo`; contact EP for manual recovery — no self-serve path documented |
 | Hosted Mintlify public URL | README placeholder | Set in partner handoff |
 
 ## Dual products easy to confuse
