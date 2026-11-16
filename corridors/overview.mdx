@@ -89,7 +89,7 @@ Other countries: use catalog + [order-requirements](/api-reference/introduction)
 ## Supported stablecoins (asset)
 
 Pass **`asset.token`**, **`asset.currency`**, and **`asset.network`** on every quote.  
-Local fiat corridors currently support **two** contract addresses only:
+Local fiat corridors support **two** EVM contract addresses:
 
 | Use | Currency | Network | Contract (`asset.token`) |
 |-----|----------|---------|--------------------------|
@@ -99,3 +99,11 @@ Local fiat corridors currently support **two** contract addresses only:
 **Partner guidance:** use **Base USDC** for all OnRamp and OffRamp sandbox examples unless we tell you otherwise. Quickstart and corridor samples use Base USDC. Polygon USDT remains available on the rail but can behave differently for direct settlement — stick to Base USDC unless QA has confirmed USDT for your corridor.
 
 Same addresses apply on sandbox and production for these rails.
+
+### Stellar USDC (KE OffRamp only)
+
+| Use | Currency | Network | `asset.token` |
+|-----|----------|---------|---------------|
+| KE OffRamp | `USDC` | `STELLAR` | **Omit** — resolved server-side |
+
+Stellar is **not** addressed by contract id: the USDC asset differs between sandbox and production, so pass `asset.network: "STELLAR"` and leave `asset.token` out. It is available on **Kenya OffRamp only** (M-PESA or bank), is enabled per environment, and deposits require a **memo**. See [Kenya → OffRamp (Stellar USDC)](/corridors/kenya#offramp-stellar-usdc).

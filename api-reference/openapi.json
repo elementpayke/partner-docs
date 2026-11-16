@@ -8741,7 +8741,7 @@
               }
             ],
             "title": "Token",
-            "description": "Token contract address or route token hint. local fiat rail currently requires Base USDC or Polygon USDT address."
+            "description": "Token contract address or route token hint. local fiat rail currently requires Base USDC or Polygon USDT address. Omit for Stellar \u2014 send asset.network=STELLAR instead (KE OffRamp only); the USDC asset is resolved server-side and differs per environment."
           },
           "channel_id": {
             "anyOf": [

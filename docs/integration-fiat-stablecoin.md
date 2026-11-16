@@ -40,8 +40,11 @@ Field hints: `GET /partner/order-requirements?country=…&currency=…&order_typ
 |-----|------------------|-----------------|---------------|
 | **Default (recommended)** | `USDC` | `BASE` | `0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913` |
 | Alternate | `USDT` | `POLYGON` | `0xc2132d05d31c914a87c6611c10748aeb04b58e8f` |
+| KE OffRamp only | `USDC` | `STELLAR` | **omit** — resolved server-side |
 
-Same addresses on sandbox and production. Prefer Base USDC unless QA confirms USDT for your corridor (`corridors/overview.mdx`). KE OffRamp sandbox samples often use Polygon USDT.
+Same addresses on sandbox and production for the EVM rows. Prefer Base USDC unless QA confirms USDT for your corridor (`corridors/overview.mdx`). KE OffRamp sandbox samples often use Polygon USDT.
+
+**Stellar** is the exception to the "always send `asset.token`" rule: the USDC asset differs per environment, so send `asset.network: "STELLAR"` with no `asset.token`. It is limited to **Kenya OffRamp** (M-PESA or bank), is enabled per environment (`422` when off), uses **7 decimals** rather than 6, and its deposit address is **shared across orders** — the per-order `memo` returned by accept is mandatory. See `corridors/kenya.mdx`.
 
 ## How the rate is quoted and locked
 

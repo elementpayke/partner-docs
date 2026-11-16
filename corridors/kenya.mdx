@@ -62,8 +62,103 @@ Use **Polygon USDT** on the quote:
 4. Webhook `order.settled` when fiat is paid out to momo
 
 <Warning>
-OffRamp deposit address is **per order** from accept. Do not reuse across orders. Sandbox on-chain sends (e.g. testnet USDC/USDT) are not a supported settle path — use the `Successful` name trigger instead.
+On **EVM networks** (Base, Polygon) the OffRamp deposit address is **per order** from accept. Do not reuse across orders. Stellar behaves differently — see [OffRamp (Stellar USDC)](#offramp-stellar-usdc). Sandbox on-chain sends (e.g. testnet USDC/USDT) are not a supported settle path — use the `Successful` name trigger instead.
 </Warning>
+
+## OffRamp (Stellar USDC)
+
+Kenya OffRamp also accepts **USDC on Stellar**, settling to M-PESA or bank in KES.
+
+<Note>
+This corridor is **enabled per environment**. While it is off, a quote with `asset.network: "STELLAR"` returns `422` and no Stellar row appears in the catalog. Confirm availability with Element Pay (`compliance@elementpay.net`) before building against it.
+</Note>
+
+Check your environment before integrating:
+
+```bash
+curl -sS "$BASE/partner/catalog?country=KE&order_type=OffRamp" \
+  -H "X-API-Key: $API_KEY" | jq '.data.offramp.countries.KE.crypto_assets'
+```
+
+A `{"currency": "USDC", "network": "STELLAR"}` entry means the corridor is live for your key.
+
+### Asset
+
+| Field | Value |
+|-------|--------|
+| `asset.currency` | `USDC` (only — any other currency returns `422`) |
+| `asset.network` | `STELLAR` |
+| `asset.token` | **Omit.** Resolved server-side |
+
+<Warning>
+Do **not** hardcode a Stellar contract id. Unlike Base and Polygon, the USDC asset differs between sandbox and production, so the rail resolves it from `asset.network` instead. Sending an EVM-style `asset.token` here is the most common integration error.
+</Warning>
+
+### Supported rails
+
+| `payment_method.type` | Payee fields | Settles via |
+|-----------------------|--------------|-------------|
+| `mobile_money` | `phone_number` | M-PESA |
+| `bank` | `account_number`, `account_name` | Bank |
+
+Both require `payment_method.network_id` — discover it from catalog or payment-methods with `order_type=OffRamp`. Do not hardcode it.
+
+### Required quote fields
+
+`currency`, `country: "KE"`, one of `crypto_amount` / `local_amount` / `fiat_amount`, `refund_address` (or `refund_to_source_address`), `payment_method.network_id`, and an approved `customer_id`. Bank adds `account_number` + `account_name`; momo adds `phone_number`. Anything missing returns `422` with `data.missing_fields`.
+
+```bash
+curl -sS -X POST "$BASE/partner/orders/quote" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_type": "OffRamp",
+    "country": "KE",
+    "currency": "KES",
+    "crypto_amount": 25,
+    "asset": { "currency": "USDC", "network": "STELLAR" },
+    "customer_id": "pcus_...",
+    "refund_address": "G...",
+    "payment_method": {
+      "type": "mobile_money",
+      "network_id": "<from catalog>",
+      "phone_number": "+2541111111111"
+    }
+  }' | jq '.'
+```
+
+### Deposit instructions — memo is mandatory
+
+Accept returns `data.accepted.payment_instructions` with a **shared** Stellar address and a per-order memo:
+
+```json
+{
+  "type": "crypto_deposit",
+  "wallet_address": "G...",
+  "amount": "25.0000000",
+  "currency": "USDC",
+  "network": "STELLAR",
+  "memo": "EP3f2a9c1b7d4e6f8a0b2c4d",
+  "memo_type": "text",
+  "expires_at": "2026-11-16T14:05:00Z",
+  "note": "Send the exact USDC amount to this address and include the memo."
+}
+```
+
+<Warning>
+The Stellar deposit address is **shared across orders** — the `memo` is the only thing that identifies the payment. A deposit sent without the exact `memo` (type `text`) cannot be matched to an order, will not auto-credit, and needs manual recovery. Always pass `memo` through to the sending wallet.
+</Warning>
+
+Settlement notes:
+
+- **7 decimals** on Stellar, not the 6 used by Base and Polygon. Send the exact `amount`; a short payment fails the order.
+- Deposits are matched by polling Horizon, so credit is not tied to EVM-style block confirmations.
+- Quotes expire in **15 minutes**; the deposit window after accept is **3 hours** (`expires_at`).
+- Webhooks are unchanged: `order.processing`, `order.settled`, `order.failed`, `order.refunded`.
+
+<Note>
+[Signed accepts](/orders/signed-accepts) are **EVM-only** and cannot be used on this corridor. Accept Stellar quotes with the standard `customer_id` flow.
+</Note>
 
 ## Bank rail
 

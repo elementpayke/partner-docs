@@ -6273,7 +6273,8 @@ components:
           - type: 'null'
           title: Token
           description: Token contract address or route token hint. local fiat rail currently requires Base USDC or Polygon
-            USDT address.
+            USDT address. Omit for Stellar — send asset.network=STELLAR instead (KE
+            OffRamp only); the USDC asset is resolved server-side and differs per environment.
         channel_id:
           anyOf:
           - type: string
