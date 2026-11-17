@@ -155,10 +155,13 @@ Create a binding quote for a fiat ↔ crypto order.
     `POST` with corridor, customer, and payment method details.
   </Step>
   <Step title="Show pricing">
-    Display returned amounts and **payment instructions** to the user (OnRamp).
+    Display returned amounts to the user.
   </Step>
   <Step title="Accept">
     [`POST /partner/orders/{quote_id}/accept`](/partner/orders/{quote_id}/accept) when the user confirms.
+  </Step>
+  <Step title="Show payment instructions">
+    OnRamp: display `data.accepted.payment_instructions` when present (e.g. `payment_link` or momo details).
   </Step>
 </Steps>
 
@@ -413,14 +416,22 @@ PARTNER_ORDER_QUOTE_TRY_IT_SCHEMA: dict[str, Any] = {
             "description": "OffRamp: refund wallet if payout fails.",
             "example": "0x3333333333333333333333333333333333333333",
         },
+        "redirect_url": {
+            "type": "string",
+            "description": (
+                "Customer return URL after hosted pay-in (http or https). "
+                "Required on OnRamp quote for CI and ZA; optional elsewhere."
+            ),
+            "example": "https://your-app.example/orders/return",
+        },
     },
     "title": "PartnerOrderQuoteRequestTryIt",
     "description": (
         "Quote body for Mintlify Try it. Includes customer_id **or** inline "
-        "customer, asset, and payment_method only. Not shown here (still "
-        "accepted on live API if needed): provider, channel_id, channel_type, "
-        "sequence_id, destination, source, sender, recipient, rail, token "
-        "top-level alias, crypto_currency/crypto_network hints."
+        "customer, asset, payment_method, and redirect_url (CI/ZA OnRamp). "
+        "Not shown here (still accepted on live API if needed): provider, "
+        "channel_id, channel_type, sequence_id, destination, source, sender, "
+        "recipient, rail, token top-level alias, crypto_currency/crypto_network hints."
     ),
     "example": QUOTE_TRY_IT_DEFAULT,
 }
@@ -488,6 +499,32 @@ QUOTE_TRY_IT_EXAMPLES: dict[str, Any] = {
                 "type": "mobile_money",
                 "phone_number": "+2541111111111",
                 "network_id": "7ea6df5c-6bba-46b2-a7e6-f511959e7edb",
+            },
+            "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+        },
+    },
+    "ci_onramp_hosted_payin": {
+        "summary": "CI OnRamp — redirect_url required",
+        "description": (
+            "Côte d'Ivoire hosted pay-in: include redirect_url on quote; "
+            "after accept, open payment_instructions.payment_link when present."
+        ),
+        "value": {
+            "order_type": "OnRamp",
+            "currency": "XOF",
+            "country": "CI",
+            "local_amount": 5000,
+            "customer_id": "pcus_a1b2c3d4e5f6",
+            "redirect_url": "https://your-app.example/orders/return",
+            "asset": {
+                "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+                "currency": "USDC",
+                "network": "BASE",
+            },
+            "payment_method": {
+                "type": "mobile_money",
+                "phone_number": "+2251111111111",
+                "network_id": "REPLACE_FROM_CATALOG",
             },
             "wallet_address": "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
         },
