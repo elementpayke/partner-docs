@@ -3,7 +3,6 @@
 Self-contained Mintlify site for B2B partners (African fiat corridors: mobile money and bank), plus **agent-readable** OpenAPI and Markdown entrypoints.
 
 **API runtime:** Element Pay aggregator — `https://sandbox.elementpay.net/api/v1/partner/*` (sandbox) and `https://api.elementpay.net/api/v1/partner/*` (production).
-
 ## Start here (agents + humans)
 
 | File | Purpose |
