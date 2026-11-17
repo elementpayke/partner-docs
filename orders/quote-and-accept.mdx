@@ -99,9 +99,13 @@ curl -sS -X POST "$BASE/partner/orders/quote" \
 | Field | Use |
 |-------|-----|
 | `data.quote_id` | Pass to accept (save before TTL) |
-| `data.expires_at` | Show countdown; re-quote if expired (**410** on accept) |
+| `data.expires_at` | Show countdown; re-quote if expired (**410** on accept). MoMo collections typically expire in about **10 minutes** if the customer does not fund in time. |
 | `data.amounts` | Display pricing to the end-user |
 | `data.instructions.available_after_accept` | OnRamp momo: STK / pay instructions come **after** accept |
+
+<Warning>
+**OnRamp / collections funding:** After accept, the customer must approve the mobile-money prompt (or complete `paymentLink` when present) **immediately**, with sufficient wallet balance. Most failed collections expire because funding never arrives (PIN decline, insufficient funds, slow confirm, or abandoned link) — not because the quote API failed. Do not create a quote until the user is ready to pay. Use `payment_method.phone_number` only for the MoMo leg (E.164 for the corridor, e.g. Côte d'Ivoire `+225` + **10** national digits such as `+2250701234567`). Never send a local `0…` number or a KYC `customer.phone` from another country as the money-movement MSISDN.
+</Warning>
 
 Save the quote id:
 
@@ -157,7 +161,7 @@ OnRamp: read **`data.payment_instructions`** (when present) for what the custome
 | Customer | **`customer_id`** (approved) | same |
 | `asset` | `{ token, currency, network }` | often Polygon USDT for KE sandbox OffRamp |
 | `payment_method.type` | `mobile_money` | `mobile_money` |
-| `payment_method.phone_number` | E.164 MSISDN | payout MSISDN |
+| `payment_method.phone_number` | E.164 MSISDN for corridor (CI: `+225` + 10 digits) | payout MSISDN (same rules) |
 | `payment_method.network_id` | from catalog | from catalog (same `order_type`) |
 | `wallet_address` | **required** (receive crypto) | omit |
 | `refund_address` | omit | **required** (OffRamp) |
@@ -171,6 +175,7 @@ Field hints per corridor: `GET /partner/order-requirements`. Copy-paste payloads
 | Customer not `approved` | `422` `customer_status: incomplete` | Finish [KYC](/customers/quickstart) |
 | Missing `network_id` | `422` | Catalog lookup for same country + `order_type` |
 | Quote expired | `410` on accept | New quote |
+| Invalid MoMo phone | `422` `field: payment_method.phone_number` | E.164 + corridor dial / national length (see [Errors](/errors)) |
 | Wrong sandbox phone | order fails later | [Sandbox success & failure](/sandbox/success-failure) |
 
 ## Deprecated: inline `customer`

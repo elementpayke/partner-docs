@@ -60,7 +60,7 @@ Same addresses on sandbox and production for the EVM rows. Prefer Base USDC unle
 | Field | Meaning |
 |-------|---------|
 | `data.quote_id` | Pass to accept (e.g. `yc_receive_…`) |
-| `data.expires_at` | Re-quote if past; accept returns **410** when expired |
+| `data.expires_at` | Re-quote if past; accept returns **410** when expired. OnRamp MoMo: customer must fund within ~**10 minutes** or the collection expires |
 | `data.amounts.rate` | Locked FX for this quote |
 | `data.amounts.user_pays` | `{ amount, currency }` (fiat or crypto depending on direction) |
 | `data.amounts.user_receives` | `{ amount, currency, network? }` |
