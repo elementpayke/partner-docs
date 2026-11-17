@@ -60,13 +60,15 @@ Same addresses on sandbox and production for the EVM rows. Prefer Base USDC unle
 | Field | Meaning |
 |-------|---------|
 | `data.quote_id` | Pass to accept (e.g. `yc_receive_…`) |
-| `data.expires_at` | Re-quote if past; accept returns **410** when expired. OnRamp MoMo: customer must fund within ~**10 minutes** or the collection expires |
+| `data.expires_at` | Quote acceptance deadline — re-quote if past; accept returns **410** when expired |
 | `data.amounts.rate` | Locked FX for this quote |
 | `data.amounts.user_pays` | `{ amount, currency }` (fiat or crypto depending on direction) |
 | `data.amounts.user_receives` | `{ amount, currency, network? }` |
 | `data.amounts.fees` | e.g. `service_fee_local`, `service_fee_usd` |
 
 **TTL in seconds:** not a fixed published constant — honor `expires_at`. TODO: [`KNOWN_GAPS.md`](KNOWN_GAPS.md).
+
+**OnRamp MoMo funding (after accept):** Accept consumes the quote and starts the collection rail. The customer then has about **10 minutes** to approve the mobile-money prompt (or finish `paymentLink`); if funding does not arrive in that window, the collection expires.
 
 Indicative rates are **not** binding and **not** ledger-pair FX.
 
