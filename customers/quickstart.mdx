@@ -75,7 +75,7 @@ Content-Type: application/json
 
 ## Hosted KYC (individual, beta)
 
-For dexes / partners that should not run their own ID upload UI, use **hosted KYC** (`purpose=basic`).
+Use **hosted KYC** (`purpose=basic`) when you want Element Pay to host the identity check instead of uploading documents yourself.
 
 <Warning>
 Hosted individual KYC is **beta**. Session create may include `"maturity": "beta"`. Corridors: KE, NG, ZA. Prefer webhooks; poll as backup.
@@ -86,18 +86,36 @@ curl -sS -X POST "$BASE/partner/kyc/sessions" \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "partner_customer_ref": "dex-user-001",
+    "partner_customer_ref": "customer-ref-001",
     "redirect_url": "https://app.example.com/kyc-done",
     "purpose": "basic",
     "country": "KE"
   }' | jq '.data'
 ```
 
-1. Open `verification_url` (Element shell).
-2. Collect **email**, **phone** (E.164), **id_number**. For **NG**, also **11-digit BVN**.
-3. Complete Smile DocV (camera or upload + selfie). Sandbox: use documented Clearwater / Dangerfield test identities.
-4. Wait for `customer.approved` or `customer.rejected`. If the user cancels or Smile rejects a non–test identity before a job exists → `customer.kyc_session_failed` (still `incomplete` — create a new session to retry).
-5. Quote with `customer_id`. Nigeria retail ramps also need BVN on the vault (`additional_id_*`), which the shell stores.
+1. Open `verification_url` (hosted page).
+2. On that page, enter **email**, **phone** (E.164), and **id_number**. For **NG**, also enter an **11-digit BVN**.
+3. Complete ID capture (camera or upload) and selfie. In **sandbox**, use the exact test values below — outcome is driven by **name + email**, not by the photo.
+4. Wait for `customer.approved` or `customer.rejected`. Cancel, consent deny, or any non–test name/email → `customer.kyc_session_failed` (customer stays `incomplete`; create a new session to retry).
+5. Quote with `customer_id`. Nigeria retail ramps also need BVN on the vault (`additional_id_*`), which the hosted page stores.
+
+### Sandbox test values (copy exactly)
+
+Sandbox only accepts these test identities. Enter the email on the hosted page; when the flow asks for names, use the matching given names / last name. Phone and id number only need a valid format for the country.
+
+| Outcome | Partner webhook | Email | Given names | Last name |
+| --- | --- | --- | --- | --- |
+| Approve | `customer.approved` | `amina.clearwater@example.com` | `Amina Fatou` | `Clearwater` |
+| Reject | `customer.rejected` | `rashid.dangerfield@example.com` | `Rashid Omar` | `Dangerfield` |
+
+Suggested shell fields (any format-valid values work; these are known-good):
+
+| Country | Phone | ID number | BVN (NG only) |
+| --- | --- | --- | --- |
+| KE | `+254712345678` | `12345678` | — |
+| NG | `+2348012345678` | `12345678901` | `22222222222` |
+
+Anything else (random email/name) typically yields `customer.kyc_session_failed` with no approve/reject job.
 
 `products.deposit_account.status` stays `none` on basic approve — banking / deposit accounts are a separate product.
 
