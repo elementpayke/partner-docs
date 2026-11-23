@@ -7689,6 +7689,7 @@ components:
           - customer.submitted
           - customer.approved
           - customer.rejected
+          - customer.kyc_session_failed
           - customer.revoked
           - customer.updated
           - customer.deposit_account.updated
@@ -7873,6 +7874,7 @@ webhooks:
           - customer.submitted
           - customer.approved
           - customer.rejected
+          - customer.kyc_session_failed
           - customer.revoked
           - customer.updated
           - customer.deposit_account.updated

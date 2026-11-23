@@ -50,7 +50,7 @@ Content-Type: application/json
 | `rejected` | Review declined |
 | `suspended` | Partner offboarded or blocked — cannot quote, patch, or open new banking activity |
 
-## Happy path
+## Happy path (document upload)
 
 <Steps>
   <Step title="Requirements">
@@ -72,6 +72,34 @@ Content-Type: application/json
     [`customer_id`](/orders/quote-and-accept) on `POST /partner/orders/quote` — required path for new integrations
   </Step>
 </Steps>
+
+## Hosted KYC (individual, beta)
+
+For dexes / partners that should not run their own ID upload UI, use **hosted KYC** (`purpose=basic`).
+
+<Warning>
+Hosted individual KYC is **beta**. Session create may include `"maturity": "beta"`. Corridors: KE, NG, ZA. Prefer webhooks; poll as backup.
+</Warning>
+
+```bash
+curl -sS -X POST "$BASE/partner/kyc/sessions" \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partner_customer_ref": "dex-user-001",
+    "redirect_url": "https://app.example.com/kyc-done",
+    "purpose": "basic",
+    "country": "KE"
+  }' | jq '.data'
+```
+
+1. Open `verification_url` (Element shell).
+2. Collect **email**, **phone** (E.164), **id_number**. For **NG**, also **11-digit BVN**.
+3. Complete Smile DocV (camera or upload + selfie). Sandbox: use documented Clearwater / Dangerfield test identities.
+4. Wait for `customer.approved` or `customer.rejected`. If the user cancels or Smile rejects a non–test identity before a job exists → `customer.kyc_session_failed` (still `incomplete` — create a new session to retry).
+5. Quote with `customer_id`. Nigeria retail ramps also need BVN on the vault (`additional_id_*`), which the shell stores.
+
+`products.deposit_account.status` stays `none` on basic approve — banking / deposit accounts are a separate product.
 
 ## 1. Requirements
 
